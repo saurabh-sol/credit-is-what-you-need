@@ -10,8 +10,8 @@ export const config = createConfig({
     injected(),
     // The Coinbase Wallet app and extension. Smart wallets are left to Base
     // Account below, which is Coinbase's current SDK for them.
-    coinbaseWallet({ appName: "Fuel", preference: { options: "eoaOnly" } }),
-    baseAccount({ appName: "Fuel" }),
+    coinbaseWallet({ appName: "Kredit", preference: { options: "eoaOnly" } }),
+    baseAccount({ appName: "Kredit" }),
   ],
   // Optional private RPCs (e.g. Alchemy). Without them the public RPCs are used.
   transports: {

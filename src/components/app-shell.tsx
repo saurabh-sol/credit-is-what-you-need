@@ -165,7 +165,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const title = everywhere.find((item) => item.href === pathname)?.name ?? "Fuel";
+  const title = everywhere.find((item) => item.href === pathname)?.name ?? "Kredit";
 
   return (
     // A fixed frame: the sidebar and top bar stay put and the page scrolls inside <main>,
@@ -234,7 +234,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <MenuIcon className="size-5" />
           </button>
           <p className="text-[0.8125rem] text-mist">
-            Fuel <span className="mx-1.5 text-line">/</span> <span className="text-fog">{title}</span>
+            Kredit <span className="mx-1.5 text-line">/</span> <span className="text-fog">{title}</span>
           </p>
           <div className="ml-auto flex items-center gap-2">
             {account.data && (

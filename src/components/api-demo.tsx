@@ -6,14 +6,14 @@ import { prefersReducedMotion, useInView } from "@/components/motion/use-in-view
 import { snippetNames as tabs, snippets, type SnippetName as Tab } from "@/lib/snippets";
 
 // What the built-in test model really answers, headers included.
-const response = `{ "role": "assistant", "content": "Fuel echo: hi" }`;
+const response = `{ "role": "assistant", "content": "Kredit echo: hi" }`;
 
 const subscribe = () => () => {};
 const useOrigin = () =>
   useSyncExternalStore(
     subscribe,
     () => window.location.origin,
-    () => "https://your-fuel-host",
+    () => "https://your-kredit-host",
   );
 
 // Colors double-quoted strings, including one that is still being typed.
@@ -108,8 +108,8 @@ export function ApiDemo() {
           <span className="flex items-center gap-2 text-lime">
             <span className="live-dot" /> 200 OK
           </span>
-          <span>x-fuel-credits-charged: 1</span>
-          <span>x-fuel-balance: 2863</span>
+          <span>x-kredit-credits-charged: 1</span>
+          <span>x-kredit-balance: 2863</span>
         </p>
         <p className="mt-2 overflow-x-auto whitespace-pre text-fog">
           <Highlighted text={response} />

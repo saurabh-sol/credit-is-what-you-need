@@ -1,6 +1,6 @@
 // What a model call costs in credits. 1,000 credits = $1.
 export const CREDITS_PER_USD = 1000;
-export const MARGIN = 0.2; // Fuel's cut on top of the provider's price
+export const MARGIN = 0.2; // Kredit's cut on top of the provider's price
 export const MIN_CREDITS_PER_REQUEST = 1;
 
 // Used only when the provider doesn't report what the call cost.

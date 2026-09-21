@@ -1,7 +1,7 @@
 import { distribution } from "@/lib/distribution";
 import { Board } from "./board";
 
-export const metadata = { title: "Distribution — Fuel" };
+export const metadata = { title: "Distribution — Kredit" };
 // Read from the ledger on every visit; the board then keeps itself fresh.
 export const dynamic = "force-dynamic";
 

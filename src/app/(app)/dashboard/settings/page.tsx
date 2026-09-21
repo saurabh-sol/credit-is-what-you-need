@@ -1,7 +1,7 @@
 import { DisplayName } from "../display-name";
 import { PageHeader } from "../page-header";
 
-export const metadata = { title: "Settings — Fuel" };
+export const metadata = { title: "Settings — Kredit" };
 
 export default function Settings() {
   return (

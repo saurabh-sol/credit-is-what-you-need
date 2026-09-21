@@ -53,6 +53,6 @@ check("new wallet gets an empty receipt", scan.status === 200 && scanBody.total 
 
 // 7. logout
 const out = await fetch(`${base}/api/auth/logout`, { method: "POST", headers: { cookie: session } });
-check("logout clears cookie", out.headers.getSetCookie().some((c) => c.startsWith("fuel_session=;")));
+check("logout clears cookie", out.headers.getSetCookie().some((c) => c.startsWith("kredit_session=;")));
 
 process.exit(results.every(Boolean) ? 0 : 1);

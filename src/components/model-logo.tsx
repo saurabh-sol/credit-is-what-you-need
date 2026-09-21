@@ -36,7 +36,7 @@ export function ProviderLogo({ logo, className = "size-5", mono = false }: Provi
   );
 }
 
-// The logo for a model id. Fuel's own test model, and makers we have no mark for, get the F tile.
+// The logo for a model id. Kredit's own test model, and makers we have no mark for, get the K tile.
 export function ModelLogo({ model, className = "size-5" }: { model: string; className?: string }) {
   const provider = providerOf(model);
   if (provider) return <ProviderLogo logo={provider.logo} className={className} />;
@@ -45,7 +45,7 @@ export function ModelLogo({ model, className = "size-5" }: { model: string; clas
       aria-hidden
       className={`${className} inline-grid shrink-0 place-items-center rounded-[28%] bg-lime font-mono text-[10px] leading-none font-bold text-ink`}
     >
-      F
+      K
     </span>
   );
 }

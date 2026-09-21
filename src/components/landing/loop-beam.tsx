@@ -10,7 +10,7 @@ const stages = [
   {
     icon: CoinsIcon,
     title: "Credits",
-    text: "Fuel scans your record, shows a receipt for every task, and you claim the total.",
+    text: "Kredit scans your record, shows a receipt for every task, and you claim the total.",
   },
   {
     icon: SparkIcon,

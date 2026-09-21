@@ -1,4 +1,4 @@
-# Render Blueprint for Fuel, with a persistent disk for the credit ledger.
+# Render Blueprint for Kredit, with a persistent disk for the credit ledger.
 #
 # Credits, API keys and display names live in a SQLite file. Render's free plan
 # has no disk, so that file is lost on every restart and deploy; use this
@@ -6,7 +6,7 @@
 # Apply it from the Render dashboard: New > Blueprint > pick this repository.
 services:
   - type: web
-    name: fuel
+    name: kredit
     runtime: node
     plan: starter
     repo: https://github.com/saurabh-sol/credit-is-what-you-need
@@ -17,14 +17,14 @@ services:
     startCommand: npm run start
     healthCheckPath: /api/health
     disk:
-      name: fuel-data
+      name: kredit-data
       mountPath: /var/data
       sizeGB: 1
     envVars:
       - key: NODE_VERSION
         value: "24"
       - key: DATABASE_PATH
-        value: /var/data/fuel.db
+        value: /var/data/kredit.db
       - key: SESSION_SECRET
         generateValue: true
       # Set these in the dashboard; they are secrets or deployment choices.

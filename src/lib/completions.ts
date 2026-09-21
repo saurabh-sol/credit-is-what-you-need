@@ -1,4 +1,4 @@
-import { apiError, chargeHeaders, ECHO_MODEL, settle, upstream, type Caller } from "./gateway.ts";
+import { apiError, chargeHeaders, ECHO_MODEL, LEGACY_ECHO_MODEL, settle, upstream, type Caller } from "./gateway.ts";
 import { getBalance } from "./ledger.ts";
 
 // One chat completion for a caller who has already been identified: by API key
@@ -16,7 +16,7 @@ const promptText = (body: ChatBody) => body.messages.map((message) => textOf(mes
 
 export async function complete(caller: Caller, request: Request) {
   if (getBalance(caller.address) <= 0) {
-    return apiError(402, "You are out of credits. Earn more on your Fuel dashboard.", "insufficient_credits");
+    return apiError(402, "You are out of credits. Earn more on your Kredit dashboard.", "insufficient_credits");
   }
 
   const body = (await request.json().catch(() => null)) as ChatBody | null;
@@ -24,7 +24,8 @@ export async function complete(caller: Caller, request: Request) {
     return apiError(400, "Send a JSON body with `model` and a non-empty `messages` array.", "invalid_body");
   }
 
-  if (body.model === ECHO_MODEL) return echo(caller, body);
+  // The legacy id is answered by the same model and recorded under the new id.
+  if (body.model === ECHO_MODEL || body.model === LEGACY_ECHO_MODEL) return echo(caller, body);
 
   const { baseUrl, apiKey, isOpenRouter } = upstream();
   if (!apiKey) {
@@ -125,12 +126,12 @@ function streamThrough(source: ReadableStream<Uint8Array>, caller: Caller, body:
 
 function echo(caller: Caller, body: ChatBody) {
   const lastUser = [...body.messages].reverse().find((message) => message.role === "user");
-  const reply = `Fuel echo: ${textOf(lastUser?.content)}`;
+  const reply = `Kredit echo: ${textOf(lastUser?.content)}`;
   // Echo costs us nothing, but it is billed by length like any model that does
   // not report its price, so a key can be tested against realistic charges.
   const charge = settle(caller, ECHO_MODEL, undefined, { input: promptText(body), output: reply });
 
-  const base = { id: `fuel-echo-${Date.now()}`, created: Math.floor(Date.now() / 1000), model: ECHO_MODEL };
+  const base = { id: `kredit-echo-${Date.now()}`, created: Math.floor(Date.now() / 1000), model: ECHO_MODEL };
   if (!body.stream) {
     return Response.json(
       {

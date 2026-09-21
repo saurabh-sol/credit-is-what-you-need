@@ -38,9 +38,9 @@ export function ApiKeys() {
     () => "",
   );
   const snippet = `curl ${origin}/v1/chat/completions \\
-  -H "Authorization: Bearer ${fresh?.key ?? "YOUR_FUEL_KEY"}" \\
+  -H "Authorization: Bearer ${fresh?.key ?? "YOUR_KREDIT_KEY"}" \\
   -H "Content-Type: application/json" \\
-  -d '{"model": "fuel/echo", "messages": [{"role": "user", "content": "hello"}]}'`;
+  -d '{"model": "kredit/echo", "messages": [{"role": "user", "content": "hello"}]}'`;
 
   return (
     <section className="card p-6">
@@ -123,7 +123,7 @@ export function ApiKeys() {
       </pre>
       <p className="mt-2 text-xs leading-relaxed text-mist">
         In Postman: POST to <span className="font-mono text-fog">{origin}/v1/chat/completions</span>, Auth type
-        &quot;Bearer Token&quot;. <span className="font-mono text-fog">fuel/echo</span> is a test model that repeats your
+        &quot;Bearer Token&quot;. <span className="font-mono text-fog">kredit/echo</span> is a test model that repeats your
         message and is billed by length, like a real model.
       </p>
     </section>
