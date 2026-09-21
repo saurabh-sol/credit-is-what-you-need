@@ -43,7 +43,7 @@ export function TopUpTeaser() {
         </div>
       </div>
 
-      <Link href="/dashboard#buy-credits" className="btn-ghost mt-8 w-full justify-center px-5 py-2.5 text-sm">
+      <Link href="/dashboard/credits"className="btn-ghost mt-8 w-full justify-center px-5 py-2.5 text-sm">
         {config ? "Buy credits on your dashboard" : "Open your dashboard"}
       </Link>
     </div>

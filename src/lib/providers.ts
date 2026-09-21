@@ -21,7 +21,22 @@ const providers: Record<string, Provider> = {
   minimax: { name: "MiniMax", logo: "minimax" },
 };
 
-export const providerOf = (modelId: string): Provider | null => providers[modelId.split("/")[0]] ?? null;
+// Gateways disagree on how to spell a maker ("meta-llama" on OpenRouter, "meta" on Vercel AI Gateway).
+const aliases: Record<string, string> = {
+  meta: "meta-llama",
+  mistral: "mistralai",
+  xai: "x-ai",
+  alibaba: "qwen",
+  moonshot: "moonshotai",
+  zai: "z-ai",
+};
+
+export const makerOf = (modelId: string) => {
+  const prefix = modelId.split("/")[0];
+  return aliases[prefix] ?? prefix;
+};
+
+export const providerOf = (modelId: string): Provider | null => providers[makerOf(modelId)] ?? null;
 
 // The ones shown on the landing page and in the docs, in this order.
 export const featuredProviders = ["openai", "anthropic", "google", "meta-llama", "mistralai", "deepseek", "x-ai", "qwen", "cohere", "perplexity", "nvidia", "microsoft"].map(
