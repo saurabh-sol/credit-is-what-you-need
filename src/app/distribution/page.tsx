@@ -19,7 +19,7 @@ export default function DistributionPage() {
         <p style={{ animationDelay: "250ms" }} className="mt-6 max-w-[60ch] animate-rise text-lg leading-relaxed text-mist">
           Credits are handed out by rules, not by us, so the full list is public: each
           wallet, what it earned, where that came from, and any tokens it paid for more.
-          Spending stays private. Set a display name on your dashboard if you would
+          Spending shows only as one total per wallet, never what it went on. Set a display name on your dashboard if you would
           rather not be a row of hex.
         </p>
       </header>

@@ -19,7 +19,6 @@ const sources: { kind: EarningKind; label: string; shade: string }[] = [
   { kind: "royalty", label: "Royalties", shade: "bg-lime/35" },
   { kind: "topup", label: "Bought", shade: "bg-fog/40" },
 ];
-const sourceLabel = Object.fromEntries(sources.map((source) => [source.kind, source.label]));
 
 const usd = (credits: number) => `$${(credits / 1000).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const tokens = (paid: TokenPaid[]) => paid.map((token) => `${formatTokenAmount(BigInt(token.amount), token.decimals)} ${token.symbol}`);
@@ -43,7 +42,11 @@ export function Board({ initial }: { initial: Distribution }) {
     placeholderData: keepPreviousData,
     refetchInterval: 20_000, // new claims show up on their own
   });
-  const { totals, wallets, recent } = data;
+  const { totals, wallets, active } = data;
+  // A short list is repeated so the strip still fills its width and loops without a gap.
+  const ticker = Array.from({ length: Math.ceil(8 / Math.max(active.length, 1)) }, (_, repeat) =>
+    active.map((wallet) => ({ ...wallet, repeat })),
+  ).flat();
 
   const stats = [
     { label: "wallets have earned credits", value: <CountUp value={totals.wallets} /> },
@@ -66,18 +69,28 @@ export function Board({ initial }: { initial: Distribution }) {
         ))}
       </dl>
 
-      {recent.length > 0 && (
-        <div className="marquee mt-6 rounded-full border border-line bg-surface/60 py-2.5" aria-label="Latest earnings">
+      {active.length > 0 && (
+        <div className="marquee mt-6 rounded-full border border-line bg-surface/60 py-2.5" aria-label="Most active wallets">
           <div className="marquee-track text-sm">
             {[0, 1].map((copy) => (
               <ul key={copy} aria-hidden={copy === 1} className="flex shrink-0">
-                {recent.map((entry) => (
-                  <li key={entry.id} className="flex items-center gap-2 px-5 whitespace-nowrap text-mist">
+                {ticker.map((wallet) => (
+                  <li
+                    key={`${wallet.address}-${wallet.repeat}`}
+                    aria-hidden={wallet.repeat > 0}
+                    className="flex items-center gap-2 px-5 whitespace-nowrap text-mist"
+                  >
                     <span className="size-1.5 rounded-full bg-lime breathe" />
-                    <span className="text-fog">{entry.name ?? shortAddress(entry.address)}</span>
-                    {sourceLabel[entry.kind] ?? entry.kind}
-                    <span className="font-mono text-lime">+{formatCredits(entry.amount)}</span>
-                    <span suppressHydrationWarning>{ago(entry.createdAt)}</span>
+                    <span className="text-fog">{wallet.name ?? shortAddress(wallet.address)}</span>
+                    claimed
+                    <span className="font-mono text-lime">+{formatCredits(wallet.claimed)}</span>
+                    {wallet.used > 0 && (
+                      <>
+                        used
+                        <span className="font-mono text-fog">{formatCredits(wallet.used)}</span>
+                      </>
+                    )}
+                    <span suppressHydrationWarning>{ago(wallet.lastActiveAt)}</span>
                   </li>
                 ))}
               </ul>
