@@ -226,22 +226,13 @@ export default function Home() {
       {/* Pulled up under the sticky header (4rem), so the background runs behind it. */}
       <section className="relative isolate -mt-16 overflow-hidden pt-16">
         <div className="hero-bg -z-10" aria-hidden>
-          <div className="aurora aurora-a" />
-          <div className="aurora aurora-b" />
           <div className="grid-lines" />
         </div>
 
         <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 py-16 md:grid-cols-[1.05fr_1fr] md:py-24 lg:gap-16 lg:py-28">
           <div>
-            <p
-              style={beat(0)}
-              className="inline-flex animate-rise items-center gap-2.5 rounded-full border border-line bg-surface/60 px-3.5 py-1.5 font-mono text-xs uppercase tracking-widest text-fog"
-            >
-              <span className="live-dot" />
-              AI credits on Robinhood Chain
-            </p>
             {/* Sized so each half of the sentence holds one line beside the orbit; phones wrap on their own. */}
-            <h1 className="mt-7 text-4xl font-semibold leading-[1.06] tracking-tight text-balance sm:text-5xl">
+            <h1 className="text-4xl font-semibold leading-[1.06] tracking-tight text-balance sm:text-5xl">
               {headline.map((word, index) => (
                 <Fragment key={word}>
                   <span style={beat(index + 1)} className="inline-block animate-rise">
@@ -532,7 +523,6 @@ export default function Home() {
       <section className="px-4 py-24 md:py-32">
         <Reveal className="relative isolate mx-auto max-w-6xl overflow-hidden rounded-2xl border border-line bg-surface px-6 py-16 sm:px-12 md:py-20">
           <div className="hero-bg -z-10" aria-hidden>
-            <div className="aurora aurora-a" />
             <div className="grid-lines" />
           </div>
           <div className="flex flex-col gap-10 md:flex-row md:items-end md:justify-between">

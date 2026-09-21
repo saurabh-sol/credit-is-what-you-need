@@ -8,7 +8,8 @@
    tokens, so a rebrand is an edit to this block alone. Currently Cream & Black:
    an off-white page with black text and black buttons. Orange is kept for small
    highlights, darkened from Kredit Orange so it stays readable on cream; the
-   true brand orange is --color-accent-2, used for glows and the text shine. */
+   true brand orange is --color-accent-2, used for the text shine. Backgrounds stay
+   plain: no orange glows behind the content. */
 @theme inline {
   --color-ink: #f8f5ee;
   --color-surface: #fdfbf7;
@@ -62,18 +63,6 @@ body {
     opacity: 0;
     transform: translateY(18px);
     filter: blur(6px);
-  }
-}
-
-@keyframes drift-a {
-  50% {
-    transform: translate3d(8%, 10%, 0) scale(1.15);
-  }
-}
-
-@keyframes drift-b {
-  50% {
-    transform: translate3d(-10%, -6%, 0) scale(0.9);
   }
 }
 
@@ -156,31 +145,6 @@ body {
     pointer-events: none;
   }
 
-  /* Blur-free aurora: soft radial blobs that only animate transform. */
-  .aurora {
-    position: absolute;
-    border-radius: 9999px;
-    will-change: transform;
-  }
-
-  .aurora-a {
-    top: -35%;
-    left: 8%;
-    width: 60rem;
-    height: 42rem;
-    background: radial-gradient(closest-side, color-mix(in srgb, var(--color-accent) 16%, transparent), transparent);
-    animation: drift-a 16s ease-in-out infinite;
-  }
-
-  .aurora-b {
-    top: -10%;
-    right: -12%;
-    width: 46rem;
-    height: 40rem;
-    background: radial-gradient(closest-side, color-mix(in srgb, var(--color-accent-2) 9%, transparent), transparent);
-    animation: drift-b 20s ease-in-out infinite;
-  }
-
   .grid-lines {
     position: absolute;
     inset: 0;
@@ -243,7 +207,7 @@ body {
     z-index: -1;
     background: radial-gradient(
       420px circle at var(--mx, 50%) var(--my, 0%),
-      color-mix(in srgb, var(--color-accent) 9%, transparent),
+      color-mix(in srgb, var(--color-fog) 4%, transparent),
       transparent 60%
     );
   }
@@ -470,15 +434,6 @@ body {
   .stagger > :nth-child(5) { animation-delay: 280ms; }
   .stagger > :nth-child(6) { animation-delay: 360ms; }
   .stagger > :nth-child(n + 7) { animation-delay: 440ms; }
-}
-
-/* Soft accent glow behind the hero. */
-.glow {
-  background: radial-gradient(
-    60% 50% at 50% 0%,
-    color-mix(in srgb, var(--color-accent) 13%, transparent),
-    transparent 70%
-  );
 }
 
 /* Torn-paper edge for the receipt card. */
