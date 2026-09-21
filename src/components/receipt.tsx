@@ -19,7 +19,7 @@ export function Receipt({ badge, subtitle, lines, total, emptyText, animated }: 
   const totalDelay = 900 + lines.length * 110;
 
   return (
-    <div className="w-full max-w-sm drop-shadow-[0_0_40px_rgb(198_244_50/0.12)]">
+    <div className="w-full max-w-sm drop-shadow-[0_0_40px_color-mix(in_srgb,var(--color-accent)_12%,transparent)]">
       <div className={animated === "print" ? "receipt-print" : undefined}>
         <div className="rounded-t-xl bg-fog px-6 pt-6 pb-4 font-mono text-sm text-ink">
           <div className="flex items-baseline justify-between">

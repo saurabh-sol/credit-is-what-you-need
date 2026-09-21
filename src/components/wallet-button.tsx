@@ -83,7 +83,7 @@ export function WalletButton({ label = "Connect wallet", signedIn = "action" }: 
       <div className="flex items-center gap-2">
         <Link
           href="/dashboard"
-          className="rounded-full border border-line bg-surface px-4 py-2 font-mono text-sm text-fog transition hover:border-lime"
+          className="rounded-full border border-line bg-surface px-4 py-2 font-mono text-sm text-fog transition hover:border-accent"
         >
           <span className="live-dot mr-2" />
           {shortAddress(session.address)}
@@ -147,7 +147,7 @@ function WalletModal({ onClose }: { onClose: () => void }) {
         className="card w-full max-w-sm animate-modal-in p-6 shadow-[0_40px_100px_-20px_rgb(0_0_0/0.9)]"
         onClick={(event) => event.stopPropagation()}
       >
-        <p className="font-mono text-xs uppercase tracking-widest text-lime">
+        <p className="font-mono text-xs uppercase tracking-widest text-accent">
           Step {isConnected ? "2" : "1"} of 2
         </p>
 
@@ -160,7 +160,7 @@ function WalletModal({ onClose }: { onClose: () => void }) {
                   <button
                     disabled={isPending}
                     onClick={() => connect({ connector })}
-                    className="flex w-full items-center gap-3 rounded-xl border border-line bg-raised px-4 py-3 text-left transition duration-300 hover:translate-x-1 hover:border-lime active:scale-[0.99] disabled:opacity-60"
+                    className="flex w-full items-center gap-3 rounded-xl border border-line bg-raised px-4 py-3 text-left transition duration-300 hover:translate-x-1 hover:border-accent active:scale-[0.99] disabled:opacity-60"
                   >
                     <WalletLogo id={connector.id} icon={connector.icon} />
                     <span className="flex-1 font-medium">

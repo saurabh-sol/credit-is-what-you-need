@@ -80,7 +80,7 @@ export function Board({ initial }: { initial: Distribution }) {
             <dt className="kpi-label">{kpi.label}</dt>
             <dd
               title={typeof kpi.value === "string" ? kpi.value : undefined}
-              className={`kpi-value truncate ${kpi.accent ? "text-lime" : ""} ${kpi.long ? "text-lg leading-8" : ""}`}
+              className={`kpi-value truncate ${kpi.accent ? "text-accent" : ""} ${kpi.long ? "text-lg leading-8" : ""}`}
             >
               {kpi.value}
             </dd>
@@ -132,7 +132,7 @@ export function Board({ initial }: { initial: Distribution }) {
       )}
 
       <div className="mt-10 flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
-        <label className="field flex h-9 w-full items-center gap-2 rounded-lg py-0 pr-2 pl-3 text-[0.8125rem] focus-within:border-lime/60 focus-within:shadow-[0_0_0_3px_rgb(198_244_50/0.12)] sm:w-80">
+        <label className="field flex h-9 w-full items-center gap-2 rounded-lg py-0 pr-2 pl-3 text-[0.8125rem] focus-within:border-accent/60 focus-within:shadow-[0_0_0_3px_color-mix(in_srgb,var(--color-accent)_12%,transparent)] sm:w-80">
           <SearchIcon className={`size-4 shrink-0 text-mist ${found.isFetching && query ? "breathe" : ""}`} />
           <input
             ref={input}

@@ -35,7 +35,7 @@ export function DisplayName() {
     >
       <label htmlFor="display-name" className="text-sm text-mist">
         Display name on the{" "}
-        <Link href="/distribution" className="text-fog underline decoration-line underline-offset-4 transition hover:decoration-lime">
+        <Link href="/distribution" className="text-fog underline decoration-line underline-offset-4 transition hover:decoration-accent">
           distribution page
         </Link>
       </label>
@@ -50,7 +50,7 @@ export function DisplayName() {
           className="field"
         />
         <button type="submit" disabled={unchanged || save.isPending} className="btn-ghost shrink-0 px-4 text-sm">
-          {save.isSuccess && unchanged ? <CheckIcon className="text-lime" /> : null}
+          {save.isSuccess && unchanged ? <CheckIcon className="text-accent" /> : null}
           {save.isPending ? "Saving" : save.isSuccess && unchanged ? "Saved" : "Save"}
         </button>
       </div>

@@ -43,7 +43,7 @@ export function ModelLogo({ model, className = "size-5" }: { model: string; clas
   return (
     <span
       aria-hidden
-      className={`${className} inline-grid shrink-0 place-items-center rounded-[28%] bg-lime font-mono text-[10px] leading-none font-bold text-ink`}
+      className={`${className} inline-grid shrink-0 place-items-center rounded-[28%] bg-accent font-mono text-[10px] leading-none font-bold text-ink`}
     >
       K
     </span>

@@ -23,7 +23,7 @@ export default function Credits() {
       <div className="kpi-strip animate-rise" style={{ "--kpis": 3 } as React.CSSProperties}>
         {rules.map(([value, text], index) => (
           <div key={text} className="kpi">
-            <p className={`kpi-value ${index === 0 ? "text-lime" : ""}`}>{value}</p>
+            <p className={`kpi-value ${index === 0 ? "text-accent" : ""}`}>{value}</p>
             <p className="kpi-note">{text}</p>
           </div>
         ))}

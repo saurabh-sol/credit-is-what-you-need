@@ -13,7 +13,7 @@ import type { Failure, Turn } from "./types";
 
 const fetchAccount = () => api<AccountResponse>("/api/account");
 
-const link = "text-fog underline decoration-line underline-offset-4 transition-colors hover:decoration-lime";
+const link = "text-fog underline decoration-line underline-offset-4 transition-colors hover:decoration-accent";
 
 // Reads an OpenAI-style event stream and hands each piece of text to `onText`.
 async function readStream(body: ReadableStream<Uint8Array>, onText: (text: string) => void) {

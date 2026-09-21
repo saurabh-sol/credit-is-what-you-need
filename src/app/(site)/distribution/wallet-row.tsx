@@ -10,10 +10,10 @@ import { formatTokenAmount } from "@/lib/topup";
 
 // Earned credits share one colour at falling strength; bought credits stand apart.
 export const sources: { kind: EarningKind; label: string; shade: string }[] = [
-  { kind: "claim", label: "Tasks", shade: "bg-lime/80" },
-  { kind: "milestone", label: "Milestones", shade: "bg-lime/55" },
-  { kind: "gasback", label: "Gas-Back", shade: "bg-lime/35" },
-  { kind: "royalty", label: "Royalties", shade: "bg-lime/20" },
+  { kind: "claim", label: "Tasks", shade: "bg-accent/80" },
+  { kind: "milestone", label: "Milestones", shade: "bg-accent/55" },
+  { kind: "gasback", label: "Gas-Back", shade: "bg-accent/35" },
+  { kind: "royalty", label: "Royalties", shade: "bg-accent/20" },
   { kind: "topup", label: "Bought", shade: "bg-fog/35" },
 ];
 export const sourceLabel: Record<string, string> = Object.fromEntries(sources.map((source) => [source.kind, source.label]));
@@ -47,7 +47,7 @@ function CopyAddress({ address }: { address: string }) {
         setCopied(true);
         setTimeout(() => setCopied(false), 1600);
       }}
-      className={`grid size-5 place-items-center rounded transition-colors ${copied ? "text-lime" : "text-mist/70 hover:text-fog"}`}
+      className={`grid size-5 place-items-center rounded transition-colors ${copied ? "text-accent" : "text-mist/70 hover:text-fog"}`}
     >
       {copied ? <CheckIcon className="size-3" /> : <CopyIcon className="size-3" />}
     </button>
@@ -69,7 +69,7 @@ export function WalletRow({ wallet, rank, share, you }: WalletRowProps) {
   const short = shortAddress(wallet.address);
 
   return (
-    <tr className={you ? "bg-lime/[0.04]" : undefined}>
+    <tr className={you ? "bg-accent/[0.04]" : undefined}>
       <td className="num w-12 text-mist">{rank ?? "—"}</td>
       <td>
         <div className="flex items-center gap-3">
@@ -79,7 +79,7 @@ export function WalletRow({ wallet, rank, share, you }: WalletRowProps) {
               <span className={`truncate text-fog ${wallet.name ? "font-medium" : "font-mono"}`} title={wallet.address}>
                 {wallet.name ?? short}
               </span>
-              {you && <span className="chip py-0 text-[0.625rem] leading-4 text-lime">You</span>}
+              {you && <span className="chip py-0 text-[0.625rem] leading-4 text-accent">You</span>}
               {!wallet.name && <CopyAddress address={wallet.address} />}
             </p>
             {/* An unnamed wallet already shows its address above; saying it twice adds nothing. */}

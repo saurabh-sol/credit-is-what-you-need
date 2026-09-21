@@ -14,7 +14,7 @@ export function CopyButton({ text, label = "Copy", className = "" }: { text: str
         setTimeout(() => setCopied(false), 1600);
       }}
       className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 font-mono text-xs transition active:scale-95 ${
-        copied ? "text-lime" : "text-mist hover:text-fog"
+        copied ? "text-accent" : "text-mist hover:text-fog"
       } ${className}`}
     >
       {copied ? <CheckIcon className="size-3.5" /> : <CopyIcon className="size-3.5" />}
@@ -28,7 +28,7 @@ function highlight(code: string) {
   return code.split(/("[^"\n]*"|(?:^|\s)(?:#|\/\/)[^\n]*)/gm).map((part, index) => {
     if (part.startsWith('"')) {
       return (
-        <span key={index} className="text-lime">
+        <span key={index} className="text-accent">
           {part}
         </span>
       );
@@ -74,7 +74,7 @@ export function CodeTabs({ tabs }: { tabs: { name: string; code: string }[] }) {
               aria-selected={index === active}
               onClick={() => setActive(index)}
               className={`rounded-md px-2.5 py-1 transition ${
-                index === active ? "bg-lime/15 text-lime" : "text-mist hover:text-fog"
+                index === active ? "bg-accent/15 text-accent" : "text-mist hover:text-fog"
               }`}
             >
               {tab.name}

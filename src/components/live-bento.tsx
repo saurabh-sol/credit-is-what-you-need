@@ -51,10 +51,10 @@ export const TaskFeed = memo(function TaskFeed() {
             className="shuffle-row flex h-13 items-center justify-between gap-4 border-b border-line/70 text-sm"
           >
             <span className="flex min-w-0 items-center gap-2.5">
-              <span className={`size-1.5 shrink-0 rounded-full ${row === 0 ? "bg-lime" : "bg-line"}`} />
+              <span className={`size-1.5 shrink-0 rounded-full ${row === 0 ? "bg-accent" : "bg-line"}`} />
               <span className="truncate">{task.label}</span>
             </span>
-            <span className="font-mono text-lime">+{formatCredits(task.credits)}</span>
+            <span className="font-mono text-accent">+{formatCredits(task.credits)}</span>
           </div>
         );
       })}
@@ -115,7 +115,7 @@ export const PromptBar = memo(function PromptBar() {
         {phase === "thinking" && <span className="breathe">Routing through your Kredit key</span>}
         {phase === "answered" && (
           <>
-            <span className="chip pop-in text-lime">−{prompt.cost} credits</span>
+            <span className="chip pop-in text-accent">−{prompt.cost} credits</span>
             <span className="chip pop-in" style={{ animationDelay: "120ms" }}>
               x-kredit-balance: {formatCredits(2864 - prompt.cost)}
             </span>
@@ -146,7 +146,7 @@ export const KeyStatus = memo(function KeyStatus() {
           <li key={key.name} className="flex items-center gap-3">
             <span
               style={{ animationDelay: `${index * 500}ms` }}
-              className={`size-2 rounded-full ${key.live ? "breathe bg-lime" : "bg-danger/70"}`}
+              className={`size-2 rounded-full ${key.live ? "breathe bg-accent" : "bg-danger/70"}`}
             />
             <span className={key.live ? "" : "text-mist line-through"}>{key.name}</span>
             <span className="ml-auto font-mono text-xs text-mist">{key.used}</span>
@@ -154,7 +154,7 @@ export const KeyStatus = memo(function KeyStatus() {
         ))}
       </ul>
       {showing && (
-        <p className="pop-in absolute -top-3 right-0 rounded-full border border-lime/30 bg-ink px-3 py-1 font-mono text-xs text-lime shadow-[0_10px_30px_-10px_rgb(0_0_0/0.9)]">
+        <p className="pop-in absolute -top-3 right-0 rounded-full border border-accent/30 bg-ink px-3 py-1 font-mono text-xs text-accent shadow-[0_10px_30px_-10px_rgb(0_0_0/0.9)]">
           {notices[Math.floor(notice / 2) % notices.length]}
         </p>
       )}
@@ -180,11 +180,11 @@ export const HeaderFocus = memo(function HeaderFocus() {
         <p
           key={name}
           className={`-mx-3 flex flex-wrap gap-x-3 rounded-lg px-3 py-1.5 transition-colors duration-700 ${
-            index === focus ? "bg-lime/10 text-fog" : "text-mist"
+            index === focus ? "bg-accent/10 text-fog" : "text-mist"
           }`}
         >
           <span>{name}{index > 0 && ":"}</span>
-          <span className={index === focus ? "text-lime" : ""}>{value}</span>
+          <span className={index === focus ? "text-accent" : ""}>{value}</span>
         </p>
       ))}
       <p className="mt-3 h-5 font-sans text-xs text-mist transition-opacity duration-500">

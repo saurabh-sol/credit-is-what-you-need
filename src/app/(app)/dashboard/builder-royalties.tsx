@@ -56,7 +56,7 @@ export function BuilderRoyalties() {
     <section className="mt-4 card p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="font-mono text-xs uppercase tracking-widest text-lime">For builders</p>
+          <p className="font-mono text-xs uppercase tracking-widest text-accent">For builders</p>
           <h2 className="mt-1 text-lg font-semibold">Builder Royalties</h2>
           <p className="mt-1 max-w-xl text-sm text-mist">
             Deploy a contract on Robinhood Chain. When other people use it, 20% of the gas they
@@ -105,7 +105,7 @@ export function BuilderRoyalties() {
                         href={`${data.network.explorerUrl}/address/${contract.address}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="underline-offset-4 hover:text-lime hover:underline"
+                        className="underline-offset-4 hover:text-accent hover:underline"
                       >
                         {shortAddress(contract.address)}
                       </a>
@@ -113,7 +113,7 @@ export function BuilderRoyalties() {
                         deployed {new Date(contract.deployedAt).toLocaleDateString()}
                       </span>
                     </td>
-                    <td className="py-2.5 text-right text-lime">{contract.newCalls}</td>
+                    <td className="py-2.5 text-right text-accent">{contract.newCalls}</td>
                     <td className="py-2.5 text-right">{contract.newUsers}</td>
                     <td className="py-2.5 text-right text-mist">{contract.paidCalls}</td>
                   </tr>
@@ -165,7 +165,7 @@ export function BuilderRoyalties() {
           />
           <button
             disabled={add.isPending || address.trim() === ""}
-            className="rounded-full border border-line px-5 py-2 text-sm transition hover:border-lime disabled:opacity-60"
+            className="rounded-full border border-line px-5 py-2 text-sm transition hover:border-accent disabled:opacity-60"
           >
             {add.isPending ? "Checking…" : "Add contract"}
           </button>

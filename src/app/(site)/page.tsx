@@ -268,7 +268,7 @@ export default function Home() {
             <ul style={beat(10)} className="mt-10 flex animate-rise flex-wrap gap-x-6 gap-y-2 text-sm text-mist">
               {proofPoints.map((point) => (
                 <li key={point} className="flex items-center gap-2">
-                  <CheckIcon className="size-4 text-lime" />
+                  <CheckIcon className="size-4 text-accent" />
                   {point}
                 </li>
               ))}
@@ -292,7 +292,7 @@ export default function Home() {
                   {compatibility.map((item) => (
                     <li key={item} className="flex items-center whitespace-nowrap">
                       <span className="px-6">{item}</span>
-                      <SparkIcon className="size-3 text-lime" />
+                      <SparkIcon className="size-3 text-accent" />
                     </li>
                   ))}
                 </ul>
@@ -328,7 +328,7 @@ export default function Home() {
             <ul className="mt-10 border-t border-line">
               {earnings.map((way, index) => (
                 <Reveal as="li" key={way.name} delay={index * 60} className="entity group items-start gap-4 py-4">
-                  <span className="entity-icon mt-0.5 transition-colors duration-300 group-hover:text-lime">{way.icon}</span>
+                  <span className="entity-icon mt-0.5 transition-colors duration-300 group-hover:text-accent">{way.icon}</span>
                   <div className="min-w-0 flex-1">
                     <h3 className="text-[0.9375rem] font-medium text-fog">{way.name}</h3>
                     <p className="mt-0.5 text-sm leading-relaxed text-mist">{way.text}</p>
@@ -384,7 +384,7 @@ export default function Home() {
             <ul className="mt-10 border-t border-line">
               {dashboardPoints.map((point, index) => (
                 <Reveal as="li" key={point.title} delay={index * 80} className="flex items-start gap-3 border-b border-line/60 py-4">
-                  <CheckIcon className="mt-1 size-4 text-lime" />
+                  <CheckIcon className="mt-1 size-4 text-accent" />
                   <div>
                     <h3 className="text-[0.9375rem] font-medium text-fog">{point.title}</h3>
                     <p className="mt-0.5 text-sm leading-relaxed text-mist">{point.text}</p>
@@ -460,7 +460,7 @@ export default function Home() {
             {stats.map((stat, index) => (
               <div key={stat.label} className="kpi flex flex-col-reverse justify-end gap-3 p-5 sm:p-7">
                 <dt className="max-w-[24ch] text-sm leading-relaxed text-mist">{stat.label}</dt>
-                <dd className={`kpi-value mt-0 text-3xl leading-none sm:text-4xl lg:text-5xl ${index === 0 ? "text-lime" : ""}`}>
+                <dd className={`kpi-value mt-0 text-3xl leading-none sm:text-4xl lg:text-5xl ${index === 0 ? "text-accent" : ""}`}>
                   <CountUp value={stat.value} />
                   {stat.suffix}
                 </dd>
@@ -482,7 +482,7 @@ export default function Home() {
               <ul className="mt-8 space-y-3 text-sm text-mist">
                 {topUpPoints.map((point) => (
                   <li key={point} className="flex items-start gap-2.5">
-                    <CheckIcon className="mt-0.5 size-4 text-lime" />
+                    <CheckIcon className="mt-0.5 size-4 text-accent" />
                     {point}
                   </li>
                 ))}
@@ -512,11 +512,11 @@ export default function Home() {
             {faqs.map((faq, index) => (
               <Reveal key={faq.question} delay={index * 60}>
                 <details className="faq group" name="faq">
-                  <summary className="flex items-center justify-between gap-6 py-5 text-base font-medium transition hover:text-lime sm:text-lg">
+                  <summary className="flex items-center justify-between gap-6 py-5 text-base font-medium transition hover:text-accent sm:text-lg">
                     {faq.question}
                     <span
                       aria-hidden
-                      className="chevron grid size-8 shrink-0 place-items-center rounded-full border border-line text-mist group-open:border-lime/50 group-open:text-lime"
+                      className="chevron grid size-8 shrink-0 place-items-center rounded-full border border-line text-mist group-open:border-accent/50 group-open:text-accent"
                     >
                       <PlusIcon />
                     </span>
