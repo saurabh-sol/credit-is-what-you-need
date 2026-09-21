@@ -28,6 +28,9 @@ services:
       - key: SESSION_SECRET
         generateValue: true
       # Set these in the dashboard; they are secrets or deployment choices.
+      # The WalletConnect ID is read at build time: redeploy after setting it.
+      - key: NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID
+        sync: false
       - key: UPSTREAM_BASE_URL
         sync: false
       - key: UPSTREAM_API_KEY

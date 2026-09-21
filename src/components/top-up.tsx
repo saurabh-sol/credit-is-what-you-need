@@ -3,7 +3,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { erc20Abi, type Address } from "viem";
-import { useConnection, useReadContract, useSwitchChain, useWriteContract } from "wagmi";
+import { useAccount, useReadContract, useSwitchChain, useWriteContract } from "wagmi";
 import { CheckIcon, CoinsIcon } from "@/components/icons";
 import { formatCredits } from "@/lib/format";
 import { creditsForPayment, formatTokenAmount, parseTokenAmount, type TopUpConfig } from "@/lib/topup";
@@ -35,9 +35,9 @@ export function TopUp() {
   const config = data?.config;
   const chain = config?.network === "testnet" ? rewardChains[0] : rewardChains[1];
 
-  const { address, chainId } = useConnection();
-  const { mutateAsync: switchChain } = useSwitchChain();
-  const { mutateAsync: writeContract } = useWriteContract();
+  const { address, chainId } = useAccount();
+  const { switchChainAsync: switchChain } = useSwitchChain();
+  const { writeContractAsync: writeContract } = useWriteContract();
   const held = useReadContract({
     abi: erc20Abi,
     address: config?.token as Address | undefined,
