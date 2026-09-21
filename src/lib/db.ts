@@ -131,19 +131,20 @@ function migrate(database: DatabaseSync) {
 }
 
 // One connection per process; survives hot reloads in dev.
-const holder = globalThis as { fuelDb?: DatabaseSync };
+const holder = globalThis as { kreditDb?: DatabaseSync };
 
 export function db() {
-  if (!holder.fuelDb) {
+  if (!holder.kreditDb) {
+    // The file name predates the rename to Kredit; existing local data lives there.
     const path = process.env.DATABASE_PATH ?? "data/fuel.db";
     if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true });
     const database = new DatabaseSync(path);
     database.exec("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;");
     database.exec(SCHEMA);
     migrate(database);
-    holder.fuelDb = database;
+    holder.kreditDb = database;
   }
-  return holder.fuelDb;
+  return holder.kreditDb;
 }
 
 // node:sqlite is synchronous, so nothing else in this process runs between

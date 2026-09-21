@@ -13,7 +13,7 @@ import { BaseUrl, ModelsExample, Quickstart, StreamingExample } from "./quicksta
 import { SectionNav } from "./section-nav";
 import type { SectionId } from "./sections";
 
-export const metadata = { title: "API — Fuel" };
+export const metadata = { title: "API — Kredit" };
 // The model list depends on how this server is configured, so it is read per request.
 export const dynamic = "force-dynamic";
 
@@ -32,14 +32,14 @@ const errors = [
 ];
 
 const billingHeaders = [
-  ["x-fuel-credits-charged", "What this request cost, in credits."],
-  ["x-fuel-balance", "Your balance after the charge."],
+  ["x-kredit-credits-charged", "What this request cost, in credits."],
+  ["x-kredit-balance", "Your balance after the charge."],
 ];
 
 const tools = [
-  ["Cursor", "Settings, Models, then override the OpenAI base URL with the one shown here and paste your Fuel key as the OpenAI API key."],
+  ["Cursor", "Settings, Models, then override the OpenAI base URL with the one shown here and paste your Kredit key as the OpenAI API key."],
   ["Postman", "POST to /v1/chat/completions, set Auth to Bearer Token, and send a JSON body with model and messages."],
-  ["OpenAI SDKs", "Pass base_url (Python) or baseURL (Node) and your Fuel key as api_key. Nothing else changes."],
+  ["OpenAI SDKs", "Pass base_url (Python) or baseURL (Node) and your Kredit key as api_key. Nothing else changes."],
 ];
 
 // The same bodies the gateway sends, so what you read here is what your client gets.
@@ -47,7 +47,7 @@ const errorExample = `HTTP/1.1 402 Payment Required
 
 {
   "error": {
-    "message": "You are out of credits. Earn more on your Fuel dashboard.",
+    "message": "You are out of credits. Earn more on your Kredit dashboard.",
     "type": "invalid_request_error",
     "code": "insufficient_credits"
   }
@@ -119,8 +119,8 @@ export default async function Docs() {
   const typicalCharge = costExamples[1].credits;
   const billingExample = `HTTP/1.1 200 OK
 content-type: application/json
-x-fuel-credits-charged: ${typicalCharge}
-x-fuel-balance: ${5_000 - typicalCharge}`;
+x-kredit-credits-charged: ${typicalCharge}
+x-kredit-balance: ${5_000 - typicalCharge}`;
 
   return (
     <div className="mx-auto max-w-6xl px-4 pt-10 pb-24 xl:max-w-[88rem]">
@@ -129,7 +129,7 @@ x-fuel-balance: ${5_000 - typicalCharge}`;
           <p className="eyebrow">API</p>
           <h1 className="page-title mt-3">One key for the models you already use</h1>
           <p className="page-lede">
-            Fuel speaks the OpenAI API format. Change the base URL, paste your key, and your credits pay for the
+            Kredit speaks the OpenAI API format. Change the base URL, paste your key, and your credits pay for the
             call. Every response tells you what it cost and what is left.
           </p>
           <span className="chip mt-4">
@@ -161,7 +161,7 @@ x-fuel-balance: ${5_000 - typicalCharge}`;
           <Section id="quickstart" title="Quickstart" code={<Quickstart />}>
             <p>
               Send your first request with <code>{ECHO_MODEL}</code>, a built-in model that repeats your message. It
-              works on every Fuel server and is billed by length like any other model, so it is the fastest way to
+              works on every Kredit server and is billed by length like any other model, so it is the fastest way to
               check a key end to end.
             </p>
           </Section>
@@ -172,13 +172,13 @@ x-fuel-balance: ${5_000 - typicalCharge}`;
             code={
               <>
                 <BaseUrl />
-                <CodeBlock title="Header" code="Authorization: Bearer fuel_sk_…" />
+                <CodeBlock title="Header" code="Authorization: Bearer kredit_sk_…" />
               </>
             }
           >
             <p>
               Send your key as a bearer token in the <code>Authorization</code> header. Keys start with{" "}
-              <code>fuel_sk_</code>. Keep them on a server or in a tool you trust, never in code that runs in someone
+              <code>kredit_sk_</code>. Keep them on a server or in a tool you trust, never in code that runs in someone
               else&apos;s browser.
             </p>
           </Section>
@@ -247,7 +247,7 @@ x-fuel-balance: ${5_000 - typicalCharge}`;
               </table>
             </div>
             <p className="text-xs">
-              Worked out with the same pricing function that bills you, at Fuel&apos;s fallback token price. When the
+              Worked out with the same pricing function that bills you, at Kredit&apos;s fallback token price. When the
               provider reports its own price for a call, you are billed at that instead.
             </p>
 
@@ -305,14 +305,14 @@ x-fuel-balance: ${5_000 - typicalCharge}`;
                 : `This server has no AI provider connected yet, so only ${ECHO_MODEL} answers. Once one is connected, models from these makers become available under ids like openai/… or anthropic/….`}
             </p>
             <Label note={live ? `${number(modelCount)} models in total` : "Waiting for a provider"}>
-              {live ? "Makers on this server" : "Makers Fuel can reach"}
+              {live ? "Makers on this server" : "Makers Kredit can reach"}
             </Label>
             {/* Cells draw their own right and bottom rules, so an uneven last row leaves no filler block. */}
             <ul className="mt-4 grid grid-cols-2 overflow-hidden rounded-xl border border-line sm:grid-cols-3 md:grid-cols-4 2xl:grid-cols-5 [&>li]:-mr-px [&>li]:-mb-px [&>li]:max-w-none [&>li]:border-r [&>li]:border-b [&>li]:border-line">
               <li className="flex items-center gap-3 px-4 py-3.5">
                 <ModelLogo model={ECHO_MODEL} className="size-5" />
                 <div className="min-w-0 leading-5">
-                  <span className="block truncate text-[0.8125rem] font-medium text-fog">Fuel</span>
+                  <span className="block truncate text-[0.8125rem] font-medium text-fog">Kredit</span>
                   <span className="block truncate font-mono text-xs">echo · always on</span>
                 </div>
               </li>

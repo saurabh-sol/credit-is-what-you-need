@@ -23,7 +23,7 @@ export function Receipt({ badge, subtitle, lines, total, emptyText, animated }: 
       <div className={animated === "print" ? "receipt-print" : undefined}>
         <div className="rounded-t-xl bg-fog px-6 pt-6 pb-4 font-mono text-sm text-ink">
           <div className="flex items-baseline justify-between">
-            <p className="font-bold tracking-widest">FUEL RECEIPT</p>
+            <p className="font-bold tracking-widest">KREDIT RECEIPT</p>
             <p className="text-xs opacity-60">{badge}</p>
           </div>
           <p className="mt-1 text-xs opacity-60">{subtitle}</p>

@@ -18,7 +18,7 @@ const rings = [
 const charges = [14, 3, 35, 9, 116, 2, 22, 11, 6, 43, 18, 4];
 const START_BALANCE = 2864;
 
-// Makers circle the Fuel core. Every few seconds one of them answers a call:
+// Makers circle the Kredit core. Every few seconds one of them answers a call:
 // its seat lights up, a ring pulses out from the middle, and the balance drops.
 export const ModelOrbit = memo(function ModelOrbit() {
   const [call, setCall] = useState(0);
@@ -37,7 +37,7 @@ export const ModelOrbit = memo(function ModelOrbit() {
   const spent = call === 0 ? 0 : charges.slice(0, step + 1).reduce((sum, charge) => sum + charge, 0);
 
   return (
-    <figure className="mx-auto w-full max-w-[34rem]" aria-label="Models from many makers, all reached through one Fuel key">
+    <figure className="mx-auto w-full max-w-[34rem]" aria-label="Models from many makers, all reached through one Kredit key">
       <div className="orbit" aria-hidden>
         {rings.map((ring) => (
           <div
@@ -70,9 +70,9 @@ export const ModelOrbit = memo(function ModelOrbit() {
 
         <div className="orbit-core">
           <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-lime font-mono text-2xl font-bold text-ink shadow-[inset_0_1px_0_rgb(255_255_255/0.5),0_0_0_8px_rgb(198_244_50/0.08)]">
-            F
+            K
           </span>
-          <p className="mt-3 font-mono text-[0.6875rem] tracking-wider text-mist uppercase">x-fuel-balance</p>
+          <p className="mt-3 font-mono text-[0.6875rem] tracking-wider text-mist uppercase">x-kredit-balance</p>
           <p className="font-mono text-lg font-semibold tabular-nums text-fog">{formatCredits(START_BALANCE - spent)}</p>
         </div>
       </div>

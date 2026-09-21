@@ -4,7 +4,7 @@ import { formatCredits } from "@/lib/format";
 import { CREDITS_PER_USD, MARGIN, MIN_CREDITS_PER_REQUEST } from "@/lib/pricing";
 import { PageHeader, Stack } from "../page-header";
 
-export const metadata = { title: "Credits — Fuel" };
+export const metadata = { title: "Credits — Kredit" };
 
 const rules = [
   [`${formatCredits(CREDITS_PER_USD)} credits`, "pay for $1 of AI usage"],
@@ -62,8 +62,8 @@ export default function Credits() {
         </div>
         <p className="mt-3 max-w-[70ch] text-xs leading-relaxed text-mist">
           Worked out by the same pricing function that bills you. When a provider reports the exact price of a call,
-          that price is used instead. Every response also carries <span className="font-mono text-fog">x-fuel-credits-charged</span> and{" "}
-          <span className="font-mono text-fog">x-fuel-balance</span>, so your code always knows what a call cost.
+          that price is used instead. Every response also carries <span className="font-mono text-fog">x-kredit-credits-charged</span> and{" "}
+          <span className="font-mono text-fog">x-kredit-balance</span>, so your code always knows what a call cost.
         </p>
       </section>
 

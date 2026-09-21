@@ -71,7 +71,7 @@ export const DashboardPreview = memo(function DashboardPreview() {
   const shift = count === 0 ? "" : count % 2 ? "preview-row-a" : "preview-row-b";
 
   return (
-    <figure ref={ref} className="panel overflow-hidden shadow-[0_30px_80px_-40px_rgb(0_0_0/0.9)]" aria-label="A preview of the Fuel dashboard with example numbers">
+    <figure ref={ref} className="panel overflow-hidden shadow-[0_30px_80px_-40px_rgb(0_0_0/0.9)]" aria-label="A preview of the Kredit dashboard with example numbers">
       <div aria-hidden>
         <div className="flex items-center gap-3 border-b border-line bg-raised/60 px-4 py-2.5">
           <div className="flex gap-1.5">
@@ -80,7 +80,7 @@ export const DashboardPreview = memo(function DashboardPreview() {
             <span className="size-2.5 rounded-full bg-line" />
           </div>
           <p className="mx-auto truncate rounded-md border border-line bg-ink/60 px-3 py-0.5 font-mono text-[0.6875rem] text-mist sm:px-8">
-            fuel / overview
+            kredit / overview
           </p>
           <span className="chip">Example</span>
         </div>

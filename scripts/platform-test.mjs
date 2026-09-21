@@ -1,8 +1,8 @@
 // End-to-end check of the public platform pieces: display names, the
 // playground, the distribution board and top-up gating.
 // Needs a server and this script to share SESSION_SECRET and DATABASE_PATH:
-//   SESSION_SECRET=… DATABASE_PATH=/tmp/fuel-test.db npx next start -p 3458
-//   SESSION_SECRET=… DATABASE_PATH=/tmp/fuel-test.db BASE_URL=http://localhost:3458 node scripts/platform-test.mjs
+//   SESSION_SECRET=… DATABASE_PATH=/tmp/kredit-test.db npx next start -p 3458
+//   SESSION_SECRET=… DATABASE_PATH=/tmp/kredit-test.db BASE_URL=http://localhost:3458 node scripts/platform-test.mjs
 // Credits are seeded straight into the database (local testing only).
 import fs from "node:fs";
 import { DatabaseSync } from "node:sqlite";
@@ -15,7 +15,7 @@ const secret =
 const jwt = await new SignJWT({ address: WALLET })
   .setProtectedHeader({ alg: "HS256" }).setIssuedAt().setExpirationTime("10m")
   .sign(new TextEncoder().encode(secret));
-const cookie = `fuel_session=${jwt}`;
+const cookie = `kredit_session=${jwt}`;
 
 const results = [];
 const check = (name, pass, detail = "") => { results.push(pass); console.log(`${pass ? "PASS" : "FAIL"}  ${name} ${detail}`); };
@@ -43,7 +43,7 @@ check("a valid name is trimmed and saved", named.name === NAME);
 check("signed-out visitors cannot set a name", (await fetch(`${base}/api/profile`, { method: "PUT", body: "{}" })).status === 401);
 
 // --- playground
-const hello = { model: "fuel/echo", stream: true, messages: [{ role: "user", content: "hi" }] };
+const hello = { model: "kredit/echo", stream: true, messages: [{ role: "user", content: "hi" }] };
 const signedOut = await fetch(`${base}/api/playground`, { method: "POST", body: JSON.stringify(hello) });
 check("playground needs a session", signedOut.status === 401);
 const broke = await app("/api/playground", { method: "POST", body: JSON.stringify(hello) });
@@ -54,7 +54,7 @@ database.prepare("INSERT INTO ledger (address, amount, kind, memo) VALUES (?, 50
 
 const reply = await app("/api/playground", { method: "POST", body: JSON.stringify(hello) });
 const stream = await reply.text();
-check("playground streams the model's answer", reply.status === 200 && stream.includes("Fuel echo: hi") && stream.includes("[DONE]"));
+check("playground streams the model's answer", reply.status === 200 && stream.includes("Kredit echo: hi") && stream.includes("[DONE]"));
 const account = await json(await app("/api/account"));
 check("the reply was paid from the wallet's balance", account.balance === 499, `(balance ${account.balance})`);
 const essay = { ...hello, messages: [{ role: "user", content: "Explain rollups in depth. ".repeat(300) }] };
@@ -75,7 +75,7 @@ check("searching for nobody finds nobody", (await json(await fetch(`${base}/api/
 
 // --- models and top-ups
 const models = await json(await fetch(`${base}/api/models`));
-check("the model catalog always has the test model", models.models.some((model) => model.id === "fuel/echo"));
+check("the model catalog always has the test model", models.models.some((model) => model.id === "kredit/echo"));
 const { config } = await json(await fetch(`${base}/api/topup`));
 if (config) {
   check("top-up config names the chain to pay on", Number.isInteger(config.chainId) && config.creditsPerToken > 0);

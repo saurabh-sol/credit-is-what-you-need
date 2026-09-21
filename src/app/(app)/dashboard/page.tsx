@@ -8,7 +8,7 @@ import { ChainRecord } from "./chain-record";
 import { KpiStrip } from "./overview";
 import { PageHeader } from "./page-header";
 
-export const metadata = { title: "Overview — Fuel" };
+export const metadata = { title: "Overview — Kredit" };
 
 const nextSteps = [
   { icon: BoltIcon, title: "Scan your on-chain record", text: "Turn past transactions into credits", href: "/dashboard/earn", action: "Scan record" },

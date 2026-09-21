@@ -1,7 +1,7 @@
 import { ActivityTable } from "../activity-table";
 import { PageHeader } from "../page-header";
 
-export const metadata = { title: "Activity — Fuel" };
+export const metadata = { title: "Activity — Kredit" };
 
 export default function Activity() {
   return (

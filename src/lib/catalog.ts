@@ -6,14 +6,14 @@ import { ECHO_MODEL, upstream } from "./gateway.ts";
 export type CatalogModel = { id: string; name: string; provider: string };
 export type Catalog = { live: boolean; models: CatalogModel[] };
 
-const ECHO: CatalogModel = { id: ECHO_MODEL, name: "Echo (test model)", provider: "fuel" };
+const ECHO: CatalogModel = { id: ECHO_MODEL, name: "Echo (test model)", provider: "kredit" };
 const CACHE_MS = 10 * 60_000;
-const holder = globalThis as { fuelCatalog?: { at: number; value: Catalog } };
+const holder = globalThis as { kreditCatalog?: { at: number; value: Catalog } };
 
 const providerOf = (id: string) => (id.includes("/") ? id.split("/")[0] : "other");
 
 export async function catalog(): Promise<Catalog> {
-  const cached = holder.fuelCatalog;
+  const cached = holder.kreditCatalog;
   if (cached && cached.at > Date.now() - CACHE_MS) return cached.value;
 
   const { baseUrl, apiKey } = upstream();
@@ -40,6 +40,6 @@ export async function catalog(): Promise<Catalog> {
     }
   }
   // A failed fetch is retried on the next request instead of being cached.
-  if (value.live || !apiKey) holder.fuelCatalog = { at: Date.now(), value };
+  if (value.live || !apiKey) holder.kreditCatalog = { at: Date.now(), value };
   return value;
 }

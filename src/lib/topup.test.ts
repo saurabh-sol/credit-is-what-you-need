@@ -63,7 +63,7 @@ test("top-ups are off until fully configured", () => {
   assert.equal(topUpConfig({ TOPUP_TOKEN_ADDRESS: TOKEN, TOPUP_TREASURY_ADDRESS: TREASURY }), null); // no price
   assert.equal(topUpConfig({ TOPUP_TOKEN_ADDRESS: "nope", TOPUP_TREASURY_ADDRESS: TREASURY, TOPUP_CREDITS_PER_TOKEN: "100" }), null);
   assert.deepEqual(
-    topUpConfig({ TOPUP_TOKEN_ADDRESS: TOKEN, TOPUP_TREASURY_ADDRESS: TREASURY, TOPUP_CREDITS_PER_TOKEN: "100", TOPUP_TOKEN_SYMBOL: "FUEL" }),
-    { network: "mainnet", token: TOKEN, treasury: TREASURY, symbol: "FUEL", decimals: 18, creditsPerToken: 100 },
+    topUpConfig({ TOPUP_TOKEN_ADDRESS: TOKEN, TOPUP_TREASURY_ADDRESS: TREASURY, TOPUP_CREDITS_PER_TOKEN: "100", TOPUP_TOKEN_SYMBOL: "KRDT" }),
+    { network: "mainnet", token: TOKEN, treasury: TREASURY, symbol: "KRDT", decimals: 18, creditsPerToken: 100 },
   );
 });

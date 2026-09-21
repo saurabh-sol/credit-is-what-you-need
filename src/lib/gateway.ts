@@ -3,7 +3,9 @@ import { creditsFor, estimateTokens } from "./pricing.ts";
 
 // A built-in model that repeats your message. It lets anyone test a key
 // end-to-end before a real AI provider is configured.
-export const ECHO_MODEL = "fuel/echo";
+export const ECHO_MODEL = "kredit/echo";
+// The id the echo model had before the rename. Requests for it are still answered.
+export const LEGACY_ECHO_MODEL = "fuel/echo";
 
 const RATE_WINDOW_MS = 60_000;
 const RATE_LIMIT = 60; // requests per key per minute
@@ -21,7 +23,7 @@ export function authenticate(request: Request): Caller | Response {
   const header = request.headers.get("authorization") ?? "";
   const key = header.startsWith("Bearer ") ? findKey(header.slice(7).trim()) : null;
   if (!key) {
-    return apiError(401, "Invalid or revoked API key. Create one on your Fuel dashboard.", "invalid_api_key");
+    return apiError(401, "Invalid or revoked API key. Create one on your Kredit dashboard.", "invalid_api_key");
   }
 
   return rateLimited(key.id) ?? { keyId: key.id, address: key.address };
@@ -59,6 +61,6 @@ export function settle(caller: Caller, model: string, usage: ProviderUsage, text
 }
 
 export const chargeHeaders = (charge: { credits: number; balance: number }) => ({
-  "x-fuel-credits-charged": String(charge.credits),
-  "x-fuel-balance": String(charge.balance),
+  "x-kredit-credits-charged": String(charge.credits),
+  "x-kredit-balance": String(charge.balance),
 });

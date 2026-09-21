@@ -19,7 +19,7 @@ const payment = (hash: string, amount: bigint, credits: number) => ({
   hash,
   address: ALICE,
   token: TOKEN,
-  symbol: "FUEL",
+  symbol: "KRDT",
   decimals: 18,
   amount,
   credits,
@@ -35,7 +35,7 @@ test("distribution ranks wallets by what they earned, not what they kept", () =>
   grant(ALICE, 600, "claim");
   grant(ALICE, 84, "gasback");
   grant(BOB, 2000, "royalty");
-  recordUsage({ keyId: "k", address: BOB, model: "fuel/echo", inputTokens: 1, outputTokens: 1, credits: 1900 });
+  recordUsage({ keyId: "k", address: BOB, model: "kredit/echo", inputTokens: 1, outputTokens: 1, credits: 1900 });
   recordTopUp(payment("0xdef", ONE * BigInt(2) + ONE / BigInt(2), 250));
 
   const { totals, wallets, recent } = distribution();
@@ -43,11 +43,11 @@ test("distribution ranks wallets by what they earned, not what they kept", () =>
   assert.equal(wallets[0].earned, 2000); // spending does not shrink it
   assert.equal(wallets[1].earned, 500 + 600 + 84 + 250);
   assert.deepEqual(wallets[1].bySource, { claim: 600, milestone: 0, gasback: 84, royalty: 0, topup: 750 });
-  assert.deepEqual(wallets[1].tokensPaid, [{ symbol: "FUEL", decimals: 18, amount: (ONE * BigInt(7) + ONE / BigInt(2)).toString() }]);
+  assert.deepEqual(wallets[1].tokensPaid, [{ symbol: "KRDT", decimals: 18, amount: (ONE * BigInt(7) + ONE / BigInt(2)).toString() }]);
   assert.deepEqual(totals, {
     wallets: 2,
     credits: 3434,
-    tokensPaid: [{ symbol: "FUEL", decimals: 18, amount: (ONE * BigInt(7) + ONE / BigInt(2)).toString() }],
+    tokensPaid: [{ symbol: "KRDT", decimals: 18, amount: (ONE * BigInt(7) + ONE / BigInt(2)).toString() }],
   });
   assert.ok(recent.every((entry) => entry.amount > 0));
   // Everything handed to the page must be a plain object, or React refuses to render it.

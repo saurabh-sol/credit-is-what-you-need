@@ -1,5 +1,5 @@
 // End-to-end check of Builder Royalties against a real testnet builder.
-//   DATABASE_PATH=/tmp/fuel-test.db npx next start -p 3458
+//   DATABASE_PATH=/tmp/kredit-test.db npx next start -p 3458
 //   BASE_URL=http://localhost:3458 node scripts/royalties-test.mjs
 // Signs sessions locally (local testing only: real users sign with their wallet).
 import fs from "node:fs";
@@ -12,7 +12,7 @@ const BUSY_CONTRACT = "0x713ecbb623b879e5C6e51978c32b41dfe25de58D";
 const USER = "0x0695BCD9c32d90fdD4AD75e2aEE29213Db1e771D"; // only calls contracts, never deployed one
 const secret = fs.readFileSync(".env.local", "utf8").match(/SESSION_SECRET=(.+)/)[1].trim();
 const sessionFor = async (address) =>
-  `fuel_session=${await new SignJWT({ address }).setProtectedHeader({ alg: "HS256" }).setIssuedAt().setExpirationTime("10m").sign(new TextEncoder().encode(secret))}`;
+  `kredit_session=${await new SignJWT({ address }).setProtectedHeader({ alg: "HS256" }).setIssuedAt().setExpirationTime("10m").sign(new TextEncoder().encode(secret))}`;
 
 const results = [];
 const check = (name, pass, detail = "") => { results.push(pass); console.log(`${pass ? "PASS" : "FAIL"}  ${name} ${detail}`); };

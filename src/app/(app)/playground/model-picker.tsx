@@ -130,9 +130,9 @@ export function ModelPicker({ value, onChange }: { value: string; onChange: (mod
           This server has no AI provider connected yet, so only the test model answers.
         </p>
       )}
-      {value === "fuel/echo" && (
+      {value === "kredit/echo" && (
         <p className="mt-2.5 text-xs leading-relaxed text-mist">
-          <span className="font-mono text-fog">fuel/echo</span> repeats your message and is billed by length, like a real
+          <span className="font-mono text-fog">kredit/echo</span> repeats your message and is billed by length, like a real
           model. It is the cheapest way to see the whole loop work.
         </p>
       )}
