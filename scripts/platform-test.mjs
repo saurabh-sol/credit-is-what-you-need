@@ -27,6 +27,13 @@ for (const page of ["/", "/docs", "/playground", "/distribution"]) {
   check(`${page} renders`, (await fetch(base + page)).status === 200);
 }
 
+// --- the signed-in product
+for (const page of ["/dashboard", "/dashboard/earn", "/dashboard/keys", "/dashboard/activity", "/dashboard/credits", "/dashboard/settings"]) {
+  check(`${page} renders for a signed-in wallet`, (await app(page)).status === 200);
+}
+const stranger = await fetch(`${base}/dashboard/keys`, { redirect: "manual" });
+check("dashboard pages send signed-out visitors away", stranger.status >= 300 && stranger.status < 400);
+
 // --- display name
 const badName = await app("/api/profile", { method: "PUT", body: JSON.stringify({ name: "<b>" }) });
 check("a name with markup is refused", badName.status === 400);
