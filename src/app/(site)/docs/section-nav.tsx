@@ -43,7 +43,7 @@ export function SectionNav() {
                   <a
                     href={`#${id}`}
                     aria-current={active === id ? "location" : undefined}
-                    className="block rounded-md px-3 py-1.5 text-mist transition-colors hover:text-fog aria-[current]:bg-fog/5 aria-[current]:text-fog lg:-ml-px lg:rounded-none lg:border-l lg:border-transparent lg:py-1 lg:aria-[current]:border-lime lg:aria-[current]:bg-transparent"
+                    className="block rounded-md px-3 py-1.5 text-mist transition-colors hover:text-fog aria-[current]:bg-fog/5 aria-[current]:text-fog lg:-ml-px lg:rounded-none lg:border-l lg:border-transparent lg:py-1 lg:aria-[current]:border-accent lg:aria-[current]:bg-transparent"
                   >
                     {title}
                   </a>

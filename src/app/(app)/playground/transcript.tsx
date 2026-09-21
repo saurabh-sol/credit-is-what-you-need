@@ -22,7 +22,7 @@ const facts = [
   ["Every cost shown", "Each reply lists its model, how long it took and what it cost."],
 ];
 
-const link = "text-fog underline decoration-line underline-offset-4 transition-colors hover:decoration-lime";
+const link = "text-fog underline decoration-line underline-offset-4 transition-colors hover:decoration-accent";
 
 // What to do about each failure the gateway can report.
 function advice(code?: string) {
@@ -87,7 +87,7 @@ function Row({ turn, streaming }: { turn: Turn; streaming: boolean }) {
               <>
                 <span aria-hidden>·</span>
                 <span className="transition-opacity duration-500 motion-reduce:transition-none starting:opacity-0">
-                  <span className="text-lime">−{formatCredits(turn.cost)}</span> credits
+                  <span className="text-accent">−{formatCredits(turn.cost)}</span> credits
                 </span>
               </>
             )}

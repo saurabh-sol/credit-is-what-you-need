@@ -1,6 +1,6 @@
 "use client";
 
-import { darkTheme, RainbowKitAuthenticationProvider, RainbowKitProvider, type Theme } from "@rainbow-me/rainbowkit";
+import { lightTheme, RainbowKitAuthenticationProvider, RainbowKitProvider, type Theme } from "@rainbow-me/rainbowkit";
 import "@rainbow-me/rainbowkit/styles.css";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
@@ -9,26 +9,32 @@ import { WagmiProvider } from "wagmi";
 import { sessionAdapter, useSession } from "@/lib/use-session";
 import { config } from "@/lib/wagmi";
 
-// RainbowKit's dark theme, moved onto our palette and typeface so its dialogs
-// look like the rest of the site.
-const base = darkTheme({ accentColor: "#c6f432", accentColorForeground: "#0b0f0c", borderRadius: "large", overlayBlur: "small" });
+// RainbowKit's light theme, moved onto our palette and typeface so its dialogs
+// look like the rest of the site. The colours are the tokens from globals.css,
+// so a rebrand there carries over; the main button is black, like ours.
+const base = lightTheme({
+  accentColor: "var(--color-fog)",
+  accentColorForeground: "var(--color-ink)",
+  borderRadius: "large",
+  overlayBlur: "small",
+});
 const theme: Theme = {
   ...base,
   colors: {
     ...base.colors,
-    modalBackground: "#111713",
-    modalBorder: "#263228",
-    modalText: "#e9f0e6",
-    modalTextSecondary: "#8fa08f",
-    modalTextDim: "#8fa08f",
-    generalBorder: "#263228",
-    generalBorderDim: "#263228",
-    menuItemBackground: "#182019",
-    actionButtonSecondaryBackground: "#182019",
-    closeButtonBackground: "#182019",
-    closeButton: "#8fa08f",
-    profileForeground: "#182019",
-    modalBackdrop: "rgb(0 0 0 / 0.7)",
+    modalBackground: "var(--color-surface)",
+    modalBorder: "var(--color-line)",
+    modalText: "var(--color-fog)",
+    modalTextSecondary: "var(--color-mist)",
+    modalTextDim: "var(--color-mist)",
+    generalBorder: "var(--color-line)",
+    generalBorderDim: "var(--color-line)",
+    menuItemBackground: "var(--color-raised)",
+    actionButtonSecondaryBackground: "var(--color-raised)",
+    closeButtonBackground: "var(--color-raised)",
+    closeButton: "var(--color-mist)",
+    profileForeground: "var(--color-raised)",
+    modalBackdrop: "rgb(2 1 0 / 0.45)",
   },
   fonts: { body: "var(--font-geist-sans), system-ui, sans-serif" },
 };

@@ -71,7 +71,7 @@ export const DashboardPreview = memo(function DashboardPreview() {
   const shift = count === 0 ? "" : count % 2 ? "preview-row-a" : "preview-row-b";
 
   return (
-    <figure ref={ref} className="panel overflow-hidden shadow-[0_30px_80px_-40px_rgb(0_0_0/0.9)]" aria-label="A preview of the Kredit dashboard with example numbers">
+    <figure ref={ref} className="panel overflow-hidden shadow-[0_30px_80px_-40px_var(--shade)]" aria-label="A preview of the Kredit dashboard with example numbers">
       <div aria-hidden>
         <div className="flex items-center gap-3 border-b border-line bg-raised/60 px-4 py-2.5">
           <div className="flex gap-1.5">
@@ -97,7 +97,7 @@ export const DashboardPreview = memo(function DashboardPreview() {
           <div className="kpi-strip mt-4">
             <div className="kpi px-4">
               <p className="kpi-label">Balance</p>
-              <p className="kpi-value text-xl text-lime sm:text-2xl">
+              <p className="kpi-value text-xl text-accent sm:text-2xl">
                 <CountUp value={totals.balance} duration={700} />
               </p>
               <p className="kpi-note">{dollars(totals.balance)}</p>

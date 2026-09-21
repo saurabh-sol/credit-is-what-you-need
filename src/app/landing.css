@@ -80,7 +80,7 @@
     position: absolute;
     inset: 0;
     transform: translateY(-100%);
-    background: linear-gradient(to bottom, transparent 82%, rgb(198 244 50 / 0.9)) center / 1px 100% no-repeat;
+    background: linear-gradient(to bottom, transparent 82%, color-mix(in srgb, var(--color-accent) 90%, transparent)) center / 1px 100% no-repeat;
   }
 
   .loop-beam::after {
@@ -92,7 +92,7 @@
     height: 5px;
     margin-left: -2.5px;
     border-radius: 9999px;
-    background: var(--color-lime);
+    background: var(--color-accent);
   }
 
   .loop.is-visible .loop-beam {
@@ -113,7 +113,7 @@
 
     .loop-beam {
       transform: translateX(-100%);
-      background: linear-gradient(to right, transparent 82%, rgb(198 244 50 / 0.9)) center / 100% 1px no-repeat;
+      background: linear-gradient(to right, transparent 82%, color-mix(in srgb, var(--color-accent) 90%, transparent)) center / 100% 1px no-repeat;
     }
 
     .loop-beam::after {
@@ -150,9 +150,9 @@
     display: grid;
     place-items: center;
     border-radius: inherit;
-    border: 1px solid rgb(198 244 50 / 0.7);
-    background: color-mix(in srgb, var(--color-lime) 8%, var(--color-raised));
-    color: var(--color-lime);
+    border: 1px solid color-mix(in srgb, var(--color-accent) 70%, transparent);
+    background: color-mix(in srgb, var(--color-accent) 8%, var(--color-raised));
+    color: var(--color-accent);
     opacity: 0;
   }
 

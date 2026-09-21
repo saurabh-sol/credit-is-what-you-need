@@ -49,7 +49,7 @@ export function RecordScanner() {
                 aria-selected={network === tab.id}
                 onClick={() => setNetwork(tab.id)}
                 className={`rounded-full px-3 py-1 transition ${
-                  network === tab.id ? "bg-lime font-semibold text-ink" : "text-mist hover:text-fog"
+                  network === tab.id ? "bg-accent font-semibold text-ink" : "text-mist hover:text-fog"
                 }`}
               >
                 {tab.label}
@@ -147,12 +147,12 @@ function ScanResult({ data, onClaimed }: { data: RecordResponse; onClaimed: () =
                     href={`${data.network.explorerUrl}/tx/${task.hash}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="font-mono text-xs text-mist underline-offset-4 hover:text-lime hover:underline"
+                    className="font-mono text-xs text-mist underline-offset-4 hover:text-accent hover:underline"
                   >
                     {shortAddress(task.hash)} · {new Date(task.timestamp).toLocaleDateString()}
                   </a>
                 </div>
-                <span className="shrink-0 font-mono text-lime">+{formatCredits(task.credits)}</span>
+                <span className="shrink-0 font-mono text-accent">+{formatCredits(task.credits)}</span>
               </li>
             ))}
           </ul>

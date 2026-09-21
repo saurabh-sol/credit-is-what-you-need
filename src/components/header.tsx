@@ -16,7 +16,7 @@ const links = [
 export function Logo() {
   return (
     <Link href="/" className="group flex items-center gap-2 text-lg font-semibold tracking-tight">
-      <span className="grid size-7 place-items-center rounded-md bg-lime font-mono text-sm font-bold text-ink shadow-[inset_0_1px_0_rgb(255_255_255/0.5)] transition duration-500 group-hover:-rotate-6">
+      <span className="grid size-7 place-items-center rounded-md bg-accent font-mono text-sm font-bold text-ink shadow-[inset_0_1px_0_rgb(255_255_255/0.5)] transition duration-500 group-hover:-rotate-6">
         K
       </span>
       Kredit
@@ -31,7 +31,7 @@ export function Header() {
   // The menu belongs to the page it was opened on, so navigating closes it.
   const menuOpen = menuAt === pathname;
 
-  // Clear over the hero, frosted once the page moves; the lime line tracks
+  // Clear over the hero, frosted once the page moves; the accent line tracks
   // reading progress. Written straight to the DOM so scrolling never re-renders.
   useEffect(() => {
     const onScroll = () => {
@@ -75,9 +75,9 @@ export function Header() {
           <Link
             href="/playground"
             aria-current={pathname === "/playground" ? "page" : undefined}
-            className="btn-ghost hidden px-3.5 py-2 text-sm aria-[current=page]:border-lime/55 sm:inline-flex"
+            className="btn-ghost hidden px-3.5 py-2 text-sm aria-[current=page]:border-accent/55 sm:inline-flex"
           >
-            <PlayIcon className="size-3.5 text-lime" />
+            <PlayIcon className="size-3.5 text-accent" />
             Playground
           </Link>
           <WalletButton signedIn="account" />
@@ -111,7 +111,7 @@ export function Header() {
 
       <div
         aria-hidden
-        className="absolute bottom-[-1px] left-0 h-px w-full origin-left scale-x-(--progress) bg-gradient-to-r from-lime/0 via-lime to-lime"
+        className="absolute bottom-[-1px] left-0 h-px w-full origin-left scale-x-(--progress) bg-gradient-to-r from-accent/0 via-accent to-accent"
       />
     </header>
   );

@@ -20,7 +20,7 @@ const useOrigin = () =>
 function Highlighted({ text }: { text: string }) {
   return text.split(/("[^"\n]*"?)/).map((part, index) =>
     part.startsWith('"') ? (
-      <span key={index} className="text-lime">
+      <span key={index} className="text-accent">
         {part}
       </span>
     ) : (
@@ -60,12 +60,12 @@ export function ApiDemo() {
   };
 
   return (
-    <div ref={ref} className="card overflow-hidden shadow-[0_30px_80px_-30px_rgb(0_0_0/0.8)]">
+    <div ref={ref} className="card overflow-hidden shadow-[0_30px_80px_-30px_var(--shade)]">
       <div className="flex items-center gap-3 border-b border-line bg-raised/60 px-4 py-2.5">
         <div className="flex gap-1.5" aria-hidden>
           <span className="size-3 rounded-full bg-danger/70" />
           <span className="size-3 rounded-full bg-[#f4c132]/70" />
-          <span className="size-3 rounded-full bg-lime/70" />
+          <span className="size-3 rounded-full bg-accent/70" />
         </div>
         <div role="tablist" aria-label="Language" className="ml-2 flex gap-1 font-mono text-xs">
           {tabs.map((name) => (
@@ -75,7 +75,7 @@ export function ApiDemo() {
               aria-selected={tab === name}
               onClick={() => restart(name)}
               className={`rounded-md px-2.5 py-1 transition ${
-                tab === name ? "bg-lime/15 text-lime" : "text-mist hover:text-fog"
+                tab === name ? "bg-accent/15 text-accent" : "text-mist hover:text-fog"
               }`}
             >
               {name}
@@ -105,7 +105,7 @@ export function ApiDemo() {
         }`}
       >
         <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-mist">
-          <span className="flex items-center gap-2 text-lime">
+          <span className="flex items-center gap-2 text-accent">
             <span className="live-dot" /> 200 OK
           </span>
           <span>x-kredit-credits-charged: 1</span>

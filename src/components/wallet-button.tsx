@@ -47,7 +47,7 @@ export function WalletButton({ label = "Connect wallet", signedIn = "action" }: 
       <div className="flex items-center gap-2">
         <Link
           href="/dashboard"
-          className="rounded-full border border-line bg-surface px-4 py-2 font-mono text-sm text-fog transition hover:border-lime"
+          className="rounded-full border border-line bg-surface px-4 py-2 font-mono text-sm text-fog transition hover:border-accent"
         >
           <span className="live-dot mr-2" />
           {shortAddress(session.address)}
