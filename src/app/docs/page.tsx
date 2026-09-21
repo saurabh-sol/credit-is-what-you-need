@@ -128,7 +128,7 @@ export default async function Docs() {
           <Section id="quickstart" title="Quickstart">
             <p>
               Send your first request with <code>{ECHO_MODEL}</code>, a built-in model that repeats your
-              message. It works on every Fuel server and costs the minimum charge, so it is the fastest
+              message. It works on every Fuel server and is billed by length like any other model, so it is the fastest
               way to check a key end to end.
             </p>
             <div className="mt-6">
