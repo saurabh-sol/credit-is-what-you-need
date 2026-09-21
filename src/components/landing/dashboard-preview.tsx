@@ -97,7 +97,7 @@ export const DashboardPreview = memo(function DashboardPreview() {
           <div className="kpi-strip mt-4">
             <div className="kpi px-4">
               <p className="kpi-label">Balance</p>
-              <p className="kpi-value text-xl text-lime sm:text-2xl">
+              <p className="kpi-value text-xl text-accent sm:text-2xl">
                 <CountUp value={totals.balance} duration={700} />
               </p>
               <p className="kpi-note">{dollars(totals.balance)}</p>

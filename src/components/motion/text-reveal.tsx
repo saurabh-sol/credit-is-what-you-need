@@ -21,7 +21,7 @@ export function TextReveal({ text, as = "h2", className = "", accent = [] }: Tex
     <Tag ref={ref} aria-label={text} className={`text-reveal ${inView ? "is-visible" : ""} ${className}`}>
       {words.map((word, index) => (
         <span key={index} aria-hidden className="word">
-          <span style={{ "--i": index } as React.CSSProperties} className={accent.includes(word) ? "text-lime" : undefined}>
+          <span style={{ "--i": index } as React.CSSProperties} className={accent.includes(word) ? "text-accent" : undefined}>
             {word}
           </span>
           {index < words.length - 1 && " "}

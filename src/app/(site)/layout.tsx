@@ -49,7 +49,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
                 <ul className="mt-4 space-y-2.5 text-mist">
                   {group.links.map(([name, href]) => (
                     <li key={href}>
-                      <Link href={href} className="transition hover:text-lime">
+                      <Link href={href} className="transition hover:text-accent">
                         {name}
                       </Link>
                     </li>

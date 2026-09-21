@@ -40,7 +40,7 @@ export function Composer({ busy, blocked, canReset, onSend, onStop, onReset }: C
           </p>
         )}
 
-        <div className="rounded-xl border border-line bg-surface transition-[border-color,box-shadow] duration-200 focus-within:border-lime/60 focus-within:shadow-[0_0_0_3px_rgb(198_244_50/0.12)]">
+        <div className="rounded-xl border border-line bg-surface transition-[border-color,box-shadow] duration-200 focus-within:border-accent/60 focus-within:shadow-[0_0_0_3px_color-mix(in_srgb,var(--color-accent)_12%,transparent)]">
           <label className="sr-only" htmlFor="prompt">
             Message
           </label>

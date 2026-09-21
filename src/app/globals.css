@@ -4,14 +4,17 @@
 @import "./orbit.css";
 @import "./landing.css";
 
-/* Ink & Lime: green-tinted black with an electric lime accent. */
+/* Brand palette. Every colour in the site and the app derives from these
+   tokens, so a rebrand is an edit to this block alone. Currently Ink & Lime:
+   green-tinted black with an electric lime accent. */
 @theme inline {
   --color-ink: #0b0f0c;
   --color-surface: #111713;
   --color-raised: #182019;
   --color-line: #263228;
-  --color-lime: #c6f432;
-  --color-lime-dim: #a4cc22;
+  --color-accent: #c6f432;
+  --color-accent-dim: #a4cc22;
+  --color-accent-2: #32f4aa;
   --color-fog: #e9f0e6;
   --color-mist: #8fa08f;
   --color-danger: #ff7a6b;
@@ -36,12 +39,12 @@ body {
 }
 
 ::selection {
-  background: var(--color-lime);
+  background: var(--color-accent);
   color: var(--color-ink);
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-lime);
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
 
@@ -158,7 +161,7 @@ body {
     left: 8%;
     width: 60rem;
     height: 42rem;
-    background: radial-gradient(closest-side, rgb(198 244 50 / 0.16), transparent);
+    background: radial-gradient(closest-side, color-mix(in srgb, var(--color-accent) 16%, transparent), transparent);
     animation: drift-a 16s ease-in-out infinite;
   }
 
@@ -167,7 +170,7 @@ body {
     right: -12%;
     width: 46rem;
     height: 40rem;
-    background: radial-gradient(closest-side, rgb(50 244 170 / 0.09), transparent);
+    background: radial-gradient(closest-side, color-mix(in srgb, var(--color-accent-2) 9%, transparent), transparent);
     animation: drift-b 20s ease-in-out infinite;
   }
 
@@ -175,8 +178,8 @@ body {
     position: absolute;
     inset: 0;
     background-image:
-      linear-gradient(to right, rgb(233 240 230 / 0.045) 1px, transparent 1px),
-      linear-gradient(to bottom, rgb(233 240 230 / 0.045) 1px, transparent 1px);
+      linear-gradient(to right, color-mix(in srgb, var(--color-fog) 4.5%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in srgb, var(--color-fog) 4.5%, transparent) 1px, transparent 1px);
     background-size: 56px 56px;
     mask-image: radial-gradient(70% 60% at 50% 0%, #000 30%, transparent 75%);
     animation: grid-pan 14s linear infinite;
@@ -197,9 +200,9 @@ body {
     border-radius: 1rem;
     border: 1px solid var(--color-line);
     background:
-      linear-gradient(180deg, rgb(233 240 230 / 0.035), transparent 40%),
+      linear-gradient(180deg, color-mix(in srgb, var(--color-fog) 3.5%, transparent), transparent 40%),
       var(--color-surface);
-    box-shadow: inset 0 1px 0 rgb(233 240 230 / 0.04);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-fog) 4%, transparent);
     transition:
       border-color 0.3s,
       transform 0.5s var(--ease-out-expo),
@@ -209,7 +212,7 @@ body {
   .card-lift:hover {
     transform: translateY(-3px);
     box-shadow:
-      inset 0 1px 0 rgb(233 240 230 / 0.06),
+      inset 0 1px 0 color-mix(in srgb, var(--color-fog) 6%, transparent),
       0 18px 40px -18px rgb(0 0 0 / 0.7);
   }
 
@@ -233,7 +236,7 @@ body {
     z-index: -1;
     background: radial-gradient(
       420px circle at var(--mx, 50%) var(--my, 0%),
-      rgb(198 244 50 / 0.09),
+      color-mix(in srgb, var(--color-accent) 9%, transparent),
       transparent 60%
     );
   }
@@ -243,7 +246,7 @@ body {
     padding: 1px;
     background: radial-gradient(
       240px circle at var(--mx, 50%) var(--my, 0%),
-      rgb(198 244 50 / 0.75),
+      color-mix(in srgb, var(--color-accent) 75%, transparent),
       transparent 65%
     );
     -webkit-mask:
@@ -266,12 +269,12 @@ body {
     position: relative;
     overflow: hidden;
     border-radius: 9999px;
-    background: var(--color-lime);
+    background: var(--color-accent);
     color: var(--color-ink);
     font-weight: 600;
     box-shadow:
       inset 0 1px 0 rgb(255 255 255 / 0.45),
-      0 0 0 0 rgb(198 244 50 / 0);
+      0 0 0 0 color-mix(in srgb, var(--color-accent) 0%, transparent);
     transition:
       transform 0.4s var(--ease-out-expo),
       box-shadow 0.4s,
@@ -292,7 +295,7 @@ body {
     transform: translateY(-1px);
     box-shadow:
       inset 0 1px 0 rgb(255 255 255 / 0.45),
-      0 10px 28px -12px rgb(198 244 50 / 0.4);
+      0 10px 28px -12px color-mix(in srgb, var(--color-accent) 40%, transparent);
   }
 
   .btn-primary:hover:not(:disabled)::after {
@@ -312,9 +315,9 @@ body {
   .text-shine {
     background: linear-gradient(
         110deg,
-        var(--color-lime) 40%,
-        #f6ffd6 50%,
-        var(--color-lime) 60%
+        var(--color-accent) 40%,
+        color-mix(in srgb, var(--color-accent) 20%, white) 50%,
+        var(--color-accent) 60%
       )
       0 0 / 200% 100%;
     -webkit-background-clip: text;
@@ -329,7 +332,7 @@ body {
     width: 0.5rem;
     height: 0.5rem;
     border-radius: 9999px;
-    background: var(--color-lime);
+    background: var(--color-accent);
   }
 
   .live-dot::after {
@@ -337,7 +340,7 @@ body {
     position: absolute;
     inset: 0;
     border-radius: inherit;
-    background: var(--color-lime);
+    background: var(--color-accent);
     animation: ping-ring 1.8s ease-out infinite;
   }
 
@@ -351,7 +354,7 @@ body {
 
   .caret::after {
     content: "▍";
-    color: var(--color-lime);
+    color: var(--color-accent);
     animation: caret 1s steps(1) infinite;
   }
 
@@ -393,7 +396,7 @@ body {
   /* Colors live here, not in utilities, so the lit state below can override them. */
   .step-dot {
     background: var(--color-surface);
-    color: var(--color-lime);
+    color: var(--color-accent);
     transition:
       background-color 0.5s var(--dot-delay, 0ms),
       color 0.5s var(--dot-delay, 0ms),
@@ -401,9 +404,9 @@ body {
   }
 
   .is-visible .step-dot {
-    background: var(--color-lime);
+    background: var(--color-accent);
     color: var(--color-ink);
-    box-shadow: 0 0 0 6px rgb(198 244 50 / 0.12);
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--color-accent) 12%, transparent);
   }
 
   /* ---------- Marquee ---------- */
@@ -462,11 +465,11 @@ body {
   .stagger > :nth-child(n + 7) { animation-delay: 440ms; }
 }
 
-/* Soft lime glow behind the hero. */
+/* Soft accent glow behind the hero. */
 .glow {
   background: radial-gradient(
     60% 50% at 50% 0%,
-    rgb(198 244 50 / 0.13),
+    color-mix(in srgb, var(--color-accent) 13%, transparent),
     transparent 70%
   );
 }
@@ -508,7 +511,7 @@ body {
   }
 
   .text-shine {
-    color: var(--color-lime);
+    color: var(--color-accent);
     background: none;
   }
 }
@@ -545,13 +548,13 @@ body {
 .slider::-webkit-slider-runnable-track {
   height: 0.375rem;
   border-radius: 9999px;
-  background: linear-gradient(to right, var(--color-lime) var(--fill), var(--color-line) var(--fill));
+  background: linear-gradient(to right, var(--color-accent) var(--fill), var(--color-line) var(--fill));
 }
 
 .slider::-moz-range-track {
   height: 0.375rem;
   border-radius: 9999px;
-  background: linear-gradient(to right, var(--color-lime) var(--fill), var(--color-line) var(--fill));
+  background: linear-gradient(to right, var(--color-accent) var(--fill), var(--color-line) var(--fill));
 }
 
 .slider::-webkit-slider-thumb {
@@ -560,9 +563,9 @@ body {
   height: 1.25rem;
   margin-top: -0.4375rem;
   border-radius: 9999px;
-  border: 3px solid var(--color-lime);
+  border: 3px solid var(--color-accent);
   background: var(--color-ink);
-  box-shadow: 0 0 0 0 rgb(198 244 50 / 0.25);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 25%, transparent);
   transition:
     box-shadow 0.3s,
     transform 0.3s var(--ease-out-expo);
@@ -572,14 +575,14 @@ body {
   width: 0.875rem;
   height: 0.875rem;
   border-radius: 9999px;
-  border: 3px solid var(--color-lime);
+  border: 3px solid var(--color-accent);
   background: var(--color-ink);
 }
 
 .slider:hover::-webkit-slider-thumb,
 .slider:focus-visible::-webkit-slider-thumb {
   transform: scale(1.15);
-  box-shadow: 0 0 0 8px rgb(198 244 50 / 0.18);
+  box-shadow: 0 0 0 8px color-mix(in srgb, var(--color-accent) 18%, transparent);
 }
 
 /* FAQ: the chevron turns everywhere; the height eases open where supported. */

@@ -112,7 +112,7 @@ export function ModelPicker({ value, onChange }: { value: string; onChange: (mod
                     <span className="block truncate text-[0.8125rem] leading-5">{model.name}</span>
                     <span className="block truncate font-mono text-[0.6875rem] leading-4 text-mist">{model.id}</span>
                   </span>
-                  {model.id === value && <CheckIcon className="size-3.5 text-lime" />}
+                  {model.id === value && <CheckIcon className="size-3.5 text-accent" />}
                 </button>
               </li>
             ))}

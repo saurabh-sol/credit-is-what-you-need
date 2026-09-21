@@ -37,7 +37,7 @@ export function Settings({ model, onModel, signedIn, balance, systemPrompt }: Se
           <h2 className="section-label">Balance</h2>
           {signedIn ? (
             <>
-              <p className="mt-3 font-mono text-2xl leading-8 font-semibold tracking-tight text-lime tabular-nums">
+              <p className="mt-3 font-mono text-2xl leading-8 font-semibold tracking-tight text-accent tabular-nums">
                 {balance === undefined ? <span className="skeleton" aria-hidden>00,000</span> : <CountUp value={balance} duration={900} />}
                 <span className="ml-2 font-sans text-xs font-normal tracking-normal text-mist">credits</span>
               </p>

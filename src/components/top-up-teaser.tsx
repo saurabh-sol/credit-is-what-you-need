@@ -20,11 +20,11 @@ export function TopUpTeaser() {
   return (
     <div className="card relative overflow-hidden p-7">
       <div className="flex items-center justify-between">
-        <span className="grid size-11 place-items-center rounded-xl border border-line bg-raised text-lime">
+        <span className="grid size-11 place-items-center rounded-xl border border-line bg-raised text-accent">
           <CoinsIcon className="size-5" />
         </span>
         <span className="chip">
-          <span className={`size-1.5 rounded-full ${config ? "bg-lime" : "bg-mist"} breathe`} />
+          <span className={`size-1.5 rounded-full ${config ? "bg-accent" : "bg-mist"} breathe`} />
           {config ? "Open now" : data ? "Opening soon" : "Checking"}
         </span>
       </div>
@@ -34,9 +34,9 @@ export function TopUpTeaser() {
           <p className="text-3xl font-semibold text-fog">1</p>
           <p className="mt-1 text-xs text-mist">{config?.symbol ?? "project token"}</p>
         </div>
-        <ArrowRightIcon className="size-5 text-lime" />
+        <ArrowRightIcon className="size-5 text-accent" />
         <div className="text-right">
-          <p className="text-3xl font-semibold text-lime">{config ? formatCredits(config.creditsPerToken) : "credits"}</p>
+          <p className="text-3xl font-semibold text-accent">{config ? formatCredits(config.creditsPerToken) : "credits"}</p>
           <p className="mt-1 text-xs text-mist">
             {config ? `credits · $${(config.creditsPerToken / 1000).toFixed(2)} of AI usage` : "price set at launch"}
           </p>

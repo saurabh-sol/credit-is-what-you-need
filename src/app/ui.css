@@ -66,7 +66,7 @@
     line-height: 1rem;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: var(--color-lime);
+    color: var(--color-accent);
   }
 
   .chip {
@@ -90,8 +90,8 @@
     gap: 0.5rem;
     border-radius: 9999px;
     border: 1px solid var(--color-line);
-    background: rgb(233 240 230 / 0.03);
-    box-shadow: inset 0 1px 0 rgb(233 240 230 / 0.05);
+    background: color-mix(in srgb, var(--color-fog) 3%, transparent);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-fog) 5%, transparent);
     color: var(--color-fog);
     font-weight: 500;
     transition:
@@ -101,8 +101,8 @@
   }
 
   .btn-ghost:hover:not(:disabled) {
-    border-color: rgb(198 244 50 / 0.55);
-    background: rgb(198 244 50 / 0.06);
+    border-color: color-mix(in srgb, var(--color-accent) 55%, transparent);
+    background: color-mix(in srgb, var(--color-accent) 6%, transparent);
   }
 
   .btn-ghost:active:not(:disabled) {
@@ -132,8 +132,8 @@
 
   .field:focus {
     outline: none;
-    border-color: rgb(198 244 50 / 0.6);
-    box-shadow: 0 0 0 3px rgb(198 244 50 / 0.12);
+    border-color: color-mix(in srgb, var(--color-accent) 60%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 12%, transparent);
   }
 
   /* ---------- Code ---------- */
@@ -229,7 +229,7 @@
   }
 
   .data-table tbody tr:hover {
-    background: rgb(233 240 230 / 0.025);
+    background: color-mix(in srgb, var(--color-fog) 2.5%, transparent);
   }
 
   /* ---------- Live bento ---------- */
@@ -252,7 +252,7 @@
     content: "";
     position: absolute;
     inset: 0;
-    background: linear-gradient(90deg, transparent, rgb(198 244 50 / 0.16), transparent);
+    background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--color-accent) 16%, transparent), transparent);
     animation: sweep 1.6s ease-in-out infinite;
   }
 

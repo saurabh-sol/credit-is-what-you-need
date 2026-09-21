@@ -156,7 +156,7 @@ export function TopUp() {
               setAmount(preset);
               setStep("idle");
             }}
-            className={`btn-ghost shrink-0 px-3.5 font-mono text-sm ${amount === preset ? "border-lime/55" : ""}`}
+            className={`btn-ghost shrink-0 px-3.5 font-mono text-sm ${amount === preset ? "border-accent/55" : ""}`}
           >
             {preset}
           </button>
@@ -166,7 +166,7 @@ export function TopUp() {
         <span>
           {units ? (
             <>
-              You get <span className="font-mono text-lime">{formatCredits(credits)}</span> credits, about $
+              You get <span className="font-mono text-accent">{formatCredits(credits)}</span> credits, about $
               {(credits / 1000).toFixed(2)} of AI usage
             </>
           ) : (
@@ -195,8 +195,8 @@ export function TopUp() {
         </p>
       )}
       {step === "done" && (
-        <p className="pop-in mt-4 flex items-center gap-2 rounded-xl border border-lime/30 bg-lime/5 px-4 py-3 text-sm" role="status">
-          <CheckIcon className="text-lime" /> {formatCredits(bought)} credits added to your balance.
+        <p className="pop-in mt-4 flex items-center gap-2 rounded-xl border border-accent/30 bg-accent/5 px-4 py-3 text-sm" role="status">
+          <CheckIcon className="text-accent" /> {formatCredits(bought)} credits added to your balance.
         </p>
       )}
       {error && (
@@ -212,7 +212,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   return (
     <section id="buy-credits" className="card relative mt-4 overflow-hidden p-6">
       <div className="flex items-center gap-3">
-        <span className="grid size-10 place-items-center rounded-xl border border-line bg-raised text-lime">
+        <span className="grid size-10 place-items-center rounded-xl border border-line bg-raised text-accent">
           <CoinsIcon className="size-5" />
         </span>
         <div>
