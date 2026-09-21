@@ -1,5 +1,5 @@
 import { createPublicClient, http, verifyMessage, type Hex } from "viem";
-import { base } from "viem/chains";
+import { base, robinhood, robinhoodTestnet } from "viem/chains";
 import { parseSiweMessage, validateSiweMessage } from "viem/siwe";
 import { consumeNonce, createSession } from "@/lib/session";
 
@@ -24,13 +24,21 @@ export async function POST(request: Request) {
   }
 
   const args = { address: parsed.address, message, signature: signature as Hex };
-  // Normal wallets verify locally. Smart wallets (Base Account) need an
-  // on-chain ERC-1271/6492 check, and Base is where they are deployed.
-  const valid =
-    (await verifyMessage(args).catch(() => false)) ||
-    (await createPublicClient({ chain: base, transport: http() })
-      .verifyMessage(args)
-      .catch(() => false));
+  // Normal wallets verify locally. Smart wallets need an on-chain ERC-1271/6492
+  // check on a chain where they live: Base (Base Account) or Robinhood Chain.
+  const onChain = () =>
+    Promise.all(
+      [
+        { chain: base, rpc: undefined },
+        { chain: robinhood, rpc: process.env.NEXT_PUBLIC_RPC_MAINNET },
+        { chain: robinhoodTestnet, rpc: process.env.NEXT_PUBLIC_RPC_TESTNET },
+      ].map(({ chain, rpc }) =>
+        createPublicClient({ chain, transport: http(rpc || undefined, { timeout: 10_000 }) })
+          .verifyMessage(args)
+          .catch(() => false),
+      ),
+    ).then((results) => results.some(Boolean));
+  const valid = (await verifyMessage(args).catch(() => false)) || (await onChain());
   if (!valid) return fail("Signature does not match this wallet", 401);
 
   await createSession(parsed.address);
