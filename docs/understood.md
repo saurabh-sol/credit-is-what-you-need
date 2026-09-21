@@ -23,7 +23,7 @@ wallet activity on chain ──scan──▶ receipt ──claim──▶ credit
 | Page | Who it is for | What it does |
 | --- | --- | --- |
 | `/` | Everyone | Explains the product. Once signed in, its button becomes "Open dashboard". |
-| `/dashboard` | Signed-in wallets | Balance, scan and claim, builder royalties, buy credits, API keys, activity, display name. |
+| `/dashboard` | Signed-in wallets | Overview and balance, with a page each for earning (`/earn`: scan, claim, builder royalties), credits (`/credits`: buy more), API keys (`/keys`), activity (`/activity`) and settings (`/settings`: display name). |
 | `/playground` | Signed-in wallets | Chat with any model in the browser, paid from your credits. No key needed. |
 | `/docs` | Developers | How to call the API, with copy-paste code and what typical requests cost. |
 | `/distribution` | Everyone | Public board: every wallet that earned credits, where they came from, and a live ticker. |
