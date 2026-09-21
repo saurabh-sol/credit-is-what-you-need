@@ -154,7 +154,7 @@ export const KeyStatus = memo(function KeyStatus() {
         ))}
       </ul>
       {showing && (
-        <p className="pop-in absolute -top-3 right-0 rounded-full border border-accent/30 bg-ink px-3 py-1 font-mono text-xs text-accent shadow-[0_10px_30px_-10px_rgb(0_0_0/0.9)]">
+        <p className="pop-in absolute -top-3 right-0 rounded-full border border-accent/30 bg-ink px-3 py-1 font-mono text-xs text-accent shadow-[0_10px_30px_-10px_var(--shade)]">
           {notices[Math.floor(notice / 2) % notices.length]}
         </p>
       )}

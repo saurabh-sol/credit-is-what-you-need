@@ -60,7 +60,7 @@ export function ApiDemo() {
   };
 
   return (
-    <div ref={ref} className="card overflow-hidden shadow-[0_30px_80px_-30px_rgb(0_0_0/0.8)]">
+    <div ref={ref} className="card overflow-hidden shadow-[0_30px_80px_-30px_var(--shade)]">
       <div className="flex items-center gap-3 border-b border-line bg-raised/60 px-4 py-2.5">
         <div className="flex gap-1.5" aria-hidden>
           <span className="size-3 rounded-full bg-danger/70" />

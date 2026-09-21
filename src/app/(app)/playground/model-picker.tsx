@@ -71,7 +71,7 @@ export function ModelPicker({ value, onChange }: { value: string; onChange: (mod
       </button>
 
       {open && (
-        <div className="panel absolute top-full right-0 left-0 z-20 mt-1.5 animate-modal-in overflow-hidden bg-raised shadow-[0_24px_48px_-16px_rgb(0_0_0/0.85)]">
+        <div className="panel absolute top-full right-0 left-0 z-20 mt-1.5 animate-modal-in overflow-hidden bg-raised shadow-[0_24px_48px_-16px_var(--shade)]">
           <label className="flex items-center gap-2 border-b border-line px-3 py-2 text-mist">
             <SearchIcon />
             <input

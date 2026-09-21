@@ -81,7 +81,7 @@ function CommandMenu({ onClose }: { onClose: () => void }) {
         role="dialog"
         aria-modal="true"
         aria-label="Go to"
-        className="panel w-full max-w-md animate-modal-in overflow-hidden shadow-[0_40px_100px_-20px_rgb(0_0_0/0.9)]"
+        className="panel w-full max-w-md animate-modal-in overflow-hidden shadow-[0_40px_100px_-20px_var(--shade)]"
         onClick={(event) => event.stopPropagation()}
       >
         <label className="flex items-center gap-2.5 border-b border-line px-4 text-mist">
