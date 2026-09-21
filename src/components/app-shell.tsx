@@ -132,7 +132,7 @@ function CommandMenu({ onClose }: { onClose: () => void }) {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const session = useSession();
-  const { mutate: disconnect } = useDisconnect();
+  const { disconnect } = useDisconnect();
   const [drawerAt, setDrawerAt] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const drawerOpen = drawerAt === pathname; // navigating closes it
