@@ -4,7 +4,7 @@ export const MARGIN = 0.2; // Kredit's cut on top of the provider's price
 export const MIN_CREDITS_PER_REQUEST = 1;
 
 // Used only when the provider doesn't report what the call cost.
-const FALLBACK_USD_PER_MILLION = { input: 3, output: 15 };
+export const FALLBACK_USD_PER_MILLION = { input: 3, output: 15 };
 
 export type Usage = { inputTokens: number; outputTokens: number; costUsd?: number };
 
