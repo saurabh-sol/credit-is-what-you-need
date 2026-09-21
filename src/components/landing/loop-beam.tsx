@@ -15,6 +15,9 @@ const receiptTotal = receiptLines.reduce((sum, line) => sum + line.credits, 0);
 
 const makers = featuredProviders.slice(0, 5);
 
+// How many models the default upstream lists. A round floor, so it stays true as the list grows.
+const MODEL_COUNT = "500+";
+
 function SignedProof() {
   return (
     <>
@@ -64,8 +67,8 @@ function ModelProof() {
         <span className="shrink-0">API key</span>
       </div>
       <div className="mt-1.5 flex items-center justify-between gap-3">
-        <span>Works in</span>
-        <span className="truncate text-fog">Cursor, curl, SDKs</span>
+        <span>Creates</span>
+        <span className="truncate text-fog">Text, images, video</span>
       </div>
       <div className="mt-2.5 flex items-center justify-between gap-3 border-t border-dashed border-line pt-2.5">
         <span className="flex items-center gap-2.5 text-fog">
@@ -73,7 +76,7 @@ function ModelProof() {
             <ProviderLogo key={maker.name} logo={maker.logo} className="size-4" />
           ))}
         </span>
-        <span className="shrink-0">and more</span>
+        <span className="shrink-0 text-accent">{MODEL_COUNT} models</span>
       </div>
     </>
   );
@@ -95,7 +98,7 @@ const stages = [
   {
     icon: SparkIcon,
     title: "Any model",
-    text: "Spend with an API key in the tools you already use, or straight in the playground.",
+    text: `Spend on ${MODEL_COUNT} models, image and video creation included, with one API key or in the playground.`,
     proof: <ModelProof />,
   },
 ];
