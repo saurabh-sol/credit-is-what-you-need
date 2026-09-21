@@ -4,7 +4,7 @@ export async function GET(request: Request) {
   const caller = authenticate(request);
   if (caller instanceof Response) return caller;
 
-  const models: unknown[] = [{ id: ECHO_MODEL, object: "model", owned_by: "fuel" }];
+  const models: unknown[] = [{ id: ECHO_MODEL, object: "model", owned_by: "kredit" }];
   const { baseUrl, apiKey } = upstream();
   if (apiKey) {
     try {

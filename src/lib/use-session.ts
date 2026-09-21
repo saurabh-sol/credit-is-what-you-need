@@ -43,7 +43,7 @@ export function useSession() {
         uri: window.location.origin,
         version: "1",
         statement:
-          "Sign in to Fuel. This proves you own this wallet and costs no gas.",
+          "Sign in to Kredit.This proves you own this wallet and costs no gas.",
       });
       const signature = await signMessage({ message });
       return post("/api/auth/verify", { message, signature });

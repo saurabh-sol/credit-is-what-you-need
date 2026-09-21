@@ -17,9 +17,9 @@ export function Logo() {
   return (
     <Link href="/" className="group flex items-center gap-2 text-lg font-semibold tracking-tight">
       <span className="grid size-7 place-items-center rounded-md bg-lime font-mono text-sm font-bold text-ink shadow-[inset_0_1px_0_rgb(255_255_255/0.5)] transition duration-500 group-hover:-rotate-6">
-        F
+        K
       </span>
-      Fuel
+      Kredit
     </Link>
   );
 }

@@ -20,7 +20,7 @@ const footerLinks = [
     ],
   },
   {
-    title: "Fuel",
+    title: "Kredit",
     links: [
       ["Dashboard", "/dashboard"],
       ["Distribution", "/distribution"],
@@ -39,7 +39,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
           <div>
             <Logo />
             <p className="mt-3 max-w-xs text-sm leading-relaxed text-mist">
-              Every on-chain record deserves credits. Built on Robinhood Chain.
+              Your on-chain activity has purchasing power. Built on Robinhood Chain.
             </p>
           </div>
           <nav aria-label="Footer" className="grid grid-cols-2 gap-x-16 gap-y-8 text-sm sm:grid-cols-3">
@@ -60,7 +60,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
           </nav>
         </div>
         <p className="border-t border-line/60 px-4 py-5 text-center text-xs text-mist">
-          Fuel · an independent project, not affiliated with Robinhood
+          Kredit · an independent project, not affiliated with Robinhood
         </p>
       </footer>
     </>

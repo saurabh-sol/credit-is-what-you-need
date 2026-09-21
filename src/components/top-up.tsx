@@ -57,7 +57,7 @@ export function TopUp() {
       <Shell>
         <p className="mt-2 max-w-md leading-relaxed text-mist">
           Soon you will be able to pay with the project token and get credits on the spot, for when your
-          on-chain record has not earned enough yet. The rest of Fuel works without it.
+          on-chain record has not earned enough yet. The rest of Kredit works without it.
         </p>
         <p className="chip mt-5">
           <span className="size-1.5 rounded-full bg-mist breathe" /> Not open yet

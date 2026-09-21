@@ -43,7 +43,7 @@ export function Playground() {
   const signedIn = Boolean(session.address);
   const account = useQuery({ queryKey: ACCOUNT_KEY, queryFn: fetchAccount, enabled: signedIn });
 
-  const [model, setModel] = useState("fuel/echo");
+  const [model, setModel] = useState("kredit/echo");
   const [turns, setTurns] = useState<Turn[]>([]);
   const [error, setError] = useState<Failure | null>(null);
   const [busy, setBusy] = useState(false);

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { creditsFor } from "./pricing.ts";
 
-test("uses the provider's reported cost plus Fuel's margin", () => {
+test("uses the provider's reported cost plus Kredit's margin", () => {
   assert.equal(creditsFor({ inputTokens: 0, outputTokens: 0, costUsd: 0.01 }), 12); // $0.01 * 1.2 = 12 credits
 });
 

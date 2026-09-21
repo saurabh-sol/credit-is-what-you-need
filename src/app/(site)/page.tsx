@@ -43,7 +43,7 @@ function Glyph({ children }: { children: React.ReactNode }) {
 
 const proofPoints = ["No gas to sign in", "OpenAI-compatible", "Revoke keys anytime"];
 
-// Places that speak the OpenAI API, mixed with what a Fuel key adds on top.
+// Places that speak the OpenAI API, mixed with what a Kredit key adds on top.
 const compatibility = [
   "Cursor",
   "Balance in every response header",
@@ -120,7 +120,7 @@ const bento = [
     span: "md:col-span-4",
     live: <PromptBar />,
     title: "One key, whichever model fits",
-    text: "Ask from Cursor, Postman or your own code. Fuel routes the call and takes the cost from your credits.",
+    text: "Ask from Cursor, Postman or your own code. Kredit routes the call and takes the cost from your credits.",
   },
   {
     span: "md:col-span-2",
@@ -196,7 +196,7 @@ const faqs = [
   },
   {
     question: "Where can I spend them?",
-    answer: "Anywhere that speaks the OpenAI API: Postman, Cursor, your own code. Point the base URL at Fuel and paste your key. The built-in fuel/echo model repeats your message and is billed by length like a real model, so you can test a key and see how charges behave.",
+    answer: "Anywhere that speaks the OpenAI API: Postman, Cursor, your own code. Point the base URL at Kredit and paste your key. The built-in kredit/echo model repeats your message and is billed by length like a real model, so you can test a key and see how charges behave.",
   },
   {
     question: "Can I buy credits instead of earning them?",
@@ -207,12 +207,12 @@ const faqs = [
     answer: `Revoke it from your dashboard and it stops working at once. You can keep up to ${MAX_ACTIVE_KEYS} active keys, one per tool, so revoking one never breaks the others.`,
   },
   {
-    question: "Is Fuel part of Robinhood?",
-    answer: "No. Fuel is an independent project built on Robinhood Chain and is not affiliated with Robinhood.",
+    question: "Is Kredit part of Robinhood?",
+    answer: "No. Kredit is an independent project built on Robinhood Chain and is not affiliated with Robinhood.",
   },
 ];
 
-const headline = ["Every", "on-chain", "record", "deserves"];
+const headline = ["Your", "on-chain", "activity", "has"];
 
 // Delay for the hero's entrance sequence, one beat per element.
 const beat = (index: number) => ({ animationDelay: `${index * 90}ms` });
@@ -240,24 +240,23 @@ export default function Home() {
               <span className="live-dot" />
               AI credits on Robinhood Chain
             </p>
-            {/* Sized so "Every on-chain record" fits on one line beside the orbit; phones wrap on their own. */}
-            <h1 className="mt-7 text-5xl font-semibold leading-[1.04] tracking-tight text-balance lg:text-[3.25rem]">
+            {/* Sized so each half of the sentence holds one line beside the orbit; phones wrap on their own. */}
+            <h1 className="mt-7 text-4xl font-semibold leading-[1.06] tracking-tight text-balance sm:text-5xl">
               {headline.map((word, index) => (
                 <Fragment key={word}>
                   <span style={beat(index + 1)} className="inline-block animate-rise">
                     {word}&nbsp;
                   </span>
-                  {word === "record" && <br className="hidden lg:block" />}
+                  {word === "activity" && <br className="hidden lg:block" />}
                 </Fragment>
               ))}
               <span style={beat(headline.length + 1)} className="inline-block animate-rise">
-                <span className="text-shine">credits.</span>
+                <span className="text-shine">purchasing power</span>
               </span>
             </h1>
             <p style={beat(6)} className="mt-6 max-w-[52ch] animate-rise text-lg leading-relaxed text-mist">
-              Fuel turns the work you already do on-chain into AI credits. No
-              spin wheels, no luck. Earn them from your record, then spend them
-              anywhere with a normal API key.
+              Kredit turns your on-chain reputation and activity into AI credits
+              you can spend across models, agents and APIs.
             </p>
             <div style={beat(8)} className="mt-9 flex animate-rise flex-wrap items-center gap-x-6 gap-y-4">
               <WalletButton label="Connect and see your record" />
@@ -282,7 +281,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section aria-label="Where a Fuel key works" className="border-y border-line bg-surface/40">
+      <section aria-label="Where a Kredit key works" className="border-y border-line bg-surface/40">
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-5 md:flex-row md:items-center md:gap-10">
           <p className="shrink-0 text-sm text-mist">Works wherever the OpenAI API works</p>
           <div className="marquee min-w-0 flex-1">
@@ -444,8 +443,8 @@ export default function Home() {
               </ul>
               <p className="mt-4 max-w-[60ch] text-sm leading-relaxed text-mist">
                 Longer questions and longer answers cost more. Every response carries{" "}
-                <span className="font-mono text-xs text-fog">x-fuel-credits-charged</span> and{" "}
-                <span className="font-mono text-xs text-fog">x-fuel-balance</span>, so your code always knows what a call cost.
+                <span className="font-mono text-xs text-fog">x-kredit-credits-charged</span> and{" "}
+                <span className="font-mono text-xs text-fog">x-kredit-balance</span>, so your code always knows what a call cost.
               </p>
             </Reveal>
           </div>
@@ -455,7 +454,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section aria-label="Fuel in four numbers" className="mx-auto max-w-6xl px-4 pt-24 md:pt-32">
+      <section aria-label="Kredit in four numbers" className="mx-auto max-w-6xl px-4 pt-24 md:pt-32">
         <Reveal>
           <dl className="kpi-strip">
             {stats.map((stat, index) => (

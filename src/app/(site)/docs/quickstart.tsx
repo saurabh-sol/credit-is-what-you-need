@@ -9,7 +9,7 @@ const useOrigin = () =>
   useSyncExternalStore(
     () => () => {},
     () => window.location.origin,
-    () => "https://your-fuel-host",
+    () => "https://your-kredit-host",
   );
 
 export function Quickstart() {
@@ -23,11 +23,11 @@ export function StreamingExample() {
     <CodeBlock
       title="Streaming"
       code={`curl -N ${origin}/v1/chat/completions \\
-  -H "Authorization: Bearer $FUEL_KEY" \\
+  -H "Authorization: Bearer $KREDIT_KEY" \\
   -H "Content-Type: application/json" \\
-  -d '{ "model": "fuel/echo", "stream": true, "messages": [{ "role": "user", "content": "hi" }] }'
+  -d '{ "model": "kredit/echo", "stream": true, "messages": [{ "role": "user", "content": "hi" }] }'
 
-# data: {"object":"chat.completion.chunk","choices":[{"delta":{"content":"Fuel echo: hi"}}]}
+# data: {"object":"chat.completion.chunk","choices":[{"delta":{"content":"Kredit echo: hi"}}]}
 # data: [DONE]`}
     />
   );
@@ -39,9 +39,9 @@ export function ModelsExample() {
     <CodeBlock
       title="List models"
       code={`curl ${origin}/v1/models \\
-  -H "Authorization: Bearer $FUEL_KEY"
+  -H "Authorization: Bearer $KREDIT_KEY"
 
-# { "object": "list", "data": [{ "id": "fuel/echo", "object": "model", "owned_by": "fuel" }] }`}
+# { "object": "list", "data": [{ "id": "kredit/echo", "object": "model", "owned_by": "kredit" }] }`}
     />
   );
 }

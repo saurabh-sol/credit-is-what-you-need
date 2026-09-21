@@ -3,7 +3,7 @@ import { MAX_ACTIVE_KEYS } from "@/lib/limits";
 import { ApiKeys } from "../api-keys";
 import { PageHeader, Stack } from "../page-header";
 
-export const metadata = { title: "API keys — Fuel" };
+export const metadata = { title: "API keys — Kredit" };
 
 export default function Keys() {
   return (

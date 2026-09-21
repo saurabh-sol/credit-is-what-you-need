@@ -112,12 +112,12 @@ export const PromptBar = memo(function PromptBar() {
         <span className="chip hidden sm:inline-flex">{maker.name}</span>
       </div>
       <div className="mt-3 flex h-7 items-center gap-2 text-xs text-mist">
-        {phase === "thinking" && <span className="breathe">Routing through your Fuel key</span>}
+        {phase === "thinking" && <span className="breathe">Routing through your Kredit key</span>}
         {phase === "answered" && (
           <>
             <span className="chip pop-in text-lime">−{prompt.cost} credits</span>
             <span className="chip pop-in" style={{ animationDelay: "120ms" }}>
-              x-fuel-balance: {formatCredits(2864 - prompt.cost)}
+              x-kredit-balance: {formatCredits(2864 - prompt.cost)}
             </span>
           </>
         )}
@@ -165,8 +165,8 @@ export const KeyStatus = memo(function KeyStatus() {
 const headers = [
   ["HTTP/1.1", "200 OK"],
   ["content-type", "application/json"],
-  ["x-fuel-credits-charged", "14"],
-  ["x-fuel-balance", "2850"],
+  ["x-kredit-credits-charged", "14"],
+  ["x-kredit-balance", "2850"],
 ];
 
 // The two billing headers take turns being pointed out.

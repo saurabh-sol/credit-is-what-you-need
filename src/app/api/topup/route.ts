@@ -47,7 +47,7 @@ export async function POST(request: Request) {
   const credits = creditsForPayment(amount, config);
   if (credits < 1) {
     return Response.json(
-      { error: `No ${config.symbol} payment from your wallet to Fuel was found in that transaction.` },
+      { error: `No ${config.symbol} payment from your wallet to Kredit was found in that transaction.` },
       { status: 400 },
     );
   }

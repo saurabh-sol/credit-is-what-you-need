@@ -2,7 +2,7 @@ import { BuilderRoyalties } from "../builder-royalties";
 import { PageHeader, Stack } from "../page-header";
 import { RecordScanner } from "../record-scanner";
 
-export const metadata = { title: "Earn credits — Fuel" };
+export const metadata = { title: "Earn credits — Kredit" };
 
 export default function Earn() {
   return (

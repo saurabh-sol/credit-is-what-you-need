@@ -2,8 +2,8 @@ import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import type { Address } from "viem";
 
-const SESSION_COOKIE = "fuel_session";
-const NONCE_COOKIE = "fuel_nonce";
+const SESSION_COOKIE = "kredit_session";
+const NONCE_COOKIE = "kredit_nonce";
 const SESSION_TTL = 60 * 60 * 24 * 7;
 const NONCE_TTL = 60 * 5;
 
