@@ -8,6 +8,9 @@ const MAX_CONTRACTS = 60; // per scan; the rest wait for the next one
 const PARALLEL = 6;
 const CACHE_MS = 60_000;
 
+export const ROYALTIES_OFF =
+  "Builder Royalties are paid on mainnet only. Testnet gas is free, so there is nothing to share.";
+
 type RoyaltyScan = { usage: ContractUsage[]; ethUsdCents: bigint; skippedContracts: number };
 const cache = new Map<string, { expires: number; value: RoyaltyScan }>();
 
@@ -36,6 +39,7 @@ export async function scanRoyalties(network: Network, builder: string): Promise<
   markChecked(network.id, batch);
 
   const value = { usage, ethUsdCents, skippedContracts: Math.max(0, contracts.length - MAX_CONTRACTS) };
+  for (const [stale, entry] of cache) if (entry.expires <= Date.now()) cache.delete(stale);
   cache.set(key, { expires: Date.now() + CACHE_MS, value });
   return value;
 }

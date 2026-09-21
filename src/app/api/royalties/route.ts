@@ -3,7 +3,7 @@ import { listContracts, previewRoyalties } from "@/lib/ledger";
 import { isNetworkId, networks } from "@/lib/networks";
 import { PriceError } from "@/lib/price";
 import { ROYALTY_PERCENT } from "@/lib/royalties";
-import { scanRoyalties } from "@/lib/royalty-scan";
+import { ROYALTIES_OFF, scanRoyalties } from "@/lib/royalty-scan";
 import { getSession } from "@/lib/session";
 
 export async function GET(request: Request) {
@@ -15,6 +15,7 @@ export async function GET(request: Request) {
     return Response.json({ error: "network must be testnet or mainnet" }, { status: 400 });
   }
   const network = networks[networkId];
+  if (!network.gasRewards) return Response.json({ error: ROYALTIES_OFF }, { status: 403 });
 
   try {
     const { usage, ethUsdCents, skippedContracts } = await scanRoyalties(network, session.address);

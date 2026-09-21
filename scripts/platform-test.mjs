@@ -4,18 +4,12 @@
 //   SESSION_SECRET=… DATABASE_PATH=/tmp/kredit-test.db npx next start -p 3458
 //   SESSION_SECRET=… DATABASE_PATH=/tmp/kredit-test.db BASE_URL=http://localhost:3458 node scripts/platform-test.mjs
 // Credits are seeded straight into the database (local testing only).
-import fs from "node:fs";
 import { DatabaseSync } from "node:sqlite";
-import { SignJWT } from "jose";
+import { sessionCookie } from "./lib/test-session.mjs";
 
 const base = process.env.BASE_URL ?? "http://localhost:3000";
 const WALLET = `0x${Date.now().toString(16).padStart(40, "c")}`; // a fresh wallet every run
-const secret =
-  process.env.SESSION_SECRET ?? fs.readFileSync(".env.local", "utf8").match(/SESSION_SECRET=(.+)/)[1].trim();
-const jwt = await new SignJWT({ address: WALLET })
-  .setProtectedHeader({ alg: "HS256" }).setIssuedAt().setExpirationTime("10m")
-  .sign(new TextEncoder().encode(secret));
-const cookie = `kredit_session=${jwt}`;
+const cookie = await sessionCookie(WALLET);
 
 const results = [];
 const check = (name, pass, detail = "") => { results.push(pass); console.log(`${pass ? "PASS" : "FAIL"}  ${name} ${detail}`); };

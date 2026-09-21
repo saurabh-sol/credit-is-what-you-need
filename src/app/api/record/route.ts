@@ -26,6 +26,7 @@ export async function GET(request: Request) {
       ...receipt,
       tasks: receipt.tasks.slice(0, RECENT_TASKS),
       claimable: previewClaim(session.address, networkId, receipt.tasks, ethUsdCents).total,
+      gasBackOffered: network.gasRewards,
       gasBackAvailable: ethUsdCents !== null,
     });
   } catch (error) {
