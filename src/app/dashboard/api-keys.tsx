@@ -43,7 +43,7 @@ export function ApiKeys() {
   -d '{"model": "fuel/echo", "messages": [{"role": "user", "content": "hello"}]}'`;
 
   return (
-    <section className="rounded-2xl border border-line bg-surface p-6">
+    <section className="card p-6">
       <h2 className="text-lg font-semibold">API keys</h2>
       <p className="mt-1 text-sm text-mist">
         Use a key anywhere that speaks the OpenAI API: Postman, Cursor, your own code.
@@ -66,7 +66,7 @@ export function ApiKeys() {
         />
         <button
           disabled={create.isPending}
-          className="rounded-full bg-lime px-5 py-2 text-sm font-semibold text-ink transition hover:bg-lime-dim disabled:opacity-60"
+          className="btn-primary px-5 py-2 text-sm"
         >
           {create.isPending ? "Creating…" : "Create key"}
         </button>

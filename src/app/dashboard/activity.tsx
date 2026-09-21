@@ -8,7 +8,7 @@ const kindLabel: Record<string, string> = { claim: "Claimed", milestone: "Milest
 export function Activity() {
   const { data } = useFuelAccount();
   return (
-    <section className="rounded-2xl border border-line bg-surface p-6">
+    <section className="card p-6">
       <h2 className="text-lg font-semibold">Activity</h2>
       {!data || data.activity.length === 0 ? (
         <p className="mt-3 text-sm text-mist">Claims and spending will show up here.</p>

@@ -53,7 +53,7 @@ export function BuilderRoyalties() {
   const error = royalties.error ?? claim.error ?? add.error;
 
   return (
-    <section className="mt-4 rounded-2xl border border-line bg-surface p-6">
+    <section className="mt-4 card p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="font-mono text-xs uppercase tracking-widest text-lime">For builders</p>
@@ -66,7 +66,7 @@ export function BuilderRoyalties() {
         <button
           onClick={() => royalties.refetch()}
           disabled={royalties.isFetching}
-          className="rounded-full bg-lime px-5 py-2 text-sm font-semibold text-ink transition hover:bg-lime-dim disabled:opacity-60"
+          className="btn-primary px-5 py-2 text-sm"
         >
           {royalties.isFetching ? "Checking…" : data ? "Check again" : "Check my contracts"}
         </button>
@@ -126,7 +126,7 @@ export function BuilderRoyalties() {
             <button
               onClick={() => claim.mutate()}
               disabled={data.newCalls === 0 || claim.isPending}
-              className="rounded-full bg-lime px-5 py-2.5 text-sm font-semibold text-ink transition hover:bg-lime-dim disabled:bg-raised disabled:text-mist"
+              className="btn-primary px-5 py-2.5 text-sm disabled:bg-raised disabled:text-mist"
             >
               {claim.isPending
                 ? "Claiming…"

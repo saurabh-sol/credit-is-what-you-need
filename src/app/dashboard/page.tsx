@@ -14,7 +14,7 @@ export default async function Dashboard() {
   if (!session) redirect("/");
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10">
+    <div className="stagger mx-auto max-w-6xl px-4 py-10">
       <p className="font-mono text-xs uppercase tracking-widest text-lime">Dashboard</p>
       <h1 className="mt-2 text-3xl font-semibold tracking-tight">Your wallet is verified</h1>
       <p className="mt-2 break-all font-mono text-sm text-mist">{session.address}</p>

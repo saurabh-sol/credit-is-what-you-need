@@ -7,8 +7,7 @@ import { useConnect, useConnection, useConnectors, useDisconnect } from "wagmi";
 import { shortAddress } from "@/lib/format";
 import { useSession } from "@/lib/use-session";
 
-const primary =
-  "rounded-full bg-lime px-5 py-2.5 text-sm font-semibold text-ink transition hover:bg-lime-dim disabled:opacity-60";
+const primary = "btn-primary px-5 py-2.5 text-sm";
 
 export function WalletButton({ label = "Connect wallet" }: { label?: string }) {
   const [open, setOpen] = useState(false);
@@ -32,7 +31,7 @@ export function WalletButton({ label = "Connect wallet" }: { label?: string }) {
           href="/dashboard"
           className="rounded-full border border-line bg-surface px-4 py-2 font-mono text-sm text-fog transition hover:border-lime"
         >
-          <span className="mr-2 inline-block size-2 rounded-full bg-lime" />
+          <span className="live-dot mr-2" />
           {shortAddress(session.address)}
         </Link>
         <button
@@ -80,14 +79,14 @@ function WalletModal({ onClose }: { onClose: () => void }) {
   // Portal to <body>: the header's backdrop blur would otherwise trap the overlay.
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 backdrop-blur-sm sm:items-center"
+      className="fixed inset-0 z-50 flex animate-overlay-in items-end justify-center bg-black/70 p-4 backdrop-blur-sm sm:items-center"
       onClick={onClose}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Connect wallet"
-        className="w-full max-w-sm rounded-2xl border border-line bg-surface p-6"
+        className="card w-full max-w-sm animate-modal-in p-6 shadow-[0_40px_100px_-20px_rgb(0_0_0/0.9),0_0_60px_-30px_rgb(198_244_50/0.35)]"
         onClick={(event) => event.stopPropagation()}
       >
         <p className="font-mono text-xs uppercase tracking-widest text-lime">
@@ -103,7 +102,7 @@ function WalletModal({ onClose }: { onClose: () => void }) {
                   <button
                     disabled={isPending}
                     onClick={() => connect({ connector })}
-                    className="flex w-full items-center justify-between rounded-xl border border-line bg-raised px-4 py-3 text-left transition hover:border-lime disabled:opacity-60"
+                    className="flex w-full items-center justify-between rounded-xl border border-line bg-raised px-4 py-3 text-left transition duration-300 hover:translate-x-1 hover:border-lime disabled:opacity-60"
                   >
                     <span className="font-medium">
                       {connector.id === "injected" ? "Browser wallet" : connector.name}
