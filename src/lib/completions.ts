@@ -1,3 +1,5 @@
+import { estimateInputTokens, FALLBACK_LIMITS, heldFor, hold, planSpend } from "./budget.ts";
+import { limitsFor } from "./catalog.ts";
 import { apiError, chargeHeaders, ECHO_MODEL, LEGACY_ECHO_MODEL, settle, upstream, type Caller } from "./gateway.ts";
 import { getBalance } from "./ledger.ts";
 
@@ -9,6 +11,8 @@ type ChatBody = {
   messages: { role: string; content: unknown }[];
   stream?: boolean;
   stream_options?: Record<string, unknown>;
+  max_tokens?: unknown;
+  max_completion_tokens?: unknown;
 };
 
 const textOf = (content: unknown) => (typeof content === "string" ? content : JSON.stringify(content ?? ""));
@@ -36,44 +40,74 @@ export async function complete(caller: Caller, request: Request) {
     );
   }
 
+  // Keep the call within the balance: shorten the answer if a longer one could
+  // not be paid for, and hold the worst case so parallel calls can't overspend.
+  const usesCompletionTokens = body.max_completion_tokens !== undefined;
+  const requested = Number(usesCompletionTokens ? body.max_completion_tokens : body.max_tokens);
+  const held = heldFor(caller.address);
+  const plan = planSpend({
+    available: getBalance(caller.address) - held,
+    inputTokens: estimateInputTokens(body.messages),
+    requestedMaxTokens: Number.isInteger(requested) && requested > 0 ? requested : undefined,
+    limits: (await limitsFor(body.model)) ?? FALLBACK_LIMITS,
+  });
+  if (!plan.ok) {
+    const running = held > 0 ? " while your other calls are still running" : "";
+    return apiError(
+      402,
+      `This call needs about ${plan.needed} credits, more than your balance covers${running}. Shorten the prompt, pick a cheaper model, or earn more on your Kredit dashboard.`,
+      "insufficient_credits",
+    );
+  }
+  const release = hold(caller.address, plan.hold);
+
   // Ask the provider to report usage (and cost, where supported) so the charge is exact.
   const payload = {
     ...body,
+    ...(plan.maxTokens !== null && { [usesCompletionTokens ? "max_completion_tokens" : "max_tokens"]: plan.maxTokens }),
     ...(isOpenRouter && { usage: { include: true } }),
     ...(body.stream && { stream_options: { ...body.stream_options, include_usage: true } }),
   };
 
-  let response: Response;
+  let streaming = false; // a stream gives its hold back itself, once it has been charged
   try {
-    response = await fetch(`${baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: { authorization: `Bearer ${apiKey}`, "content-type": "application/json" },
-      body: JSON.stringify(payload),
-      signal: request.signal,
-    });
-  } catch {
-    return apiError(502, "The AI provider could not be reached. You were not charged.", "provider_unreachable");
+    let response: Response;
+    try {
+      response = await fetch(`${baseUrl}/chat/completions`, {
+        method: "POST",
+        headers: { authorization: `Bearer ${apiKey}`, "content-type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: request.signal,
+      });
+    } catch {
+      return apiError(502, "The AI provider could not be reached. You were not charged.", "provider_unreachable");
+    }
+
+    if (!response.ok || !response.body) {
+      // Provider errors are passed through untouched and cost nothing.
+      return new Response(response.body, {
+        status: response.status,
+        headers: { "content-type": response.headers.get("content-type") ?? "application/json" },
+      });
+    }
+
+    if (body.stream) {
+      streaming = true;
+      return streamThrough(response.body, caller, body, release);
+    }
+
+    const data = await response.json();
+    const output = textOf(data.choices?.[0]?.message?.content);
+    const charge = settle(caller, body.model, data.usage, { input: promptText(body), output });
+    return Response.json(data, { headers: chargeHeaders(charge) });
+  } finally {
+    if (!streaming) release();
   }
-
-  if (!response.ok || !response.body) {
-    // Provider errors are passed through untouched and cost nothing.
-    return new Response(response.body, {
-      status: response.status,
-      headers: { "content-type": response.headers.get("content-type") ?? "application/json" },
-    });
-  }
-
-  if (body.stream) return streamThrough(response.body, caller, body);
-
-  const data = await response.json();
-  const output = textOf(data.choices?.[0]?.message?.content);
-  const charge = settle(caller, body.model, data.usage, { input: promptText(body), output });
-  return Response.json(data, { headers: chargeHeaders(charge) });
 }
 
 // Passes the provider's stream straight to the client while watching it for
 // the usage report, then charges once the stream ends or the client leaves.
-function streamThrough(source: ReadableStream<Uint8Array>, caller: Caller, body: ChatBody) {
+function streamThrough(source: ReadableStream<Uint8Array>, caller: Caller, body: ChatBody, release: () => void) {
   const reader = source.getReader();
   const decoder = new TextDecoder();
   let pending = "";
@@ -99,7 +133,11 @@ function streamThrough(source: ReadableStream<Uint8Array>, caller: Caller, body:
   const finish = () => {
     if (settled) return;
     settled = true;
-    settle(caller, body.model, usage, { input: promptText(body), output });
+    try {
+      settle(caller, body.model, usage, { input: promptText(body), output });
+    } finally {
+      release();
+    }
   };
 
   const stream = new ReadableStream<Uint8Array>({

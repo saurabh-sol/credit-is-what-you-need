@@ -13,6 +13,7 @@ type RecordResponse = ReceiptData & {
   network: { id: NetworkId; name: string; explorerUrl: string };
   truncated: boolean;
   claimable: number;
+  gasBackOffered: boolean;
   gasBackAvailable: boolean;
 };
 
@@ -126,7 +127,9 @@ function ScanResult({ data, onClaimed }: { data: RecordResponse; onClaimed: () =
           {data.successfulTxs} successful and {data.failedTxs} failed transactions scanned.
           {data.truncated && " Only your latest 1,000 transactions were read."} Each transaction
           pays out once; new activity can be claimed any time.
-          {!data.gasBackAvailable &&
+          {!data.gasBackOffered && " Gas-Back is paid on mainnet only, because testnet gas is free."}
+          {data.gasBackOffered &&
+            !data.gasBackAvailable &&
             " The ETH price feed is unreachable right now, so Gas-Back is not included. It stays claimable for later."}
         </p>
       </div>

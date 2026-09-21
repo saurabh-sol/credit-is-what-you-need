@@ -10,6 +10,7 @@ export const LEGACY_ECHO_MODEL = "fuel/echo";
 const RATE_WINDOW_MS = 60_000;
 const RATE_LIMIT = 60; // requests per key per minute
 const recentRequests = new Map<string, number[]>();
+let lastSweep = 0;
 
 // Errors use the OpenAI shape so existing clients display them properly.
 export function apiError(status: number, message: string, code: string) {
@@ -32,6 +33,13 @@ export function authenticate(request: Request): Caller | Response {
 // Counts a request against `id` (a key, or a playground user). Returns the 429 once over the limit.
 export function rateLimited(id: string) {
   const now = Date.now();
+  // Once a minute, forget callers who have gone quiet so the map can't grow forever.
+  if (now - lastSweep > RATE_WINDOW_MS) {
+    lastSweep = now;
+    for (const [caller, times] of recentRequests) {
+      if (times[times.length - 1] <= now - RATE_WINDOW_MS) recentRequests.delete(caller);
+    }
+  }
   const recent = (recentRequests.get(id) ?? []).filter((time) => time > now - RATE_WINDOW_MS);
   if (recent.length >= RATE_LIMIT) {
     return apiError(429, `Rate limit reached: ${RATE_LIMIT} requests per minute per key.`, "rate_limit_exceeded");

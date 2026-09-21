@@ -11,8 +11,10 @@ WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 # NEXT_PUBLIC_* values are written into the browser bundle at build time, so
 # they are build arguments, not runtime environment variables.
+ARG NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=
 ARG NEXT_PUBLIC_RPC_TESTNET=
 ARG NEXT_PUBLIC_RPC_MAINNET=
+ENV NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=$NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID
 ENV NEXT_PUBLIC_RPC_TESTNET=$NEXT_PUBLIC_RPC_TESTNET
 ENV NEXT_PUBLIC_RPC_MAINNET=$NEXT_PUBLIC_RPC_MAINNET
 COPY --from=deps /app/node_modules ./node_modules
@@ -32,6 +34,8 @@ ENV DATABASE_PATH=/app/data/kredit.db
 COPY --from=build --chown=node:node /app/.next/standalone ./
 COPY --from=build --chown=node:node /app/.next/static ./.next/static
 COPY --from=build --chown=node:node /app/public ./public
+# Ledger backups: docker compose exec kredit node scripts/backup.mjs
+COPY --from=build --chown=node:node /app/scripts/backup.mjs ./scripts/backup.mjs
 # Created before the volume is mounted so a new volume is owned by `node`.
 RUN mkdir -p /app/data && chown node:node /app/data
 

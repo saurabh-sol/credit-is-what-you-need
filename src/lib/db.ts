@@ -106,6 +106,23 @@ const SCHEMA = `
   );
   CREATE INDEX IF NOT EXISTS topups_address ON topups (address);
 
+  -- A signed-in browser. The cookie only names a row here, so signing out
+  -- (here or everywhere) ends the session before the cookie expires.
+  CREATE TABLE IF NOT EXISTS sessions (
+    id TEXT PRIMARY KEY,
+    address TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    expires_at INTEGER NOT NULL,   -- unix seconds
+    revoked_at TEXT
+  );
+  CREATE INDEX IF NOT EXISTS sessions_address ON sessions (address);
+
+  -- Sign-in nonces already used, kept until they would have expired anyway.
+  CREATE TABLE IF NOT EXISTS spent_nonces (
+    nonce TEXT PRIMARY KEY,
+    expires_at INTEGER NOT NULL    -- unix seconds
+  );
+
   CREATE TABLE IF NOT EXISTS usage (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     key_id TEXT NOT NULL,

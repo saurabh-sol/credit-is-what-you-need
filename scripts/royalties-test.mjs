@@ -1,18 +1,15 @@
 // End-to-end check of Builder Royalties against a real testnet builder.
-//   DATABASE_PATH=/tmp/kredit-test.db npx next start -p 3458
-//   BASE_URL=http://localhost:3458 node scripts/royalties-test.mjs
+// Royalties are mainnet-only, so the server needs TESTNET_GAS_REWARDS=on:
+//   TESTNET_GAS_REWARDS=on DATABASE_PATH=/tmp/kredit-test.db npx next start -p 3458
+//   DATABASE_PATH=/tmp/kredit-test.db BASE_URL=http://localhost:3458 node scripts/royalties-test.mjs
 // Signs sessions locally (local testing only: real users sign with their wallet).
-import fs from "node:fs";
-import { SignJWT } from "jose";
+import { sessionCookie as sessionFor } from "./lib/test-session.mjs";
 
 const base = process.env.BASE_URL ?? "http://localhost:3000";
 const BUILDER = "0x3b9964d8F96F8E970a068913eA1BA3A9B179b7d6"; // deployed MeridianProxy, which other wallets call
 const BUSY_BUILDER = "0x0b64B35c6Dd23944D6D4029864D2cA2AA1B66422"; // thousands of txs: deployment is outside the scan window
 const BUSY_CONTRACT = "0x713ecbb623b879e5C6e51978c32b41dfe25de58D";
 const USER = "0x0695BCD9c32d90fdD4AD75e2aEE29213Db1e771D"; // only calls contracts, never deployed one
-const secret = fs.readFileSync(".env.local", "utf8").match(/SESSION_SECRET=(.+)/)[1].trim();
-const sessionFor = async (address) =>
-  `kredit_session=${await new SignJWT({ address }).setProtectedHeader({ alg: "HS256" }).setIssuedAt().setExpirationTime("10m").sign(new TextEncoder().encode(secret))}`;
 
 const results = [];
 const check = (name, pass, detail = "") => { results.push(pass); console.log(`${pass ? "PASS" : "FAIL"}  ${name} ${detail}`); };
