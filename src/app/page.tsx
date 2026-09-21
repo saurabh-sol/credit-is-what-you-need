@@ -87,7 +87,7 @@ const faqs = [
   },
   {
     question: "Where can I spend them?",
-    answer: "Anywhere that speaks the OpenAI API: Postman, Cursor, your own code. Point the base URL at Fuel and paste your key. The built-in fuel/echo model lets you test a key for the minimum charge.",
+    answer: "Anywhere that speaks the OpenAI API: Postman, Cursor, your own code. Point the base URL at Fuel and paste your key. The built-in fuel/echo model repeats your message and is billed by length like a real model, so you can test a key and see how charges behave.",
   },
   {
     question: "Can I buy credits instead of earning them?",

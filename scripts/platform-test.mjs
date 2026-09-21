@@ -50,6 +50,10 @@ const stream = await reply.text();
 check("playground streams the model's answer", reply.status === 200 && stream.includes("Fuel echo: hi") && stream.includes("[DONE]"));
 const account = await json(await app("/api/account"));
 check("the reply was paid from the wallet's balance", account.balance === 499, `(balance ${account.balance})`);
+const essay = { ...hello, messages: [{ role: "user", content: "Explain rollups in depth. ".repeat(300) }] };
+await (await app("/api/playground", { method: "POST", body: JSON.stringify(essay) })).text();
+const afterEssay = (await json(await app("/api/account"))).balance;
+check("a long request costs more than a short one", 499 - afterEssay > 10, `(${499 - afterEssay} credits vs 1)`);
 const usage = database.prepare("SELECT key_id FROM usage WHERE address = ?").get(WALLET.toLowerCase());
 check("usage is recorded under the playground, not a key", usage?.key_id === "playground");
 

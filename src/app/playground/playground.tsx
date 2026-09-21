@@ -264,7 +264,7 @@ export function Playground() {
             <ModelPicker value={model} onChange={setModel} />
           </div>
           <p className="mt-3 text-xs leading-relaxed text-mist">
-            <span className="font-mono text-fog">fuel/echo</span> repeats your message for the minimum charge. It is the
+            <span className="font-mono text-fog">fuel/echo</span> repeats your message and is billed by length, like a real model. It is the
             cheapest way to see the whole loop work.
           </p>
         </section>

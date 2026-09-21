@@ -126,7 +126,9 @@ function streamThrough(source: ReadableStream<Uint8Array>, caller: Caller, body:
 function echo(caller: Caller, body: ChatBody) {
   const lastUser = [...body.messages].reverse().find((message) => message.role === "user");
   const reply = `Fuel echo: ${textOf(lastUser?.content)}`;
-  const charge = settle(caller, ECHO_MODEL, { cost: 0 }, { input: promptText(body), output: reply });
+  // Echo costs us nothing, but it is billed by length like any model that does
+  // not report its price, so a key can be tested against realistic charges.
+  const charge = settle(caller, ECHO_MODEL, undefined, { input: promptText(body), output: reply });
 
   const base = { id: `fuel-echo-${Date.now()}`, created: Math.floor(Date.now() / 1000), model: ECHO_MODEL };
   if (!body.stream) {
