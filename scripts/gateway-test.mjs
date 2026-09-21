@@ -1,0 +1,88 @@
+// End-to-end check of claim -> key -> gateway -> balance.
+// Needs a server started with the same SESSION_SECRET as .env.local:
+//   DATABASE_PATH=/tmp/fuel-test.db npx next start -p 3458
+//   BASE_URL=http://localhost:3458 node scripts/gateway-test.mjs
+// It signs a session locally for a real, active testnet wallet (local testing
+// only: real users must sign with their wallet).
+import fs from "node:fs";
+import { SignJWT } from "jose";
+
+const base = process.env.BASE_URL ?? "http://localhost:3000";
+const WALLET = "0x0695BCD9c32d90fdD4AD75e2aEE29213Db1e771D";
+const secret = fs.readFileSync(".env.local", "utf8").match(/SESSION_SECRET=(.+)/)[1].trim();
+const jwt = await new SignJWT({ address: WALLET })
+  .setProtectedHeader({ alg: "HS256" }).setIssuedAt().setExpirationTime("10m")
+  .sign(new TextEncoder().encode(secret));
+const cookie = `fuel_session=${jwt}`;
+
+const results = [];
+const check = (name, pass, detail = "") => { results.push(pass); console.log(`${pass ? "PASS" : "FAIL"}  ${name} ${detail}`); };
+const app = (path, init = {}) => fetch(base + path, { ...init, headers: { cookie, "content-type": "application/json", ...init.headers } });
+const chat = (key, body) => fetch(`${base}/v1/chat/completions`, {
+  method: "POST", headers: { authorization: `Bearer ${key}`, "content-type": "application/json" }, body: JSON.stringify(body),
+});
+const hello = { model: "fuel/echo", messages: [{ role: "user", content: "hello fuel" }] };
+
+// --- before any credits
+const start = await (await app("/api/account")).json();
+check("new account starts at zero", start.balance === 0 && start.keys.length === 0);
+
+const created = await (await app("/api/keys", { method: "POST", body: JSON.stringify({ name: "test" }) })).json();
+check("key is created and shown once", created.key?.startsWith("fuel_sk_"));
+const broke = await chat(created.key, hello);
+check("gateway refuses a wallet with no credits", broke.status === 402, `(${(await broke.json()).error.code})`);
+
+// --- claim
+const record = await (await app("/api/record?network=testnet")).json();
+check("scan shows claimable credits", record.claimable > 0 && record.claimable === record.total, `(${record.claimable})`);
+const claimed = await (await app("/api/claim", { method: "POST", body: JSON.stringify({ network: "testnet" }) })).json();
+check("claim pays exactly what the receipt showed", claimed.granted === record.claimable && claimed.balance === record.claimable);
+if (record.gasBackAvailable) {
+  const line = record.lines.find((l) => l.label.startsWith("Gas-Back"));
+  check("gas-back is on the receipt and paid with the claim", line?.credits > 0 && claimed.gasBack === line.credits, `(${claimed.gasBack} credits)`);
+} else {
+  console.log("SKIP  gas-back (ETH price feed unreachable)");
+}
+const again = await (await app("/api/claim", { method: "POST", body: JSON.stringify({ network: "testnet" }) })).json();
+check("claiming twice pays nothing the second time", again.granted === 0 && again.balance === claimed.balance);
+const rescanned = await (await app("/api/record?network=testnet")).json();
+check("receipt now shows nothing left to claim", rescanned.claimable === 0);
+
+// --- gateway
+const noKey = await fetch(`${base}/v1/chat/completions`, { method: "POST", body: JSON.stringify(hello) });
+check("gateway rejects a missing key", noKey.status === 401);
+const wrongKey = await chat("fuel_sk_not_a_real_key", hello);
+check("gateway rejects a wrong key", wrongKey.status === 401);
+const bad = await chat(created.key, { model: "fuel/echo" });
+check("gateway rejects a body without messages", bad.status === 400);
+
+const reply = await chat(created.key, hello);
+const replyBody = await reply.json();
+check("echo model answers in OpenAI format", reply.status === 200 && replyBody.choices[0].message.content === "Fuel echo: hello fuel");
+check("response reports the charge", reply.headers.get("x-fuel-credits-charged") === "1" && reply.headers.get("x-fuel-balance") === String(claimed.balance - 1));
+
+const streamed = await chat(created.key, { ...hello, stream: true });
+const sse = await streamed.text();
+check("streaming works", streamed.headers.get("content-type").includes("text/event-stream") && sse.includes("Fuel echo: hello fuel") && sse.trim().endsWith("data: [DONE]"));
+
+const real = await chat(created.key, { ...hello, model: "some/real-model" });
+check("real models say clearly that no provider is configured", real.status === 503, `(${(await real.json()).error.code})`);
+
+const models = await (await fetch(`${base}/v1/models`, { headers: { authorization: `Bearer ${created.key}` } })).json();
+check("/v1/models lists the echo model", models.data.some((m) => m.id === "fuel/echo"));
+
+const after = await (await app("/api/account")).json();
+check("balance dropped by the two paid calls", after.balance === claimed.balance - 2, `(${claimed.balance} -> ${after.balance})`);
+check("activity shows the claim and the spending", after.activity.some((e) => e.kind === "claim") && after.activity.filter((e) => e.kind === "spend").length === 2);
+check("key shows as used", Boolean(after.keys[0].lastUsedAt));
+
+// --- revoke
+const revoked = await app(`/api/keys/${created.id}`, { method: "DELETE" });
+check("key can be revoked", revoked.status === 200);
+check("revoked key stops working at once", (await chat(created.key, hello)).status === 401);
+
+// --- other people can't touch this account
+const stranger = await fetch(`${base}/api/account`);
+check("account is private without a session", stranger.status === 401);
+
+process.exit(results.every(Boolean) ? 0 : 1);
