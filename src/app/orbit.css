@@ -1,0 +1,106 @@
+/* The model orbit: makers circling the Fuel core. Radii are in container
+   units, so the whole figure scales with the space it is given. */
+
+@keyframes orbit-spin {
+  to {
+    rotate: 360deg;
+  }
+}
+
+@keyframes orbit-ping {
+  from {
+    opacity: 0.55;
+    scale: 0.35;
+  }
+  to {
+    opacity: 0;
+    scale: 1;
+  }
+}
+
+@layer components {
+  .orbit {
+    position: relative;
+    aspect-ratio: 1;
+    width: 100%;
+    container-type: inline-size;
+  }
+
+  /* Hovering anywhere stops the rings, so a logo can be looked at. */
+  .orbit:hover .orbit-ring,
+  .orbit:hover .orbit-counter {
+    animation-play-state: paused;
+  }
+
+  .orbit-ring {
+    position: absolute;
+    inset: calc(50% - var(--radius) * 1cqw);
+    border-radius: 9999px;
+    border: 1px dashed rgb(143 160 143 / 0.22);
+    animation: orbit-spin var(--turn) linear infinite var(--direction, normal);
+  }
+
+  /* Each maker is parked on the ring by its angle… */
+  .orbit-seat {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    rotate: var(--angle);
+    translate: 0 0;
+  }
+
+  .orbit-seat > * {
+    position: absolute;
+    translate: calc(var(--radius) * 1cqw - 50%) -50%;
+  }
+
+  /* …turned back by its angle, then spun against the ring at the same speed, so it
+     stays upright. Two elements, because an animated `rotate` replaces a static one. */
+  .orbit-upright {
+    rotate: calc(-1 * var(--angle));
+  }
+
+  .orbit-counter {
+    animation: orbit-spin var(--turn) linear infinite var(--counter, reverse);
+  }
+
+  .orbit-chip {
+    display: grid;
+    width: clamp(2.25rem, 9cqw, 3rem);
+    height: clamp(2.25rem, 9cqw, 3rem);
+    place-items: center;
+    border-radius: 0.75rem;
+    border: 1px solid var(--color-line);
+    background: var(--color-surface);
+    box-shadow: inset 0 1px 0 rgb(233 240 230 / 0.05);
+    color: var(--color-mist);
+    transition:
+      border-color 0.6s,
+      color 0.6s,
+      background-color 0.6s;
+  }
+
+  .orbit-chip[data-lit] {
+    border-color: rgb(198 244 50 / 0.7);
+    background: rgb(198 244 50 / 0.08);
+    color: var(--color-fog);
+  }
+
+  .orbit-ping {
+    position: absolute;
+    inset: 12%;
+    border-radius: 9999px;
+    border: 1px solid rgb(198 244 50 / 0.5);
+    animation: orbit-ping 2.4s var(--ease-out-expo) both;
+  }
+
+  .orbit-core {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    translate: -50% -50%;
+    text-align: center;
+  }
+}
