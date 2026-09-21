@@ -75,7 +75,8 @@
     border: 1px solid var(--color-line);
     background: var(--color-surface);
     box-shadow: inset 0 1px 0 rgb(233 240 230 / 0.05);
-    color: var(--color-mist);
+    /* Single-color brands (OpenAI, Anthropic, xAI) are white on dark, as they publish them. */
+    color: var(--color-fog);
     transition:
       border-color 0.6s,
       color 0.6s,
