@@ -1,5 +1,10 @@
+import Link from "next/link";
 import { ApiDemo } from "@/components/api-demo";
 import { Estimator } from "@/components/estimator";
+import { ArrowRightIcon, CheckIcon, PlusIcon, SparkIcon } from "@/components/icons";
+import { HeaderFocus, KeyStatus, ModelStream, PromptBar, TaskFeed } from "@/components/live-bento";
+import { TextReveal } from "@/components/motion/text-reveal";
+import { TopUpTeaser } from "@/components/top-up-teaser";
 import { CountUp } from "@/components/motion/count-up";
 import { Reveal } from "@/components/motion/reveal";
 import { Spotlight } from "@/components/motion/spotlight";
@@ -85,12 +90,50 @@ const faqs = [
     answer: "Anywhere that speaks the OpenAI API: Postman, Cursor, your own code. Point the base URL at Fuel and paste your key. The built-in fuel/echo model lets you test a key for the minimum charge.",
   },
   {
+    question: "Can I buy credits instead of earning them?",
+    answer: "Earning is the main way and costs nothing. Once top-ups are open you can also send the project token from your own wallet and receive credits when the chain confirms the payment. Every top-up is listed on the public distribution page.",
+  },
+  {
     question: "What if a key leaks?",
     answer: "Revoke it from your dashboard and it stops working at once. You can keep several keys, one per tool, so revoking one never breaks the others.",
   },
   {
     question: "Is Fuel part of Robinhood?",
     answer: "No. Fuel is an independent project built on Robinhood Chain and is not affiliated with Robinhood.",
+  },
+];
+
+// Live vignettes. The grid is six columns wide; spans keep the rows uneven on purpose.
+const bento = [
+  {
+    span: "md:col-span-4",
+    live: <PromptBar />,
+    title: "One key, whichever model fits",
+    text: "Ask from Cursor, Postman or your own code. Fuel routes the call and takes the cost from your credits.",
+  },
+  {
+    span: "md:col-span-2",
+    live: <KeyStatus />,
+    title: "Keys you can see and revoke",
+    text: "One key per tool. Revoke any of them and it stops working on the next request.",
+  },
+  {
+    span: "md:col-span-2",
+    live: <TaskFeed />,
+    title: "Every task counted",
+    text: "Deployments, swaps, interactions and milestones, scored by public rules.",
+  },
+  {
+    span: "md:col-span-4",
+    live: <HeaderFocus />,
+    title: "The bill arrives with the answer",
+    text: "Two response headers tell your code what the call cost and what is left. No dashboard needed.",
+  },
+  {
+    span: "md:col-span-6",
+    live: <ModelStream />,
+    title: "The makers you already use",
+    text: "Reached through one OpenAI-compatible endpoint. Which models are on depends on the provider this server is connected to.",
   },
 ];
 
@@ -101,11 +144,17 @@ const beat = (index: number) => ({ animationDelay: `${index * 90}ms` });
 
 function SectionHeading({ eyebrow, title, children }: { eyebrow: string; title: string; children?: React.ReactNode }) {
   return (
-    <Reveal>
-      <p className="font-mono text-xs uppercase tracking-widest text-lime">{eyebrow}</p>
-      <h2 className="mt-3 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">{title}</h2>
-      {children && <p className="mt-4 max-w-2xl text-lg leading-relaxed text-mist">{children}</p>}
-    </Reveal>
+    <div>
+      <Reveal>
+        <p className="eyebrow">{eyebrow}</p>
+      </Reveal>
+      <TextReveal text={title} className="mt-3 text-3xl font-semibold tracking-tight text-balance sm:text-4xl" />
+      {children && (
+        <Reveal delay={180}>
+          <p className="mt-4 max-w-2xl text-lg leading-relaxed text-mist">{children}</p>
+        </Reveal>
+      )}
+    </div>
   );
 }
 
@@ -117,7 +166,6 @@ export default function Home() {
           <div className="aurora aurora-a" />
           <div className="aurora aurora-b" />
           <div className="grid-lines" />
-          <div className="grain" />
         </div>
 
         <div className="mx-auto grid max-w-6xl items-center gap-14 px-4 py-16 md:grid-cols-[1.1fr_1fr] md:py-28">
@@ -146,9 +194,9 @@ export default function Home() {
             </p>
             <div style={beat(8)} className="mt-9 flex animate-rise flex-wrap items-center gap-5">
               <WalletButton label="Connect and see your record" />
-              <a href="#how" className="group text-sm text-mist transition hover:text-fog">
-                How it works{" "}
-                <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">→</span>
+              <a href="#how" className="group flex items-center gap-1.5 text-sm text-mist transition hover:text-fog">
+                How it works
+                <ArrowRightIcon className="size-3.5 transition-transform duration-300 group-hover:translate-x-1" />
               </a>
             </div>
             <ul style={beat(10)} className="mt-10 flex animate-rise flex-wrap gap-x-6 gap-y-2 text-sm text-mist">
@@ -179,7 +227,7 @@ export default function Home() {
                 {highlights.map((item) => (
                   <li key={item} className="flex items-center whitespace-nowrap">
                     <span className="px-6">{item}</span>
-                    <span className="text-lime">✦</span>
+                    <SparkIcon className="size-3 text-lime" />
                   </li>
                 ))}
               </ul>
@@ -197,7 +245,7 @@ export default function Home() {
             <Reveal key={way.name} delay={index * 90} className="h-full">
               <Spotlight className="card card-lift group h-full p-7">
                 <div className="flex items-center justify-between">
-                  <span className="grid size-11 place-items-center rounded-xl border border-line bg-raised text-lime transition duration-500 group-hover:border-lime/50 group-hover:shadow-[0_0_24px_-4px_rgb(198_244_50/0.5)]">
+                  <span className="grid size-11 place-items-center rounded-xl border border-line bg-raised text-lime transition duration-500 group-hover:border-lime/50 group-hover:bg-lime/10">
                     <svg
                       viewBox="0 0 24 24"
                       className="size-5 fill-none stroke-current stroke-[1.6]"
@@ -231,6 +279,30 @@ export default function Home() {
               </div>
             ))}
           </dl>
+        </Reveal>
+      </section>
+
+      <section id="live" className="mx-auto max-w-6xl px-4 pb-20 md:pb-28">
+        <SectionHeading eyebrow="Watch it work" title="From a transaction to a model's answer">
+          Your record earns the credits, your key spends them, and every response
+          tells you what is left. The numbers below are examples.
+        </SectionHeading>
+        <div className="mt-12 grid gap-x-4 gap-y-10 md:grid-cols-6">
+          {bento.map((tile, index) => (
+            <Reveal key={tile.title} delay={index * 90} className={tile.span}>
+              <div className={`card flex flex-col justify-center overflow-hidden p-7 ${tile.span === "md:col-span-6" ? "py-9" : "min-h-64"}`}>
+                {tile.live}
+              </div>
+              <h3 className="mt-5 font-semibold">{tile.title}</h3>
+              <p className="mt-1 max-w-[52ch] text-sm leading-relaxed text-mist">{tile.text}</p>
+            </Reveal>
+          ))}
+        </div>
+        <Reveal className="mt-10">
+          <Link href="/docs#models" className="group inline-flex items-center gap-1.5 text-sm text-mist transition hover:text-fog">
+            See which models this server can reach
+            <ArrowRightIcon className="size-3.5 transition-transform duration-300 group-hover:translate-x-1" />
+          </Link>
         </Reveal>
       </section>
 
@@ -289,6 +361,35 @@ export default function Home() {
         </div>
       </section>
 
+      <section id="buy" className="mx-auto max-w-6xl px-4 pb-20 md:pb-28">
+        <div className="grid items-center gap-12 lg:grid-cols-[1.2fr_1fr]">
+          <div>
+            <SectionHeading eyebrow="Need more?" title="Top up with the project token">
+              Earning comes first, and it is free. When a big job needs more than your
+              record has earned, send tokens from your own wallet and the credits land
+              as soon as the chain confirms. Nothing is approved, locked or held.
+            </SectionHeading>
+            <Reveal delay={260}>
+              <ul className="mt-8 space-y-3 text-sm text-mist">
+                {[
+                  "You pay from your own wallet, straight to the treasury.",
+                  "The server credits only what the transaction receipt proves.",
+                  "Every top-up shows on the public distribution page.",
+                ].map((point) => (
+                  <li key={point} className="flex items-start gap-2.5">
+                    <CheckIcon className="mt-0.5 size-4 text-lime" />
+                    {point}
+                  </li>
+                ))}
+              </ul>
+            </Reveal>
+          </div>
+          <Reveal delay={150}>
+            <TopUpTeaser />
+          </Reveal>
+        </div>
+      </section>
+
       <section id="faq" className="border-t border-line bg-surface">
         <div className="mx-auto grid max-w-6xl gap-12 px-4 py-20 md:py-28 lg:grid-cols-[1fr_1.6fr]">
           <SectionHeading eyebrow="FAQ" title="Questions, answered" />
@@ -300,9 +401,9 @@ export default function Home() {
                     {faq.question}
                     <span
                       aria-hidden
-                      className="chevron grid size-8 shrink-0 place-items-center rounded-full border border-line font-mono text-lime group-open:border-lime/50"
+                      className="chevron grid size-8 shrink-0 place-items-center rounded-full border border-line text-lime group-open:border-lime/50"
                     >
-                      +
+                      <PlusIcon />
                     </span>
                   </summary>
                   <p className="max-w-2xl pb-6 leading-relaxed text-mist">{faq.answer}</p>
@@ -318,7 +419,6 @@ export default function Home() {
           <div className="hero-bg -z-10" aria-hidden>
             <div className="aurora aurora-a" />
             <div className="grid-lines" />
-            <div className="grain" />
           </div>
           <h2 className="mx-auto max-w-2xl text-3xl font-semibold tracking-tight text-balance sm:text-5xl">
             Your record is already worth <span className="text-shine">something.</span>
