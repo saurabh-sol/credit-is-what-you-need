@@ -225,8 +225,9 @@ export default function Home() {
     <>
       {/* Pulled up under the sticky header (4rem), so the background runs behind it. */}
       <section className="relative isolate -mt-16 overflow-hidden pt-16">
-        <div className="hero-bg -z-10" aria-hidden>
-          <div className="grid-lines" />
+        <div className="hero-bg -z-10 [--focus:50%_74%] md:[--focus:75%_54%]" aria-hidden>
+          <div className="backdrop-light" />
+          <div className="dot-field" />
         </div>
 
         <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 py-16 md:grid-cols-[1.05fr_1fr] md:py-24 lg:gap-16 lg:py-28">
@@ -522,8 +523,8 @@ export default function Home() {
 
       <section className="px-4 py-24 md:py-32">
         <Reveal className="relative isolate mx-auto max-w-6xl overflow-hidden rounded-2xl border border-line bg-surface px-6 py-16 sm:px-12 md:py-20">
-          <div className="hero-bg -z-10" aria-hidden>
-            <div className="grid-lines" />
+          <div className="hero-bg -z-10 [--focus:100%_0%]" aria-hidden>
+            <div className="dot-field" />
           </div>
           <div className="flex flex-col gap-10 md:flex-row md:items-end md:justify-between">
             <div>
