@@ -33,8 +33,19 @@ Open [http://localhost:4000](http://localhost:4000); set `KREDIT_PORT` to use
 another port. Credits, API keys and display names live in the `kredit-data`
 volume, so they survive rebuilds. `docker compose down -v` deletes them.
 
-`NEXT_PUBLIC_RPC_*` values are baked into the browser bundle, so changing them
-needs a rebuild (`--build`); every other setting only needs a restart.
+`NEXT_PUBLIC_*` values (the RPC URLs and the WalletConnect project ID) are baked
+into the browser bundle, so changing them needs a rebuild (`--build`); every
+other setting only needs a restart.
+
+## Back up the ledger
+
+```bash
+npm run backup                                          # data/backups/kredit-<time>.db
+docker compose exec kredit node scripts/backup.mjs     # inside Docker
+```
+
+It is safe while the site is running, checks the copy, and keeps the newest 14
+(`BACKUP_KEEP`). Run it from cron and copy the folder off the server.
 
 ## Learn More
 

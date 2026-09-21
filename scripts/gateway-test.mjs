@@ -1,19 +1,14 @@
 // End-to-end check of claim -> key -> gateway -> balance.
 // Needs a server started with the same SESSION_SECRET as .env.local:
 //   DATABASE_PATH=/tmp/kredit-test.db npx next start -p 3458
-//   BASE_URL=http://localhost:3458 node scripts/gateway-test.mjs
+//   DATABASE_PATH=/tmp/kredit-test.db BASE_URL=http://localhost:3458 node scripts/gateway-test.mjs
 // It signs a session locally for a real, active testnet wallet (local testing
 // only: real users must sign with their wallet).
-import fs from "node:fs";
-import { SignJWT } from "jose";
+import { sessionCookie } from "./lib/test-session.mjs";
 
 const base = process.env.BASE_URL ?? "http://localhost:3000";
 const WALLET = "0x0695BCD9c32d90fdD4AD75e2aEE29213Db1e771D";
-const secret = fs.readFileSync(".env.local", "utf8").match(/SESSION_SECRET=(.+)/)[1].trim();
-const jwt = await new SignJWT({ address: WALLET })
-  .setProtectedHeader({ alg: "HS256" }).setIssuedAt().setExpirationTime("10m")
-  .sign(new TextEncoder().encode(secret));
-const cookie = `kredit_session=${jwt}`;
+const cookie = await sessionCookie(WALLET);
 
 const results = [];
 const check = (name, pass, detail = "") => { results.push(pass); console.log(`${pass ? "PASS" : "FAIL"}  ${name} ${detail}`); };
@@ -41,7 +36,8 @@ if (record.gasBackAvailable) {
   const line = record.lines.find((l) => l.label.startsWith("Gas-Back"));
   check("gas-back is on the receipt and paid with the claim", line?.credits > 0 && claimed.gasBack === line.credits, `(${claimed.gasBack} credits)`);
 } else {
-  console.log("SKIP  gas-back (ETH price feed unreachable)");
+  check("testnet pays no gas-back unless switched on", record.gasBackOffered || (claimed.gasBack === 0 && !record.lines.some((l) => l.label.startsWith("Gas-Back"))));
+  if (record.gasBackOffered) console.log("SKIP  gas-back (ETH price feed unreachable)");
 }
 const again = await (await app("/api/claim", { method: "POST", body: JSON.stringify({ network: "testnet" }) })).json();
 check("claiming twice pays nothing the second time", again.granted === 0 && again.balance === claimed.balance);

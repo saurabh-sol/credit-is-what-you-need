@@ -1,6 +1,7 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import type { Address } from "viem";
+import { closeAllSessions, closeSession, openSession, sessionIsLive, spendNonce } from "./session-store.ts";
 
 const SESSION_COOKIE = "kredit_session";
 const NONCE_COOKIE = "kredit_nonce";
@@ -49,41 +50,35 @@ export async function issueNonce(nonce: string) {
   );
 }
 
-// Nonces already spent, kept until they would have expired anyway. In-memory is
-// enough for one server process; move this to the database when Phase 3 adds one.
-const spentNonces = new Map<string, number>();
-
 // A nonce is single use, even if someone captured the cookie and replays it.
 export async function consumeNonce() {
   const payload = await read(NONCE_COOKIE);
   (await cookies()).delete(NONCE_COOKIE);
   const nonce = payload?.nonce;
   if (typeof nonce !== "string") return null;
-
-  const now = Date.now();
-  for (const [spent, expiry] of spentNonces) {
-    if (expiry < now) spentNonces.delete(spent);
-  }
-  if (spentNonces.has(nonce)) return null;
-  spentNonces.set(nonce, now + NONCE_TTL * 1000);
-  return nonce;
+  return spendNonce(nonce, NONCE_TTL) ? nonce : null;
 }
 
 export async function createSession(address: Address) {
   (await cookies()).set(
     SESSION_COOKIE,
-    await sign({ address }, SESSION_TTL),
+    await sign({ address, sid: openSession(address, SESSION_TTL) }, SESSION_TTL),
     cookieOptions(SESSION_TTL),
   );
 }
 
 export async function getSession() {
   const payload = await read(SESSION_COOKIE);
-  return typeof payload?.address === "string"
-    ? { address: payload.address as Address }
-    : null;
+  if (typeof payload?.address !== "string" || typeof payload.sid !== "string") return null;
+  // The cookie is only as good as its row: signing out ends it at once.
+  if (!sessionIsLive(payload.sid, payload.address)) return null;
+  return { address: payload.address as Address };
 }
 
-export async function clearSession() {
+// `everywhere` also signs the wallet out of every other browser.
+export async function clearSession({ everywhere = false } = {}) {
+  const payload = await read(SESSION_COOKIE);
+  if (typeof payload?.sid === "string") closeSession(payload.sid);
+  if (everywhere && typeof payload?.address === "string") closeAllSessions(payload.address);
   (await cookies()).delete(SESSION_COOKIE);
 }

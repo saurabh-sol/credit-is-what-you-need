@@ -156,10 +156,54 @@
     opacity: 0;
   }
 
+  /* The card under a stage lights with it: the same kind of skin, a warm edge and a glow below. */
+  .loop-card::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    border: 1px solid color-mix(in srgb, var(--color-accent) 55%, transparent);
+    background: radial-gradient(120% 60% at 0% 0%, color-mix(in srgb, var(--color-accent) 7%, transparent), transparent 70%);
+    opacity: 0;
+    pointer-events: none;
+  }
+
   /* The stages sit a third of the track apart, and the beam covers 1.2 tracks per turn. */
-  .loop.is-visible .loop-lit {
+  .loop.is-visible .loop-lit,
+  .loop.is-visible .loop-card::after {
     animation: loop-lit var(--loop-turn) linear infinite;
     animation-delay: calc(var(--stage) * var(--loop-turn) / 3.6);
+  }
+
+  /* Set into the corner and barely there, so it reads as texture before it reads as a number. */
+  .loop-numeral {
+    position: absolute;
+    top: 0.5rem;
+    right: 1.25rem;
+    font-family: var(--font-mono);
+    font-size: 4.5rem;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    color: color-mix(in srgb, var(--color-fog) 6%, transparent);
+    user-select: none;
+    transition: color 0.5s;
+  }
+
+  .loop-card:hover .loop-numeral {
+    color: color-mix(in srgb, var(--color-accent) 22%, transparent);
+  }
+
+  .loop-proof {
+    position: relative;
+    border-radius: 0.75rem;
+    border: 1px solid var(--color-line);
+    background: var(--color-ink);
+    padding: 0.875rem 1rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    line-height: 1.25rem;
+    color: var(--color-mist);
   }
 
   /* ---------- The receipt waits to print until it is looked at ---------- */

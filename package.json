@@ -13,9 +13,11 @@
     "test:auth": "node scripts/auth-test.mjs",
     "test": "node --test src/lib/*.test.ts",
     "scan": "node scripts/scan.ts",
+    "backup": "node scripts/backup.mjs",
     "test:gateway": "node scripts/gateway-test.mjs",
     "test:royalties": "node scripts/royalties-test.mjs",
-    "test:platform": "node scripts/platform-test.mjs"
+    "test:platform": "node scripts/platform-test.mjs",
+    "test:guard": "node scripts/guard-test.mjs"
   },
   "dependencies": {
     "@base-org/account": "^2.5.10",

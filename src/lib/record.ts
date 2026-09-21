@@ -9,7 +9,7 @@ const cache = new Map<string, { expires: number; value: Awaited<ReturnType<typeo
 async function load(network: Network, address: string) {
   const [{ txs, truncated }, ethUsdCents] = await Promise.all([
     scanAddress(network, address),
-    getEthUsdCentsOrNull(),
+    network.gasRewards ? getEthUsdCentsOrNull() : null, // no price, no Gas-Back
   ]);
   // The price is kept with the scan so the claim pays what the receipt showed.
   return { receipt: buildReceipt(txs, network.partners, ethUsdCents), truncated, ethUsdCents };
@@ -22,6 +22,7 @@ export async function scanRecord(network: Network, address: string) {
   const cached = cache.get(key);
   if (cached && cached.expires > Date.now()) return cached.value;
   const value = await load(network, address);
+  for (const [stale, entry] of cache) if (entry.expires <= Date.now()) cache.delete(stale);
   cache.set(key, { expires: Date.now() + CACHE_MS, value });
   return value;
 }
