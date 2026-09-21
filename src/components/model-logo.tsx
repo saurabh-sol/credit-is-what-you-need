@@ -1,7 +1,31 @@
 import { providerOf } from "@/lib/providers";
 
-// A provider's mark, painted in the current text color through a CSS mask.
-export function ProviderLogo({ logo, className = "size-5" }: { logo: string; className?: string }) {
+// Makers whose mark has colors of its own (public/logos/<name>-color.svg). The rest
+// are single-color brands, drawn in the text color so they read on a dark page.
+const colored = new Set([
+  "google",
+  "meta",
+  "mistral",
+  "deepseek",
+  "qwen",
+  "cohere",
+  "perplexity",
+  "nvidia",
+  "microsoft",
+  "zhipu",
+  "minimax",
+]);
+
+type ProviderLogoProps = { logo: string; className?: string; /** Force the single-color version. */ mono?: boolean };
+
+// A maker's mark: in its brand colors where it has them, otherwise painted in
+// the current text color through a CSS mask.
+export function ProviderLogo({ logo, className = "size-5", mono = false }: ProviderLogoProps) {
+  if (colored.has(logo) && !mono) {
+    // A small static SVG: there is nothing for next/image to optimize.
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={`/logos/${logo}-color.svg`} alt="" aria-hidden className={`${className} inline-block shrink-0 object-contain`} />;
+  }
   const mask = `url(/logos/${logo}.svg) center / contain no-repeat`;
   return (
     <span
