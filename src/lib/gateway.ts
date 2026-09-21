@@ -24,15 +24,22 @@ export function authenticate(request: Request): Caller | Response {
     return apiError(401, "Invalid or revoked API key. Create one on your Fuel dashboard.", "invalid_api_key");
   }
 
+  return rateLimited(key.id) ?? { keyId: key.id, address: key.address };
+}
+
+// Counts a request against `id` (a key, or a playground user). Returns the 429 once over the limit.
+export function rateLimited(id: string) {
   const now = Date.now();
-  const recent = (recentRequests.get(key.id) ?? []).filter((time) => time > now - RATE_WINDOW_MS);
+  const recent = (recentRequests.get(id) ?? []).filter((time) => time > now - RATE_WINDOW_MS);
   if (recent.length >= RATE_LIMIT) {
     return apiError(429, `Rate limit reached: ${RATE_LIMIT} requests per minute per key.`, "rate_limit_exceeded");
   }
-  recentRequests.set(key.id, [...recent, now]);
-
-  return { keyId: key.id, address: key.address };
+  recentRequests.set(id, [...recent, now]);
+  return null;
 }
+
+// Usage from the website's playground is recorded under this name instead of a key.
+export const PLAYGROUND_KEY_ID = "playground";
 
 export function upstream() {
   const baseUrl = (process.env.UPSTREAM_BASE_URL ?? "https://openrouter.ai/api/v1").replace(/\/$/, "");

@@ -8,7 +8,7 @@ const SCHEMA = `
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     address TEXT NOT NULL,
     amount INTEGER NOT NULL,
-    kind TEXT NOT NULL,          -- claim | milestone | gasback | royalty | spend
+    kind TEXT NOT NULL,          -- claim | milestone | gasback | royalty | topup | spend
     memo TEXT NOT NULL,
     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
   );
@@ -83,6 +83,28 @@ const SCHEMA = `
     revoked_at TEXT
   );
   CREATE INDEX IF NOT EXISTS api_keys_address ON api_keys (address);
+
+  -- The name a wallet chose to show on the public distribution page.
+  CREATE TABLE IF NOT EXISTS profiles (
+    address TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+  );
+
+  -- A token payment buys credits once. amount is in the token's base units.
+  CREATE TABLE IF NOT EXISTS topups (
+    network TEXT NOT NULL,
+    hash TEXT NOT NULL,
+    address TEXT NOT NULL,
+    token TEXT NOT NULL,
+    symbol TEXT NOT NULL,
+    decimals INTEGER NOT NULL,
+    amount TEXT NOT NULL,
+    credits INTEGER NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    PRIMARY KEY (network, hash)
+  );
+  CREATE INDEX IF NOT EXISTS topups_address ON topups (address);
 
   CREATE TABLE IF NOT EXISTS usage (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
