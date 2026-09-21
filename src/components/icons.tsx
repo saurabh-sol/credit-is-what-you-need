@@ -74,5 +74,22 @@ export const UsersIcon = icon(
     <path d="M2.5 19.5c.6-3.4 3.2-5 6.5-5s5.9 1.6 6.5 5M16 5.2a3.5 3.5 0 0 1 0 6.6m2.3 3.1c1.7.7 2.8 2.2 3.2 4.6" />
   </>,
 );
-export const BoltIcon = icon(<path d="M13 3 5 13.5h6L10 21l9-11h-6.5L13 3Z" />);
+export const GridIcon = icon(
+  <>
+    <rect x="4" y="4" width="7" height="7" rx="1.5" />
+    <rect x="13" y="4" width="7" height="7" rx="1.5" />
+    <rect x="4" y="13" width="7" height="7" rx="1.5" />
+    <rect x="13" y="13" width="7" height="7" rx="1.5" />
+  </>,
+);
+export const ActivityIcon = icon(<path d="M3 12h4l2.5-7 5 14L17 12h4" />);
+export const SettingsIcon = icon(
+  <>
+    <circle cx="12" cy="12" r="3" />
+    <path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8" />
+  </>,
+);
+export const LogOutIcon = icon(<path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4M10 8l-4 4 4 4M6 12h10" />);
+export const HomeIcon = icon(<path d="m4 11 8-7 8 7v8a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1v-8Z" />);
+export const BoltIcon =icon(<path d="M13 3 5 13.5h6L10 21l9-11h-6.5L13 3Z" />);
 export const ShieldIcon = icon(<path d="M12 3.5 5 6v5.5c0 4.3 2.7 7.6 7 9 4.3-1.4 7-4.7 7-9V6l-7-2.5Zm-3 8.7 2.2 2.2 3.8-4" />);

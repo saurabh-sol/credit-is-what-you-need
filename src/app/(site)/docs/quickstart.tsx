@@ -33,6 +33,19 @@ export function StreamingExample() {
   );
 }
 
+export function ModelsExample() {
+  const origin = useOrigin();
+  return (
+    <CodeBlock
+      title="List models"
+      code={`curl ${origin}/v1/models \\
+  -H "Authorization: Bearer $FUEL_KEY"
+
+# { "object": "list", "data": [{ "id": "fuel/echo", "object": "model", "owned_by": "fuel" }] }`}
+    />
+  );
+}
+
 export function BaseUrl() {
   const origin = useOrigin();
   return <CodeBlock title="Base URL" code={`${origin}/v1`} />;

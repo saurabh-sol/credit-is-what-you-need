@@ -124,7 +124,7 @@ export function ApiKeys() {
       <p className="mt-2 text-xs leading-relaxed text-mist">
         In Postman: POST to <span className="font-mono text-fog">{origin}/v1/chat/completions</span>, Auth type
         &quot;Bearer Token&quot;. <span className="font-mono text-fog">fuel/echo</span> is a test model that repeats your
-        message for 1 credit.
+        message and is billed by length, like a real model.
       </p>
     </section>
   );

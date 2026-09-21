@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "./ui.css";
+@import "./app.css";
 
 /* Ink & Lime: green-tinted black with an electric lime accent. */
 @theme inline {
