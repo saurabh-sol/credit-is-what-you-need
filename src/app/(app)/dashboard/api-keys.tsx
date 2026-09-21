@@ -78,8 +78,8 @@ export function ApiKeys() {
       )}
 
       {fresh && (
-        <div className="mt-4 rounded-xl border border-lime/50 bg-raised p-4">
-          <p className="text-sm font-medium text-lime">Copy your key now. You won&apos;t see it again.</p>
+        <div className="mt-4 rounded-xl border border-accent/50 bg-raised p-4">
+          <p className="text-sm font-medium text-accent">Copy your key now. You won&apos;t see it again.</p>
           <div className="mt-2 flex items-center gap-2">
             <code className="min-w-0 flex-1 truncate rounded-lg bg-ink px-3 py-2 font-mono text-sm">{fresh.key}</code>
             <button
@@ -87,7 +87,7 @@ export function ApiKeys() {
                 await navigator.clipboard.writeText(fresh.key);
                 setCopied(true);
               }}
-              className="shrink-0 rounded-full border border-line px-4 py-2 text-sm transition hover:border-lime"
+              className="shrink-0 rounded-full border border-line px-4 py-2 text-sm transition hover:border-accent"
             >
               {copied ? "Copied" : "Copy"}
             </button>

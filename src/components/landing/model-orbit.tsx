@@ -69,7 +69,7 @@ export const ModelOrbit = memo(function ModelOrbit() {
         {call > 0 && <span key={call} className="orbit-ping" />}
 
         <div className="orbit-core">
-          <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-lime font-mono text-2xl font-bold text-ink shadow-[inset_0_1px_0_rgb(255_255_255/0.5),0_0_0_8px_rgb(198_244_50/0.08)]">
+          <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-accent font-mono text-2xl font-bold text-ink shadow-[inset_0_1px_0_rgb(255_255_255/0.5),0_0_0_8px_color-mix(in_srgb,var(--color-accent)_8%,transparent)]">
             K
           </span>
           <p className="mt-3 font-mono text-[0.6875rem] tracking-wider text-mist uppercase">x-kredit-balance</p>
@@ -82,7 +82,7 @@ export const ModelOrbit = memo(function ModelOrbit() {
           <span key={call} className="pop-in flex items-center gap-2">
             <ProviderLogo logo={lit.logo} className="size-3.5 text-fog" />
             <span className="text-fog">{lit.name}</span> answered
-            <span className="font-mono text-lime">−{cost} credits</span>
+            <span className="font-mono text-accent">−{cost} credits</span>
           </span>
         ) : (
           "One key. The makers you already use."

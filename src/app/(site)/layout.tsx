@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FooterWordmark } from "@/components/footer-wordmark";
 import { Header, Logo } from "@/components/header";
 
 const footerLinks = [
@@ -34,22 +35,32 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
     <>
       <Header />
       <main className="flex-1">{children}</main>
-      <footer className="border-t border-line">
-        <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-10 md:flex-row md:items-start md:justify-between">
+      {/* The one inverted block on the page: black with cream text, so fog and ink swap roles here. */}
+      <footer className="overflow-hidden rounded-t-[2rem] bg-fog text-ink">
+        <div className="mx-auto flex max-w-6xl flex-col gap-12 px-4 pt-16 pb-12 md:flex-row md:items-start md:justify-between md:pt-20">
           <div>
             <Logo />
-            <p className="mt-3 max-w-xs text-sm leading-relaxed text-mist">
+            <p className="mt-4 max-w-xs text-sm leading-relaxed text-ink/60">
               Your on-chain activity has purchasing power. Built on Robinhood Chain.
             </p>
+            <Link
+              href="/dashboard"
+              className="mt-7 inline-flex h-10 items-center rounded-full bg-ink px-5 text-sm font-semibold text-fog transition hover:bg-ink/85"
+            >
+              Open the dashboard
+            </Link>
           </div>
-          <nav aria-label="Footer" className="grid grid-cols-2 gap-x-16 gap-y-8 text-sm sm:grid-cols-3">
+          <nav aria-label="Footer" className="grid grid-cols-2 gap-x-16 gap-y-10 text-sm sm:grid-cols-3">
             {footerLinks.map((group) => (
               <div key={group.title}>
-                <p className="font-mono text-xs uppercase tracking-widest text-mist/70">{group.title}</p>
-                <ul className="mt-4 space-y-2.5 text-mist">
+                <p className="font-mono text-xs uppercase tracking-widest text-ink/40">{group.title}</p>
+                <ul className="mt-5 space-y-3 text-ink/70">
                   {group.links.map(([name, href]) => (
                     <li key={href}>
-                      <Link href={href} className="transition hover:text-lime">
+                      <Link
+                        href={href}
+                        className="underline decoration-transparent underline-offset-4 transition hover:text-ink hover:decoration-accent-2"
+                      >
                         {name}
                       </Link>
                     </li>
@@ -59,9 +70,13 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
             ))}
           </nav>
         </div>
-        <p className="border-t border-line/60 px-4 py-5 text-center text-xs text-mist">
-          Kredit · an independent project, not affiliated with Robinhood
-        </p>
+        <div className="mx-auto flex max-w-6xl flex-col gap-2 border-t border-ink/10 px-4 py-6 text-xs text-ink/50 sm:flex-row sm:items-center sm:justify-between">
+          <p>Kredit · an independent project, not affiliated with Robinhood</p>
+          <a href="#top" className="transition hover:text-ink">
+            Back to top ↑
+          </a>
+        </div>
+        <FooterWordmark />
       </footer>
     </>
   );
