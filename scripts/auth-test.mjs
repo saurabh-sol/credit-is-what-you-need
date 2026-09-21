@@ -54,5 +54,14 @@ check("new wallet gets an empty receipt", scan.status === 200 && scanBody.total 
 // 7. logout
 const out = await fetch(`${base}/api/auth/logout`, { method: "POST", headers: { cookie: session } });
 check("logout clears cookie", out.headers.getSetCookie().some((c) => c.startsWith("kredit_session=;")));
+const stale = await (await fetch(`${base}/api/auth/me`, { headers: { cookie: session } })).json();
+check("a copy of the old cookie is dead after logout", stale.address === null);
+
+// 8. signing out everywhere ends the wallet's other sessions too
+const laptop = cookieOf((await login(alice, alice.address)).res);
+const phone = cookieOf((await login(alice, alice.address)).res);
+await fetch(`${base}/api/auth/logout?everywhere=1`, { method: "POST", headers: { cookie: laptop } });
+const other = await (await fetch(`${base}/api/auth/me`, { headers: { cookie: phone } })).json();
+check("logout everywhere ends the other browser's session", other.address === null);
 
 process.exit(results.every(Boolean) ? 0 : 1);

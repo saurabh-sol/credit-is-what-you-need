@@ -11,7 +11,7 @@ services:
     plan: starter
     repo: https://github.com/saurabh-sol/credit-is-what-you-need
     branch: premium-polish
-    # The ledger is one SQLite file and sign-in nonces are kept in memory, so run a single instance.
+    # The ledger is one SQLite file, and rate limits and credit holds are kept in memory, so run a single instance.
     numInstances: 1
     buildCommand: npm ci && npm run build
     startCommand: npm run start
