@@ -234,6 +234,51 @@ body {
     opacity: 1;
   }
 
+  /* The footer's oversized wordmark: a faint outline of itself until the cursor
+     lights it. --mx / --my are set by <FooterWordmark>. */
+  .wordmark {
+    position: relative;
+    color: color-mix(in srgb, var(--color-ink) 7%, transparent);
+    transition: color 0.6s;
+  }
+
+  .wordmark:hover {
+    color: color-mix(in srgb, var(--color-ink) 14%, transparent);
+  }
+
+  /* Two copies of the word painted with a light that sits under the cursor:
+     ::after is the lit lettering, ::before the same thing blurred into a halo. */
+  .wordmark::before,
+  .wordmark::after {
+    content: attr(data-text);
+    position: absolute;
+    inset: 0;
+    color: transparent;
+    background: radial-gradient(
+      24rem circle at var(--mx, 50%) var(--my, 50%),
+      var(--color-accent-2),
+      var(--color-ink) 42%,
+      transparent 78%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    opacity: 0;
+    transition: opacity 0.6s;
+    pointer-events: none;
+  }
+
+  .wordmark::before {
+    filter: blur(26px);
+  }
+
+  .wordmark:hover::before {
+    opacity: 0.7;
+  }
+
+  .wordmark:hover::after {
+    opacity: 1;
+  }
+
   /* ---------- Buttons ---------- */
 
   .btn-primary {
