@@ -66,12 +66,6 @@ body {
   }
 }
 
-@keyframes grid-pan {
-  to {
-    background-position: 56px 56px;
-  }
-}
-
 @keyframes shine {
   to {
     background-position: -200% 0;
@@ -145,15 +139,24 @@ body {
     pointer-events: none;
   }
 
-  .grid-lines {
+  /* A pool of lighter cream, so whatever sits at --focus lifts off the page. */
+  .backdrop-light {
     position: absolute;
     inset: 0;
-    background-image:
-      linear-gradient(to right, color-mix(in srgb, var(--color-fog) 4.5%, transparent) 1px, transparent 1px),
-      linear-gradient(to bottom, color-mix(in srgb, var(--color-fog) 4.5%, transparent) 1px, transparent 1px);
-    background-size: 56px 56px;
-    mask-image: radial-gradient(70% 60% at 50% 0%, #000 30%, transparent 75%);
-    animation: grid-pan 14s linear infinite;
+    background: radial-gradient(42% 58% at var(--focus, 50% 50%), var(--color-surface), transparent 72%);
+  }
+
+  /* Fine dots that gather at --focus and fade out well before the edges. */
+  .dot-field {
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(
+      circle at 1px 1px,
+      color-mix(in srgb, var(--color-fog) 20%, transparent) 1px,
+      transparent 1.5px
+    );
+    background-size: 22px 22px;
+    mask-image: radial-gradient(40% 56% at var(--focus, 50% 50%), #000, transparent);
   }
 
   .grain {
