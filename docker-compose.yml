@@ -1,13 +1,15 @@
 # Start:  docker compose --env-file .env.local up -d --build
 # Open:   http://localhost:4000   (set KREDIT_PORT to change the port)
 #
-# The ledger is one SQLite file and sign-in nonces are kept in memory, so run a
-# single container.
+# The ledger is one SQLite file, and rate limits and credit holds are kept in
+# memory, so run a single container.
+# Back up the ledger:  docker compose exec kredit node scripts/backup.mjs
 services:
   kredit:
     build:
       context: .
       args:
+        NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: ${NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID:-}
         NEXT_PUBLIC_RPC_TESTNET: ${NEXT_PUBLIC_RPC_TESTNET:-}
         NEXT_PUBLIC_RPC_MAINNET: ${NEXT_PUBLIC_RPC_MAINNET:-}
     image: kredit:latest
