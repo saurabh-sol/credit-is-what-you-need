@@ -144,7 +144,7 @@ function WalletModal({ onClose }: { onClose: () => void }) {
         role="dialog"
         aria-modal="true"
         aria-label="Connect wallet"
-        className="card w-full max-w-sm animate-modal-in p-6 shadow-[0_40px_100px_-20px_rgb(0_0_0/0.9)]"
+        className="card w-full max-w-sm animate-modal-in p-6 shadow-[0_40px_100px_-20px_var(--shade)]"
         onClick={(event) => event.stopPropagation()}
       >
         <p className="font-mono text-xs uppercase tracking-widest text-accent">

@@ -5,20 +5,21 @@
 @import "./landing.css";
 
 /* Brand palette. Every colour in the site and the app derives from these
-   tokens, so a rebrand is an edit to this block alone. Currently Kredit Orange:
-   warm near-black with an orange accent. Raised, line, mist and danger are not
-   in the brand sheet; they are tuned to sit with it. */
+   tokens, so a rebrand is an edit to this block alone. Currently Cream & Black:
+   an off-white page with black text and black buttons. Orange is kept for small
+   highlights, darkened from Kredit Orange so it stays readable on cream; the
+   true brand orange is --color-accent-2, used for glows and the text shine. */
 @theme inline {
-  --color-ink: #020100;
-  --color-surface: #080402;
-  --color-raised: #160c06;
-  --color-line: #38241a;
-  --color-accent: #fb6208;
-  --color-accent-dim: #d94805;
-  --color-accent-2: #ff921c;
-  --color-fog: #f8f5ee;
-  --color-mist: #a89c8e;
-  --color-danger: #ff4d5e;
+  --color-ink: #f8f5ee;
+  --color-surface: #fdfbf7;
+  --color-raised: #f1ede4;
+  --color-line: #ddd6c8;
+  --color-accent: #c2410c;
+  --color-accent-dim: #9a3412;
+  --color-accent-2: #fb6208;
+  --color-fog: #020100;
+  --color-mist: #5f574c;
+  --color-danger: #b91c1c;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
@@ -28,8 +29,13 @@
   --animate-modal-in: modal-in 0.45s var(--ease-out-expo) backwards;
 }
 
+:root {
+  /* Drop-shadow colour: soft and warm, because the page is light. */
+  --shade: rgb(60 40 20 / 0.22);
+}
+
 html {
-  color-scheme: dark;
+  color-scheme: light;
   scroll-padding-top: 5rem;
 }
 
@@ -214,7 +220,7 @@ body {
     transform: translateY(-3px);
     box-shadow:
       inset 0 1px 0 color-mix(in srgb, var(--color-fog) 6%, transparent),
-      0 18px 40px -18px rgb(0 0 0 / 0.7);
+      0 18px 40px -18px var(--shade);
   }
 
   /* Cursor-following glow; --mx / --my are set by <Spotlight>. */
@@ -270,12 +276,12 @@ body {
     position: relative;
     overflow: hidden;
     border-radius: 9999px;
-    background: var(--color-accent);
+    background: var(--color-fog);
     color: var(--color-ink);
     font-weight: 600;
     box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.45),
-      0 0 0 0 color-mix(in srgb, var(--color-accent) 0%, transparent);
+      inset 0 1px 0 rgb(255 255 255 / 0.18),
+      0 0 0 0 transparent;
     transition:
       transform 0.4s var(--ease-out-expo),
       box-shadow 0.4s,
@@ -286,7 +292,7 @@ body {
     content: "";
     position: absolute;
     inset: 0;
-    background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / 0.55) 50%, transparent 65%);
+    background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / 0.22) 50%, transparent 65%);
     transform: translateX(-120%);
     transition: transform 0.8s var(--ease-out-expo);
     pointer-events: none;
@@ -295,8 +301,8 @@ body {
   .btn-primary:hover:not(:disabled) {
     transform: translateY(-1px);
     box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.45),
-      0 10px 28px -12px color-mix(in srgb, var(--color-accent) 40%, transparent);
+      inset 0 1px 0 rgb(255 255 255 / 0.18),
+      0 10px 28px -12px color-mix(in srgb, var(--color-fog) 55%, transparent);
   }
 
   .btn-primary:hover:not(:disabled)::after {
@@ -317,7 +323,7 @@ body {
     background: linear-gradient(
         110deg,
         var(--color-accent) 40%,
-        color-mix(in srgb, var(--color-accent) 20%, white) 50%,
+        var(--color-accent-2) 50%,
         var(--color-accent) 60%
       )
       0 0 / 200% 100%;
