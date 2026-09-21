@@ -1,0 +1,36 @@
+# Render Blueprint for Fuel, with a persistent disk for the credit ledger.
+#
+# Credits, API keys and display names live in a SQLite file. Render's free plan
+# has no disk, so that file is lost on every restart and deploy; use this
+# Blueprint (Starter plan + disk) once real credits are at stake.
+# Apply it from the Render dashboard: New > Blueprint > pick this repository.
+services:
+  - type: web
+    name: fuel
+    runtime: node
+    plan: starter
+    repo: https://github.com/saurabh-sol/credit-is-what-you-need
+    branch: premium-polish
+    # The ledger is one SQLite file and sign-in nonces are kept in memory, so run a single instance.
+    numInstances: 1
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start
+    healthCheckPath: /api/health
+    disk:
+      name: fuel-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: DATABASE_PATH
+        value: /var/data/fuel.db
+      - key: SESSION_SECRET
+        generateValue: true
+      # Set these in the dashboard; they are secrets or deployment choices.
+      - key: UPSTREAM_BASE_URL
+        sync: false
+      - key: UPSTREAM_API_KEY
+        sync: false
+      - key: BLOCKSCOUT_API_KEY
+        sync: false
