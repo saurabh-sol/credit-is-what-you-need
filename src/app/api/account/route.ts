@@ -1,4 +1,4 @@
-import { getBalance, listKeys, listLedger } from "@/lib/ledger";
+import { getBalance, getTotals, listKeys, listLedger } from "@/lib/ledger";
 import { getSession } from "@/lib/session";
 
 export async function GET() {
@@ -7,6 +7,7 @@ export async function GET() {
   return Response.json({
     address: session.address,
     balance: getBalance(session.address),
+    ...getTotals(session.address),
     keys: listKeys(session.address),
     activity: listLedger(session.address),
   });

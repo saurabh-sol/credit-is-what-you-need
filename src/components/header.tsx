@@ -80,7 +80,7 @@ export function Header() {
             <PlayIcon className="size-3.5 text-lime" />
             Playground
           </Link>
-          <WalletButton />
+          <WalletButton signedIn="account" />
           <button
             type="button"
             aria-label={menuOpen ? "Close menu" : "Open menu"}

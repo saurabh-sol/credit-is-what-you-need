@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useConnect, useConnection, useConnectors, useDisconnect } from "wagmi";
-import { WalletIcon } from "@/components/icons";
+import { ArrowRightIcon, WalletIcon } from "@/components/icons";
 import { shortAddress } from "@/lib/format";
 import { useSession } from "@/lib/use-session";
 
@@ -48,7 +48,13 @@ function WalletLogo({ id, icon }: { id: string; icon?: string }) {
   );
 }
 
-export function WalletButton({ label = "Connect wallet" }: { label?: string }) {
+type WalletButtonProps = {
+  label?: string;
+  /** "account" (the header) shows who is signed in; "action" just points at the dashboard. */
+  signedIn?: "account" | "action";
+};
+
+export function WalletButton({ label = "Connect wallet", signedIn = "action" }: WalletButtonProps) {
   const [open, setOpen] = useState(false);
   const { address, isConnected } = useConnection();
   const { mutate: disconnect } = useDisconnect();
@@ -62,6 +68,15 @@ export function WalletButton({ label = "Connect wallet" }: { label?: string }) {
       signOutNow();
     }
   }, [sessionAddress, address, signOutNow]);
+
+  if (session.address && signedIn === "action") {
+    return (
+      <Link href="/dashboard" className={`${primary} group inline-flex items-center gap-2`}>
+        Open dashboard
+        <ArrowRightIcon className="size-4 transition-transform duration-300 group-hover:translate-x-0.5" />
+      </Link>
+    );
+  }
 
   if (session.address) {
     return (

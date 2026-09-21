@@ -8,6 +8,8 @@ export const ACCOUNT_KEY = ["account"];
 export type AccountResponse = {
   address: string;
   balance: number;
+  earned: number; // all credits that ever came in
+  spent: number;
   keys: ApiKeyInfo[];
   activity: LedgerEntry[];
 };

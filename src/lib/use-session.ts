@@ -50,7 +50,10 @@ export function useSession() {
     },
     onSuccess: (data) => {
       queryClient.setQueryData(SESSION_KEY, data);
-      router.push("/dashboard");
+      // Signing in leads to the dashboard, unless the wallet was connected to
+      // use the page the visitor is already on.
+      const staysHere = ["/playground", "/docs"].includes(window.location.pathname);
+      if (!staysHere) router.push("/dashboard");
     },
   });
 
