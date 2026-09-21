@@ -5,7 +5,9 @@ import type { NetworkId } from "./networks.ts";
 import { planRoyalties, ROYALTY_PERCENT, type ContractCall } from "./royalties.ts";
 import { planClaim, type ClaimState, type ScoredTask } from "./scoring.ts";
 
-export const MAX_ACTIVE_KEYS = 5;
+import { MAX_ACTIVE_KEYS } from "./limits.ts";
+
+export { MAX_ACTIVE_KEYS };
 const KEY_PREFIX = "fuel_sk_";
 
 const lower = (address: string) => address.toLowerCase();
@@ -16,6 +18,16 @@ export function getBalance(address: string) {
     .prepare("SELECT COALESCE(SUM(amount), 0) AS balance FROM ledger WHERE address = ?")
     .get(lower(address)) as { balance: number };
   return row.balance;
+}
+
+// Everything that ever came in, and everything that went out, as positive numbers.
+export function getTotals(address: string) {
+  const row = db()
+    .prepare(
+      "SELECT COALESCE(SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END), 0) AS earned, COALESCE(SUM(CASE WHEN amount < 0 THEN -amount ELSE 0 END), 0) AS spent FROM ledger WHERE address = ?",
+    )
+    .get(lower(address)) as { earned: number; spent: number };
+  return { earned: row.earned, spent: row.spent };
 }
 
 export type LedgerEntry = { id: number; amount: number; kind: string; memo: string; createdAt: string };

@@ -3,11 +3,13 @@
 type IconProps = { className?: string };
 
 const icon = (paths: React.ReactNode) =>
-  function Icon({ className = "size-4" }: IconProps) {
+  function Icon({ className = "" }: IconProps) {
+    // 1rem unless the caller sets a size, so passing just a color never blows the icon up.
+    const size = /\bsize-/.test(className) ? "" : "size-4";
     return (
       <svg
         viewBox="0 0 24 24"
-        className={`${className} shrink-0 fill-none stroke-current`}
+        className={`${size} ${className} shrink-0 fill-none stroke-current`}
         strokeWidth={1.6}
         strokeLinecap="round"
         strokeLinejoin="round"
