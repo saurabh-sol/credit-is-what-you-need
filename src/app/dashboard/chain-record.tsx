@@ -8,7 +8,7 @@ import { rewardChains } from "@/lib/wagmi";
 // the scanner will turn into credits.
 export function ChainRecord({ address }: { address: Address }) {
   return (
-    <section className="h-full rounded-2xl border border-line bg-surface p-6">
+    <section className="h-full card p-6">
       <h2 className="text-sm text-mist">Your Robinhood Chain record, live</h2>
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         {rewardChains.map((chain) => (

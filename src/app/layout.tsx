@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { Header } from "@/components/header";
+import Link from "next/link";
+import { Header, Logo } from "@/components/header";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
@@ -24,15 +25,32 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
+      data-scroll-behavior="smooth"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <Providers>
           <Header />
           <main className="flex-1">{children}</main>
-          <footer className="border-t border-line px-4 py-6 text-center text-sm text-mist">
-            Fuel · built on Robinhood Chain · an independent project, not
-            affiliated with Robinhood
+          <footer className="border-t border-line">
+            <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-10 md:flex-row md:items-start md:justify-between">
+              <div>
+                <Logo />
+                <p className="mt-3 max-w-xs text-sm leading-relaxed text-mist">
+                  Every task deserves credits. Built on Robinhood Chain.
+                </p>
+              </div>
+              <nav aria-label="Footer" className="flex gap-6 text-sm text-mist">
+                <Link href="/#earn" className="transition hover:text-lime">Earn</Link>
+                <Link href="/#how" className="transition hover:text-lime">How it works</Link>
+                <Link href="/#api" className="transition hover:text-lime">API</Link>
+                <Link href="/#faq" className="transition hover:text-lime">FAQ</Link>
+                <Link href="/dashboard" className="transition hover:text-lime">Dashboard</Link>
+              </nav>
+            </div>
+            <p className="border-t border-line/60 px-4 py-5 text-center text-xs text-mist">
+              Fuel · an independent project, not affiliated with Robinhood
+            </p>
           </footer>
         </Providers>
       </body>

@@ -32,7 +32,7 @@ export function RecordScanner() {
   });
 
   return (
-    <section className="mt-4 rounded-2xl border border-line bg-surface p-6">
+    <section className="mt-4 card p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold">Scan your on-chain record</h2>
@@ -59,7 +59,7 @@ export function RecordScanner() {
           <button
             onClick={() => record.refetch()}
             disabled={record.isFetching}
-            className="rounded-full bg-lime px-5 py-2 text-sm font-semibold text-ink transition hover:bg-lime-dim disabled:opacity-60"
+            className="btn-primary px-5 py-2 text-sm"
           >
             {record.isFetching ? "Scanning…" : record.data ? "Scan again" : "Scan my record"}
           </button>
@@ -97,6 +97,7 @@ function ScanResult({ data, onClaimed }: { data: RecordResponse; onClaimed: () =
     <div className="mt-6 grid gap-8 lg:grid-cols-[auto_1fr]">
       <div>
         <Receipt
+          animated="print"
           badge={data.network.id.toUpperCase()}
           subtitle={`${shortAddress(data.address)} · ${data.network.name}`}
           lines={data.lines}
@@ -106,7 +107,7 @@ function ScanResult({ data, onClaimed }: { data: RecordResponse; onClaimed: () =
         <button
           onClick={() => claim.mutate()}
           disabled={data.claimable === 0 || claim.isPending}
-          className="mt-5 w-full max-w-sm rounded-full bg-lime px-5 py-2.5 text-sm font-semibold text-ink transition hover:bg-lime-dim disabled:bg-raised disabled:text-mist"
+          className="mt-5 w-full max-w-sm btn-primary px-5 py-2.5 text-sm disabled:bg-raised disabled:text-mist"
         >
           {claim.isPending
             ? "Claiming…"
