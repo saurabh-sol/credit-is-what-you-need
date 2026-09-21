@@ -20,6 +20,22 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Run with Docker
+
+Put `SESSION_SECRET` (32+ random characters, `openssl rand -hex 32`) and any
+optional settings from `.env.example` in `.env.local`, then:
+
+```bash
+docker compose --env-file .env.local up -d --build
+```
+
+Open [http://localhost:4000](http://localhost:4000); set `KREDIT_PORT` to use
+another port. Credits, API keys and display names live in the `kredit-data`
+volume, so they survive rebuilds. `docker compose down -v` deletes them.
+
+`NEXT_PUBLIC_RPC_*` values are baked into the browser bundle, so changing them
+needs a rebuild (`--build`); every other setting only needs a restart.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
