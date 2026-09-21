@@ -24,7 +24,7 @@ const endpoints = [
 
 const errors = [
   ["401", "invalid_api_key", "The key is missing, mistyped or revoked."],
-  ["402", "insufficient_credits", "Your balance is empty. Earn or buy more, then retry."],
+  ["402", "insufficient_credits", "Your balance can't cover this call. When it is low, answers are kept short enough to pay for; when even that doesn't fit, the call is refused."],
   ["400", "invalid_body", "The JSON needs a model and a non-empty messages array."],
   ["429", "rate_limit_exceeded", "More than 60 requests in a minute on one key."],
   ["503", "provider_not_configured", `This server has no AI provider yet; only ${ECHO_MODEL} answers.`],
