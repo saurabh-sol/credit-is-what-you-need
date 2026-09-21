@@ -114,7 +114,7 @@ function ScanResult({ data, onClaimed }: { data: RecordResponse; onClaimed: () =
             : data.claimable > 0
               ? `Claim ${formatCredits(data.claimable)} credits`
               : data.total > 0
-                ? "All claimed ✓"
+                ? "All claimed"
                 : "Nothing to claim yet"}
         </button>
         {claim.error && (

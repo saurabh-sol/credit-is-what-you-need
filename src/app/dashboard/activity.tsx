@@ -3,7 +3,7 @@
 import { formatCredits } from "@/lib/format";
 import { useFuelAccount } from "@/lib/use-fuel-account";
 
-const kindLabel: Record<string, string> = { claim: "Claimed", milestone: "Milestone", gasback: "Gas-Back", royalty: "Royalties", spend: "Spent" };
+const kindLabel: Record<string, string> = { claim: "Claimed", milestone: "Milestone", gasback: "Gas-Back", royalty: "Royalties", topup: "Bought", spend: "Spent" };
 
 export function Activity() {
   const { data } = useFuelAccount();

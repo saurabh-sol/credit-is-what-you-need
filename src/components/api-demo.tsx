@@ -1,35 +1,9 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { CopyButton } from "@/components/code-block";
 import { prefersReducedMotion, useInView } from "@/components/motion/use-in-view";
-
-const KEY = "fuel_sk_••••••••";
-
-const snippets = {
-  curl: (origin: string) => `curl ${origin}/v1/chat/completions \\
-  -H "Authorization: Bearer ${KEY}" \\
-  -H "Content-Type: application/json" \\
-  -d '{ "model": "fuel/echo", "messages": [{ "role": "user", "content": "hi" }] }'`,
-  Python: (origin: string) => `from openai import OpenAI
-
-client = OpenAI(base_url="${origin}/v1", api_key="${KEY}")
-reply = client.chat.completions.create(
-    model="fuel/echo",
-    messages=[{"role": "user", "content": "hi"}],
-)
-print(reply.choices[0].message.content)`,
-  Node: (origin: string) => `import OpenAI from "openai";
-
-const client = new OpenAI({ baseURL: "${origin}/v1", apiKey: "${KEY}" });
-const reply = await client.chat.completions.create({
-  model: "fuel/echo",
-  messages: [{ role: "user", content: "hi" }],
-});
-console.log(reply.choices[0].message.content);`,
-};
-
-type Tab = keyof typeof snippets;
-const tabs = Object.keys(snippets) as Tab[];
+import { snippetNames as tabs, snippets, type SnippetName as Tab } from "@/lib/snippets";
 
 // What the built-in test model really answers, headers included.
 const response = `{ "role": "assistant", "content": "Fuel echo: hi" }`;
@@ -61,15 +35,14 @@ export function ApiDemo() {
   const [tab, setTab] = useState<Tab>("curl");
   const [typed, setTyped] = useState(0);
   const [run, setRun] = useState(0);
-  const [copied, setCopied] = useState(false);
 
-  const code = snippets[tab](origin);
+  const code = snippets[tab]({ origin });
   const done = typed >= code.length;
 
   // Type the request out once it is on screen, and again on tab change or replay.
   useEffect(() => {
     if (!inView) return;
-    const length = snippets[tab](origin).length;
+    const length = snippets[tab]({ origin }).length;
     const step = prefersReducedMotion() ? length : 3;
     let count = 0;
     const timer = setInterval(() => {
@@ -84,12 +57,6 @@ export function ApiDemo() {
     setTyped(0);
     setTab(next);
     setRun((count) => count + 1);
-  };
-
-  const copy = async () => {
-    await navigator.clipboard.writeText(code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1600);
   };
 
   return (
@@ -119,9 +86,7 @@ export function ApiDemo() {
           <button onClick={() => restart(tab)} className="rounded-md px-2.5 py-1 text-mist transition hover:text-fog">
             Replay
           </button>
-          <button onClick={copy} className="rounded-md px-2.5 py-1 text-mist transition hover:text-fog">
-            <span aria-live="polite">{copied ? "Copied ✓" : "Copy"}</span>
-          </button>
+          <CopyButton text={code} />
         </div>
       </div>
 

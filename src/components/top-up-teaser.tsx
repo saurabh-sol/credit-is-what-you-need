@@ -1,0 +1,51 @@
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
+import { ArrowRightIcon, CoinsIcon } from "@/components/icons";
+import { formatCredits } from "@/lib/format";
+import type { TopUpConfig } from "@/lib/topup";
+import { api } from "@/lib/use-fuel-account";
+
+// The landing page's view of top-ups: the real price when buying is open, and
+// an honest "not yet" when it is not.
+export function TopUpTeaser() {
+  const { data } = useQuery({
+    queryKey: ["topup-config"],
+    queryFn: () => api<{ config: TopUpConfig | null }>("/api/topup"),
+    staleTime: 600_000,
+  });
+  const config = data?.config;
+
+  return (
+    <div className="card relative overflow-hidden p-7">
+      <div className="flex items-center justify-between">
+        <span className="grid size-11 place-items-center rounded-xl border border-line bg-raised text-lime">
+          <CoinsIcon className="size-5" />
+        </span>
+        <span className="chip">
+          <span className={`size-1.5 rounded-full ${config ? "bg-lime" : "bg-mist"} breathe`} />
+          {config ? "Open now" : data ? "Opening soon" : "Checking"}
+        </span>
+      </div>
+
+      <div className="mt-8 grid grid-cols-[1fr_auto_1fr] items-center gap-4 font-mono">
+        <div>
+          <p className="text-3xl font-semibold text-fog">1</p>
+          <p className="mt-1 text-xs text-mist">{config?.symbol ?? "project token"}</p>
+        </div>
+        <ArrowRightIcon className="size-5 text-lime" />
+        <div className="text-right">
+          <p className="text-3xl font-semibold text-lime">{config ? formatCredits(config.creditsPerToken) : "credits"}</p>
+          <p className="mt-1 text-xs text-mist">
+            {config ? `credits · $${(config.creditsPerToken / 1000).toFixed(2)} of AI usage` : "price set at launch"}
+          </p>
+        </div>
+      </div>
+
+      <Link href="/dashboard#buy-credits" className="btn-ghost mt-8 w-full justify-center px-5 py-2.5 text-sm">
+        {config ? "Buy credits on your dashboard" : "Open your dashboard"}
+      </Link>
+    </div>
+  );
+}

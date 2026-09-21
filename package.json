@@ -11,10 +11,12 @@
     "test": "node --test src/lib/*.test.ts",
     "scan": "node scripts/scan.ts",
     "test:gateway": "node scripts/gateway-test.mjs",
-    "test:royalties": "node scripts/royalties-test.mjs"
+    "test:royalties": "node scripts/royalties-test.mjs",
+    "test:platform": "node scripts/platform-test.mjs"
   },
   "dependencies": {
     "@base-org/account": "^2.5.10",
+    "@coinbase/wallet-sdk": "^4.3.7",
     "@tanstack/react-query": "^5.103.1",
     "jose": "^6.2.12",
     "next": "16.3.5",

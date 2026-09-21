@@ -4,10 +4,49 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useConnect, useConnection, useConnectors, useDisconnect } from "wagmi";
+import { WalletIcon } from "@/components/icons";
 import { shortAddress } from "@/lib/format";
 import { useSession } from "@/lib/use-session";
 
 const primary = "btn-primary px-5 py-2.5 text-sm";
+
+const walletHints: Record<string, string> = {
+  coinbaseWalletSDK: "App or extension",
+  baseAccount: "Passkey",
+  injected: "Browser",
+};
+
+// Detected wallets bring their own icon (EIP-6963); the built-in ones are drawn here.
+function WalletLogo({ id, icon }: { id: string; icon?: string }) {
+  const frame = "grid size-8 shrink-0 place-items-center overflow-hidden rounded-lg";
+  if (id === "coinbaseWalletSDK") {
+    return (
+      <span className={`${frame} bg-[#0052ff]`} aria-hidden>
+        <svg viewBox="0 0 24 24" className="size-5">
+          <circle cx="12" cy="12" r="8" fill="#fff" />
+          <rect x="9" y="9" width="6" height="6" rx="1.2" fill="#0052ff" />
+        </svg>
+      </span>
+    );
+  }
+  if (id === "baseAccount") {
+    return (
+      <span className={`${frame} bg-fog`} aria-hidden>
+        <span className="size-4 rounded-[3px] bg-[#0000ff]" />
+      </span>
+    );
+  }
+  if (icon) {
+    // A data URI supplied by the wallet itself, so next/image has nothing to optimize.
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={icon} alt="" className={`${frame} bg-fog/5 object-contain p-1`} />;
+  }
+  return (
+    <span className={`${frame} border border-line text-mist`} aria-hidden>
+      <WalletIcon />
+    </span>
+  );
+}
 
 export function WalletButton({ label = "Connect wallet" }: { label?: string }) {
   const [open, setOpen] = useState(false);
@@ -65,8 +104,12 @@ function WalletModal({ onClose }: { onClose: () => void }) {
   const allConnectors = useConnectors();
 
   // Wallets announce themselves (EIP-6963); hide the generic fallback when they do.
+  // The Coinbase extension also announces itself; the Coinbase Wallet connector
+  // already covers it (plus the mobile app), so it is listed once.
   const detected = allConnectors.some((c) => c.type === "injected" && c.id !== "injected");
-  const connectors = allConnectors.filter((c) => !(detected && c.id === "injected"));
+  const connectors = allConnectors.filter(
+    (c) => !(detected && c.id === "injected") && c.id !== "com.coinbase.wallet",
+  );
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => event.key === "Escape" && onClose();
@@ -86,7 +129,7 @@ function WalletModal({ onClose }: { onClose: () => void }) {
         role="dialog"
         aria-modal="true"
         aria-label="Connect wallet"
-        className="card w-full max-w-sm animate-modal-in p-6 shadow-[0_40px_100px_-20px_rgb(0_0_0/0.9),0_0_60px_-30px_rgb(198_244_50/0.35)]"
+        className="card w-full max-w-sm animate-modal-in p-6 shadow-[0_40px_100px_-20px_rgb(0_0_0/0.9)]"
         onClick={(event) => event.stopPropagation()}
       >
         <p className="font-mono text-xs uppercase tracking-widest text-lime">
@@ -102,17 +145,16 @@ function WalletModal({ onClose }: { onClose: () => void }) {
                   <button
                     disabled={isPending}
                     onClick={() => connect({ connector })}
-                    className="flex w-full items-center justify-between rounded-xl border border-line bg-raised px-4 py-3 text-left transition duration-300 hover:translate-x-1 hover:border-lime disabled:opacity-60"
+                    className="flex w-full items-center gap-3 rounded-xl border border-line bg-raised px-4 py-3 text-left transition duration-300 hover:translate-x-1 hover:border-lime active:scale-[0.99] disabled:opacity-60"
                   >
-                    <span className="font-medium">
+                    <WalletLogo id={connector.id} icon={connector.icon} />
+                    <span className="flex-1 font-medium">
                       {connector.id === "injected" ? "Browser wallet" : connector.name}
                     </span>
                     <span className="text-xs text-mist">
                       {isPending && variables?.connector === connector
                         ? "Waiting…"
-                        : connector.id === "baseAccount"
-                          ? "Passkey"
-                          : "Detected"}
+                        : (walletHints[connector.id] ?? "Detected")}
                     </span>
                   </button>
                 </li>

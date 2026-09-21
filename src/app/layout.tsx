@@ -15,6 +15,34 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const footerLinks = [
+  {
+    title: "Earn",
+    links: [
+      ["Ways to earn", "/#earn"],
+      ["How it works", "/#how"],
+      ["Estimate", "/#estimate"],
+      ["Buy credits", "/#buy"],
+    ],
+  },
+  {
+    title: "Build",
+    links: [
+      ["API", "/docs"],
+      ["Playground", "/playground"],
+      ["Models", "/docs#models"],
+    ],
+  },
+  {
+    title: "Fuel",
+    links: [
+      ["Dashboard", "/dashboard"],
+      ["Distribution", "/distribution"],
+      ["FAQ", "/#faq"],
+    ],
+  },
+];
+
 export const metadata: Metadata = {
   title: "Fuel — every task deserves credits",
   description:
@@ -40,12 +68,21 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                   Every task deserves credits. Built on Robinhood Chain.
                 </p>
               </div>
-              <nav aria-label="Footer" className="flex gap-6 text-sm text-mist">
-                <Link href="/#earn" className="transition hover:text-lime">Earn</Link>
-                <Link href="/#how" className="transition hover:text-lime">How it works</Link>
-                <Link href="/#api" className="transition hover:text-lime">API</Link>
-                <Link href="/#faq" className="transition hover:text-lime">FAQ</Link>
-                <Link href="/dashboard" className="transition hover:text-lime">Dashboard</Link>
+              <nav aria-label="Footer" className="grid grid-cols-2 gap-x-16 gap-y-8 text-sm sm:grid-cols-3">
+                {footerLinks.map((group) => (
+                  <div key={group.title}>
+                    <p className="font-mono text-xs uppercase tracking-widest text-mist/70">{group.title}</p>
+                    <ul className="mt-4 space-y-2.5 text-mist">
+                      {group.links.map(([name, href]) => (
+                        <li key={href}>
+                          <Link href={href} className="transition hover:text-lime">
+                            {name}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
               </nav>
             </div>
             <p className="border-t border-line/60 px-4 py-5 text-center text-xs text-mist">
