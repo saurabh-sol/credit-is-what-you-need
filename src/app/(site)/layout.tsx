@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FooterWordmark } from "@/components/footer-wordmark";
 import { Header, Logo } from "@/components/header";
 
 const footerLinks = [
@@ -75,13 +76,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
             Back to top ↑
           </a>
         </div>
-        {/* Oversized wordmark, cropped by the footer's bottom edge. */}
-        <p
-          aria-hidden
-          className="-mb-[0.22em] select-none text-center text-[clamp(6rem,24vw,20rem)] font-semibold leading-none tracking-tighter text-ink/[0.07]"
-        >
-          Kredit
-        </p>
+        <FooterWordmark />
       </footer>
     </>
   );
