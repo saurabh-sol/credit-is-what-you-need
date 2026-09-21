@@ -212,7 +212,7 @@ export default function Home() {
           </div>
 
           <div className="flex justify-center md:justify-end">
-            <div className="w-full max-w-sm animate-float">
+            <div className="w-full max-w-sm">
               <Tilt>
                 <ExampleReceipt />
               </Tilt>
