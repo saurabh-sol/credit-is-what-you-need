@@ -39,7 +39,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
           <div>
             <Logo />
             <p className="mt-3 max-w-xs text-sm leading-relaxed text-mist">
-              Every task deserves credits. Built on Robinhood Chain.
+              Every on-chain record deserves credits. Built on Robinhood Chain.
             </p>
           </div>
           <nav aria-label="Footer" className="grid grid-cols-2 gap-x-16 gap-y-8 text-sm sm:grid-cols-3">

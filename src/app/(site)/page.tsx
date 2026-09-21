@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Fragment } from "react";
 import { ApiDemo } from "@/components/api-demo";
 import { Estimator } from "@/components/estimator";
 import { ActivityIcon, ArrowRightIcon, ArrowUpRightIcon, CheckIcon, PlusIcon, SparkIcon, UsersIcon } from "@/components/icons";
@@ -211,7 +212,7 @@ const faqs = [
   },
 ];
 
-const headline = ["Every", "task", "deserves"];
+const headline = ["Every", "on-chain", "record", "deserves"];
 
 // Delay for the hero's entrance sequence, one beat per element.
 const beat = (index: number) => ({ animationDelay: `${index * 90}ms` });
@@ -239,13 +240,17 @@ export default function Home() {
               <span className="live-dot" />
               AI credits on Robinhood Chain
             </p>
-            <h1 className="mt-7 text-5xl font-semibold leading-[1.04] tracking-tight text-balance sm:text-6xl">
+            {/* Sized so "Every on-chain record" fits on one line beside the orbit; phones wrap on their own. */}
+            <h1 className="mt-7 text-5xl font-semibold leading-[1.04] tracking-tight text-balance lg:text-[3.25rem]">
               {headline.map((word, index) => (
-                <span key={word} style={beat(index + 1)} className="inline-block animate-rise">
-                  {word}&nbsp;
-                </span>
+                <Fragment key={word}>
+                  <span style={beat(index + 1)} className="inline-block animate-rise">
+                    {word}&nbsp;
+                  </span>
+                  {word === "record" && <br className="hidden lg:block" />}
+                </Fragment>
               ))}
-              <span style={beat(4)} className="inline-block animate-rise">
+              <span style={beat(headline.length + 1)} className="inline-block animate-rise">
                 <span className="text-shine">credits.</span>
               </span>
             </h1>

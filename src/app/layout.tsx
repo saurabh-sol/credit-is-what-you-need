@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Fuel — every task deserves credits",
+  title: "Fuel — every on-chain record deserves credits",
   description:
     "Turn your Robinhood Chain activity into AI credits you can spend anywhere.",
 };
