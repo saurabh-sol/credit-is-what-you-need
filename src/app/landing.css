@@ -1,0 +1,193 @@
+/* Styles that only the landing page needs. */
+
+/* The beam is as long as its track and lit only at the leading end, so sliding
+   it from -100% carries that end across the whole line and a little past it. */
+@keyframes loop-beam-x {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(20%);
+  }
+}
+
+@keyframes loop-beam-y {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(20%);
+  }
+}
+
+/* A stage lights as the beam reaches it and fades about when the next one lights. */
+@keyframes loop-lit {
+  0% {
+    opacity: 0;
+  }
+  4%,
+  24% {
+    opacity: 1;
+  }
+  38%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes preview-row-new {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+}
+
+/* Two names for one motion: swapping between them restarts it on rows that stay mounted. */
+@keyframes preview-row-a {
+  from {
+    transform: translateY(-100%);
+  }
+}
+
+@keyframes preview-row-b {
+  from {
+    transform: translateY(-100%);
+  }
+}
+
+@layer components {
+  /* ---------- The loop: wallet activity, credits, any model ---------- */
+
+  .loop {
+    --loop-turn: 6s;
+    position: relative;
+  }
+
+  /* Runs through the middle of the icon tiles: down the side on phones, across on desktop.
+     Wider than the hairline it draws, so the beam's head is not clipped. */
+  .loop-track {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(1.375rem - 4px);
+    width: 9px;
+    overflow: hidden;
+    background: linear-gradient(var(--color-line), var(--color-line)) center / 1px 100% no-repeat;
+    mask-image: linear-gradient(to bottom, #000 70%, transparent);
+  }
+
+  .loop-beam {
+    position: absolute;
+    inset: 0;
+    transform: translateY(-100%);
+    background: linear-gradient(to bottom, transparent 82%, rgb(198 244 50 / 0.9)) center / 1px 100% no-repeat;
+  }
+
+  .loop-beam::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 5px;
+    height: 5px;
+    margin-left: -2.5px;
+    border-radius: 9999px;
+    background: var(--color-lime);
+  }
+
+  .loop.is-visible .loop-beam {
+    animation: loop-beam-y var(--loop-turn) linear infinite;
+  }
+
+  @media (min-width: 48rem) {
+    .loop-track {
+      top: calc(1.375rem - 4px);
+      right: 0;
+      bottom: auto;
+      left: 0;
+      width: auto;
+      height: 9px;
+      background-size: 100% 1px;
+      mask-image: linear-gradient(to right, #000 70%, transparent);
+    }
+
+    .loop-beam {
+      transform: translateX(-100%);
+      background: linear-gradient(to right, transparent 82%, rgb(198 244 50 / 0.9)) center / 100% 1px no-repeat;
+    }
+
+    .loop-beam::after {
+      top: 50%;
+      right: 0;
+      bottom: auto;
+      left: auto;
+      margin: -2.5px 0 0;
+    }
+
+    .loop.is-visible .loop-beam {
+      animation-name: loop-beam-x;
+    }
+  }
+
+  /* Opaque, so the line and the beam pass behind it. */
+  .loop-tile {
+    position: relative;
+    display: grid;
+    width: 2.75rem;
+    height: 2.75rem;
+    flex: none;
+    place-items: center;
+    border-radius: 0.75rem;
+    border: 1px solid var(--color-line);
+    background: var(--color-raised);
+    color: var(--color-mist);
+  }
+
+  /* The lit state is a second skin that only fades, so nothing repaints. */
+  .loop-lit {
+    position: absolute;
+    inset: -1px;
+    display: grid;
+    place-items: center;
+    border-radius: inherit;
+    border: 1px solid rgb(198 244 50 / 0.7);
+    background: color-mix(in srgb, var(--color-lime) 8%, var(--color-raised));
+    color: var(--color-lime);
+    opacity: 0;
+  }
+
+  /* The stages sit a third of the track apart, and the beam covers 1.2 tracks per turn. */
+  .loop.is-visible .loop-lit {
+    animation: loop-lit var(--loop-turn) linear infinite;
+    animation-delay: calc(var(--stage) * var(--loop-turn) / 3.6);
+  }
+
+  /* ---------- The receipt waits to print until it is looked at ---------- */
+
+  .print-on-view:not(.is-visible) .receipt-print,
+  .print-on-view:not(.is-visible) .print-line {
+    animation-play-state: paused;
+  }
+
+  /* ---------- Dashboard preview ---------- */
+
+  .preview-row-new {
+    animation: preview-row-new 0.7s var(--ease-out-expo) backwards;
+  }
+
+  .preview-row-a {
+    animation: preview-row-a 0.7s var(--ease-out-expo) backwards;
+  }
+
+  .preview-row-b {
+    animation: preview-row-b 0.7s var(--ease-out-expo) backwards;
+  }
+}
+
+/* Nothing to wait for without motion, and nothing to un-pause it without JavaScript. */
+@media (prefers-reduced-motion: reduce), (scripting: none) {
+  .print-on-view .receipt-print,
+  .print-on-view .print-line {
+    animation-play-state: running;
+  }
+}
