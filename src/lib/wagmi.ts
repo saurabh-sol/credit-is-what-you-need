@@ -1,12 +1,18 @@
 import { createConfig, http } from "wagmi";
 import { base, robinhood, robinhoodTestnet } from "wagmi/chains";
-import { baseAccount, injected } from "wagmi/connectors";
+import { baseAccount, coinbaseWallet, injected } from "wagmi/connectors";
 
 // Credits are only earned on Robinhood Chain. Base is listed so Base Account
 // (a smart wallet that lives on Base) can connect and sign in.
 export const config = createConfig({
   chains: [robinhoodTestnet, robinhood, base],
-  connectors: [injected(), baseAccount({ appName: "Fuel" })],
+  connectors: [
+    injected(),
+    // The Coinbase Wallet app and extension. Smart wallets are left to Base
+    // Account below, which is Coinbase's current SDK for them.
+    coinbaseWallet({ appName: "Fuel", preference: { options: "eoaOnly" } }),
+    baseAccount({ appName: "Fuel" }),
+  ],
   // Optional private RPCs (e.g. Alchemy). Without them the public RPCs are used.
   transports: {
     [robinhoodTestnet.id]: http(process.env.NEXT_PUBLIC_RPC_TESTNET),

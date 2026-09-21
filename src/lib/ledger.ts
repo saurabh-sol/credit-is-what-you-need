@@ -303,3 +303,45 @@ export function recordUsage(entry: {
     return getBalance(entry.address);
   });
 }
+
+// --- Buying credits with the project token -----------------------------------
+
+export class TopUpUsedError extends Error {}
+
+// A payment transaction turns into credits exactly once.
+export function recordTopUp(entry: {
+  network: NetworkId;
+  hash: string;
+  address: string;
+  token: string;
+  symbol: string;
+  decimals: number;
+  amount: bigint; // base units
+  credits: number;
+}) {
+  return transaction(() => {
+    const database = db();
+    const used = database
+      .prepare("SELECT 1 FROM topups WHERE network = ? AND hash = ?")
+      .get(entry.network, lower(entry.hash));
+    if (used) throw new TopUpUsedError("This payment has already been turned into credits.");
+    database
+      .prepare(
+        "INSERT INTO topups (network, hash, address, token, symbol, decimals, amount, credits) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      )
+      .run(
+        entry.network,
+        lower(entry.hash),
+        lower(entry.address),
+        lower(entry.token),
+        entry.symbol,
+        entry.decimals,
+        entry.amount.toString(),
+        entry.credits,
+      );
+    database
+      .prepare("INSERT INTO ledger (address, amount, kind, memo) VALUES (?, ?, 'topup', ?)")
+      .run(lower(entry.address), entry.credits, `Paid in ${entry.symbol} on ${entry.network}`);
+    return getBalance(entry.address);
+  });
+}
