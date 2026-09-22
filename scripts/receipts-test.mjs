@@ -1,21 +1,22 @@
-// End-to-end check of on-chain receipts against a local anvil chain.
+// End-to-end check of on-chain receipts against a local anvil chain that
+// pretends to be Robinhood Chain (chain id 4663), with a mock explorer.
 // Needs (see contracts/README.md, "Testing end to end"):
-//   anvil --port 8547 --chain-id 46630
+//   anvil --port 8547 --chain-id 4663
 //   node scripts/lib/mock-explorer.mjs 8548
-//   the KreditReceipts contract deployed to anvil, its address in RECEIPTS_ADDRESS_TESTNET
-//   a server started with the same env: NEXT_PUBLIC_RPC_TESTNET=http://127.0.0.1:8547
-//     EXPLORER_API_TESTNET=http://127.0.0.1:8548 RECEIPTS_ADDRESS_TESTNET=... RECEIPT_SIGNER_KEY=...
+//   the KreditReceipts contract deployed to anvil, its address in RECEIPTS_ADDRESS_MAINNET
+//   a server started with the same env: NEXT_PUBLIC_RPC_MAINNET=http://127.0.0.1:8547
+//     EXPLORER_API_MAINNET=http://127.0.0.1:8548 RECEIPTS_ADDRESS_MAINNET=... RECEIPT_SIGNER_KEY=...
 //     SESSION_SECRET=... DATABASE_PATH=... npx next dev -p 3461
 // Then: BASE_URL=http://localhost:3461 DATABASE_PATH=... SESSION_SECRET=... WALLET_KEY=<anvil key> node scripts/receipts-test.mjs
 import { createPublicClient, createWalletClient, http, parseEventLogs } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { robinhoodTestnet } from "viem/chains";
+import { robinhood } from "viem/chains";
 import { sessionCookie } from "./lib/test-session.mjs";
 
 const base = process.env.BASE_URL ?? "http://localhost:3000";
-const rpc = process.env.NEXT_PUBLIC_RPC_TESTNET ?? "http://127.0.0.1:8547";
+const rpc = process.env.NEXT_PUBLIC_RPC_MAINNET ?? "http://127.0.0.1:8547";
 const account = privateKeyToAccount(process.env.WALLET_KEY);
-const chain = { ...robinhoodTestnet, rpcUrls: { default: { http: [rpc] } } };
+const chain = { ...robinhood, rpcUrls: { default: { http: [rpc] } } };
 const wallet = createWalletClient({ account, chain, transport: http(rpc) });
 const reader = createPublicClient({ chain, transport: http(rpc) });
 
@@ -46,12 +47,12 @@ const submit = async (issued) => {
 };
 
 // --- scan
-const record = await get("/api/record?network=testnet");
+const record = await get("/api/record?network=mainnet");
 check("the scan says claims go on-chain", Boolean(record.onchain?.contract), record.onchain?.contract);
 check("the fake record earns something", record.claimable > 0, `${record.claimable} credits`);
 
 // --- claim: the server signs, the wallet submits, the server confirms
-const first = await post("/api/claim", { network: "testnet" });
+const first = await post("/api/claim", { network: "mainnet" });
 check("the claim answers with a signed receipt, not credits", first.status === 200 && first.body.onchain === true && first.body.signature?.length === 132);
 check("the receipt is for this wallet and the whole claimable amount",
   first.body.receipt?.wallet === account.address.toLowerCase() && Number(first.body.receipt?.credits) === record.claimable);
@@ -62,35 +63,35 @@ const events = parseEventLogs({ abi: ABI, eventName: "Claimed", logs: mined.logs
 check("the contract wrote the receipt", mined.status === "success" && events.length === 1 && events[0].args.receiptId === first.body.receiptId);
 check("the contract counts what was earned", (await reader.readContract({ abi: ABI, address: first.body.contract, functionName: "earned", args: [account.address] })) === BigInt(record.claimable));
 
-const confirmed = await post("/api/claim/confirm", { network: "testnet", hash });
+const confirmed = await post("/api/claim/confirm", { network: "mainnet", hash });
 check("confirming pays the credits", confirmed.status === 200 && confirmed.body.granted === record.claimable, JSON.stringify(confirmed.body));
 const account1 = await get("/api/account");
 check("the balance shows them", account1.balance === record.claimable);
 check("every ledger row points at the receipt transaction",
-  account1.activity.length > 0 && account1.activity.every((row) => row.txHash === hash.toLowerCase() && row.network === "testnet"));
+  account1.activity.length > 0 && account1.activity.every((row) => row.txHash === hash.toLowerCase() && row.network === "mainnet"));
 
-const again = await post("/api/claim/confirm", { network: "testnet", hash });
+const again = await post("/api/claim/confirm", { network: "mainnet", hash });
 check("confirming twice pays nothing more", again.status === 200 && again.body.granted === 0 && again.body.already === 1);
 check("and the balance is unchanged", (await get("/api/account")).balance === record.claimable);
 
-const empty = await post("/api/claim", { network: "testnet" });
+const empty = await post("/api/claim", { network: "mainnet" });
 check("with everything claimed there is no receipt to sign", empty.status === 409, empty.body.error);
-check("the scan agrees", (await get("/api/record?network=testnet")).claimable === 0);
+check("the scan agrees", (await get("/api/record?network=mainnet")).claimable === 0);
 
 // --- bad inputs
-const bogus = await post("/api/claim/confirm", { network: "testnet", hash: "0x" + "0".repeat(64) });
+const bogus = await post("/api/claim/confirm", { network: "mainnet", hash: "0x" + "0".repeat(64) });
 check("an unknown transaction asks the browser to retry", bogus.status === 404 && bogus.body.retry === true);
-check("a malformed hash is refused", (await post("/api/claim/confirm", { network: "testnet", hash: "hello" })).status === 400);
+check("a malformed hash is refused", (await post("/api/claim/confirm", { network: "mainnet", hash: "hello" })).status === 400);
 
 // --- recovery: a receipt claimed on-chain but never confirmed is settled on the next claim
 const database = new (await import("node:sqlite")).DatabaseSync(process.env.DATABASE_PATH);
 database.exec("DELETE FROM claimed_txs; DELETE FROM claimed_milestones; DELETE FROM claimed_streak_days; DELETE FROM ledger; DELETE FROM pending_claims;");
 database.close();
-const second = await post("/api/claim", { network: "testnet" });
+const second = await post("/api/claim", { network: "mainnet" });
 check("after a reset the server signs a fresh receipt with the next nonce", second.status === 200 && second.body.receipt?.nonce === "1");
 const { hash: hash2 } = await submit(second.body);
 check("the wallet claimed it on-chain without telling the server", (await get("/api/account")).balance === 0);
-const third = await post("/api/claim", { network: "testnet" });
+const third = await post("/api/claim", { network: "mainnet" });
 check("the next claim finds it on-chain and pays it first", third.status === 409 && (await get("/api/account")).balance === record.claimable, third.body.error);
 check("and records its transaction", (await get("/api/account")).activity.every((row) => row.txHash === hash2.toLowerCase()));
 

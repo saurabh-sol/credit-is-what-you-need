@@ -9,7 +9,7 @@ const check = (name, pass, detail = "") => { results.push(pass); console.log(`${
 async function login(signer, claimedAddress) {
   const nonceRes = await fetch(`${base}/api/auth/nonce`);
   const { nonce } = await nonceRes.json();
-  const message = createSiweMessage({ address: claimedAddress, chainId: 46630, nonce, domain: new URL(base).host, uri: base, version: "1", statement: "test" });
+  const message = createSiweMessage({ address: claimedAddress, chainId: 4663, nonce, domain: new URL(base).host, uri: base, version: "1", statement: "test" });
   const signature = await signer.signMessage({ message });
   const send = () => fetch(`${base}/api/auth/verify`, { method: "POST", headers: { "content-type": "application/json", cookie: cookieOf(nonceRes) }, body: JSON.stringify({ message, signature }) });
   return { res: await send(), replay: send };
@@ -47,7 +47,7 @@ const anonScan = await fetch(`${base}/api/record`);
 check("scan blocked without session", anonScan.status === 401);
 const badNetwork = await fetch(`${base}/api/record?network=solana`, { headers: { cookie: session } });
 check("scan rejects unknown network", badNetwork.status === 400);
-const scan = await fetch(`${base}/api/record?network=testnet`, { headers: { cookie: session } });
+const scan = await fetch(`${base}/api/record?network=mainnet`, { headers: { cookie: session } });
 const scanBody = await scan.json();
 check("new wallet gets an empty receipt", scan.status === 200 && scanBody.total === 0 && scanBody.address === alice.address, `(total ${scanBody.total})`);
 

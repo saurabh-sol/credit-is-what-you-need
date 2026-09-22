@@ -31,15 +31,13 @@ export function TopUpTeaser() {
 
       <div className="mt-8 grid grid-cols-[1fr_auto_1fr] items-center gap-4 font-mono">
         <div>
-          <p className="text-3xl font-semibold text-fog">1</p>
-          <p className="mt-1 text-xs text-mist">{config?.symbol ?? "project token"}</p>
+          <p className="text-3xl font-semibold text-fog">{config ? formatCredits(Math.round(1 / config.creditsPerToken)) : "1"}</p>
+          <p className="mt-1 text-xs text-mist">{config?.symbol ?? "project token"}{config?.swap ? ", paid in ETH" : ""}</p>
         </div>
         <ArrowRightIcon className="size-5 text-accent" />
         <div className="text-right">
-          <p className="text-3xl font-semibold text-accent">{config ? formatCredits(config.creditsPerToken) : "credits"}</p>
-          <p className="mt-1 text-xs text-mist">
-            {config ? `credits · $${(config.creditsPerToken / 1000).toFixed(2)} of AI usage` : "price set at launch"}
-          </p>
+          <p className="text-3xl font-semibold text-accent">{config ? "1" : "credits"}</p>
+          <p className="mt-1 text-xs text-mist">{config ? "credit · $0.001 of AI usage" : "price set at launch"}</p>
         </div>
       </div>
 

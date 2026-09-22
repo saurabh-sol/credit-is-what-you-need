@@ -52,7 +52,7 @@ message cannot be replayed. Smart wallets such as Base Account are verified on-c
 ### 3. Earning credits from your on-chain record
 
 On the dashboard, **Scan** reads your wallet history from the chain explorer (up to your
-latest 1,000 transactions, on testnet or mainnet) and shows a receipt. **Claim** pays
+latest 1,000 transactions on Robinhood Chain) and shows a receipt. **Claim** pays
 that receipt into your balance.
 
 Each successful transaction is one "task" (`src/lib/scoring.ts`):
@@ -60,7 +60,7 @@ Each successful transaction is one "task" (`src/lib/scoring.ts`):
 | What you did | Credits |
 | --- | --- |
 | Deployed a contract | 500 |
-| Used a partner protocol | set per partner (the demo partner on testnet pays 250) |
+| Used a partner protocol | set per partner (none listed yet) |
 | Called any other contract | 50 |
 | Sent a plain transfer | 10 |
 | A failed transaction | 0 |

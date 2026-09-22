@@ -16,7 +16,7 @@ import {
   zerionWallet,
 } from "@rainbow-me/rainbowkit/wallets";
 import { createConfig, http } from "wagmi";
-import { base, robinhood, robinhoodTestnet } from "wagmi/chains";
+import { base, robinhood } from "wagmi/chains";
 
 // From https://cloud.reown.com. Wallets that pair by QR code or deep link
 // (Rainbow, Trust, Ledger, WalletConnect itself) cannot be created without it.
@@ -54,18 +54,17 @@ const connectors = connectorsForWallets(groups, { appName: "Kredit", projectId: 
 // Credits are only earned on Robinhood Chain. Base is listed so a Coinbase smart
 // wallet (which lives on Base) can connect and sign in.
 export const config = createConfig({
-  chains: [robinhoodTestnet, robinhood, base],
+  chains: [robinhood, base],
   connectors,
   // Optional private RPCs (e.g. Alchemy). Without them the public RPCs are used.
   transports: {
-    [robinhoodTestnet.id]: http(process.env.NEXT_PUBLIC_RPC_TESTNET),
     [robinhood.id]: http(process.env.NEXT_PUBLIC_RPC_MAINNET),
     [base.id]: http(),
   },
   ssr: true,
 });
 
-export const rewardChains = [robinhoodTestnet, robinhood] as const;
+export const rewardChains = [robinhood] as const;
 
 declare module "wagmi" {
   interface Register {

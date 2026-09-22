@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { createPublicClient, http, isAddress, verifyMessage, type Hex } from "viem";
-import { base, robinhood, robinhoodTestnet } from "viem/chains";
+import { base, robinhood } from "viem/chains";
 import { parseSiweMessage, validateSiweMessage } from "viem/siwe";
 import { REFERRAL_COOKIE, setReferrer } from "@/lib/referrals";
 import { consumeNonce, createSession } from "@/lib/session";
@@ -33,7 +33,6 @@ export async function POST(request: Request) {
       [
         { chain: base, rpc: undefined },
         { chain: robinhood, rpc: process.env.NEXT_PUBLIC_RPC_MAINNET },
-        { chain: robinhoodTestnet, rpc: process.env.NEXT_PUBLIC_RPC_TESTNET },
       ].map(({ chain, rpc }) =>
         createPublicClient({ chain, transport: http(rpc || undefined, { timeout: 10_000 }) })
           .verifyMessage(args)

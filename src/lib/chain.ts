@@ -1,13 +1,18 @@
 import { createPublicClient, http } from "viem";
-import { robinhood, robinhoodTestnet } from "viem/chains";
+import { robinhood } from "viem/chains";
 import type { NetworkId } from "./networks.ts";
 
 // Read-only access to Robinhood Chain from the server. The RPC can be swapped
-// for a private one (or a local anvil in tests) through the environment.
+// for a private one (or a local anvil in tests) through the environment:
+// RPC_MAINNET is server-only, NEXT_PUBLIC_RPC_MAINNET is shared with the browser.
+export function rpcUrl(network: NetworkId = "mainnet"): string | undefined {
+  void network; // one network today; the parameter keeps call sites explicit
+  return process.env.RPC_MAINNET || process.env.NEXT_PUBLIC_RPC_MAINNET || undefined;
+}
+
 export const chains = {
-  testnet: { chain: robinhoodTestnet, rpc: process.env.NEXT_PUBLIC_RPC_TESTNET },
-  mainnet: { chain: robinhood, rpc: process.env.NEXT_PUBLIC_RPC_MAINNET },
-} satisfies Record<NetworkId, { chain: typeof robinhood | typeof robinhoodTestnet; rpc: string | undefined }>;
+  mainnet: { chain: robinhood, rpc: rpcUrl("mainnet") },
+} satisfies Record<NetworkId, { chain: typeof robinhood; rpc: string | undefined }>;
 
 const clients = new Map<NetworkId, ReturnType<typeof createPublicClient>>();
 

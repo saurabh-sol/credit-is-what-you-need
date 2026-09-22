@@ -1,16 +1,10 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
 import { CodeBlock, CodeTabs } from "@/components/code-block";
+import { SITE_URL } from "@/lib/site";
 import { snippetNames, snippets } from "@/lib/snippets";
 
-// The real origin in the browser, a stand-in on the server, with no hydration mismatch.
-const useOrigin = () =>
-  useSyncExternalStore(
-    () => () => {},
-    () => window.location.origin,
-    () => "https://your-kredit-host",
-  );
+const useOrigin = () => SITE_URL;
 
 export function Quickstart() {
   const origin = useOrigin();
@@ -53,4 +47,15 @@ curl ${origin}/v1/account -H "Authorization: Bearer $KREDIT_KEY"
 export function BaseUrl() {
   const origin = useOrigin();
   return <CodeBlock title="Base URL" code={`${origin}/v1`} />;
+}
+
+// A code sample with "{origin}" replaced by this site's real address.
+export function OriginCode({ title, code }: { title?: string; code: string }) {
+  const origin = useOrigin();
+  return <CodeBlock title={title} code={code.replaceAll("{origin}", origin)} />;
+}
+
+export function OriginTabs({ tabs }: { tabs: { name: string; code: string }[] }) {
+  const origin = useOrigin();
+  return <CodeTabs tabs={tabs.map((tab) => ({ name: tab.name, code: tab.code.replaceAll("{origin}", origin) }))} />;
 }

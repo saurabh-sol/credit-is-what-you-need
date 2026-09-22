@@ -48,7 +48,7 @@ async function fetchPage(
   if (response.status === 403) {
     // Bot protection on the public explorer. See .env.example for the fix.
     throw new ExplorerError(
-      `${network.name} scanning isn't set up yet: its explorer blocks server requests. Use Testnet for now.`,
+      `${network.name} scanning isn't set up yet: its explorer blocks server requests. Set an Alchemy RPC (see .env.example).`,
     );
   }
   if (!response.ok || !isJson) {
