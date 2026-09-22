@@ -7,7 +7,7 @@ import { useAccount, useReadContract, useSwitchChain, useWriteContract } from "w
 import { CheckIcon, CoinsIcon } from "@/components/icons";
 import { formatCredits } from "@/lib/format";
 import { creditsForPayment, formatTokenAmount, parseTokenAmount, type TopUpConfig } from "@/lib/topup";
-import { ACCOUNT_KEY, api } from "@/lib/use-fuel-account";
+import { ACCOUNT_KEY, api } from "@/lib/use-kredit-account";
 import { rewardChains } from "@/lib/wagmi";
 
 type Step = "idle" | "switching" | "signing" | "confirming" | "crediting" | "done";

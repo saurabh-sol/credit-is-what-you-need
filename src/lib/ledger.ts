@@ -8,8 +8,6 @@ import { MAX_ACTIVE_KEYS } from "./limits.ts";
 
 export { MAX_ACTIVE_KEYS };
 const KEY_PREFIX = "kredit_sk_";
-// Keys made before the rename. Only their hash is stored, so accepting the old prefix keeps them working.
-const LEGACY_KEY_PREFIX = "fuel_sk_";
 
 const lower = (address: string) => address.toLowerCase();
 const hashKey = (key: string) => createHash("sha256").update(key).digest("hex");
@@ -178,7 +176,7 @@ export function revokeKey(address: string, id: string) {
 }
 
 export function findKey(key: string) {
-  if (!key.startsWith(KEY_PREFIX) && !key.startsWith(LEGACY_KEY_PREFIX)) return null;
+  if (!key.startsWith(KEY_PREFIX)) return null;
   const row = db()
     .prepare("SELECT id, address, name, prefix FROM api_keys WHERE key_hash = ? AND revoked_at IS NULL")
     .get(hashKey(key)) as { id: string; address: string; name: string; prefix: string } | undefined;

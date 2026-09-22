@@ -25,7 +25,7 @@ import {
 import { Identicon } from "@/components/identicon";
 import { WalletButton } from "@/components/wallet-button";
 import { formatCredits, shortAddress } from "@/lib/format";
-import { ACCOUNT_KEY, api, type AccountResponse } from "@/lib/use-fuel-account";
+import { ACCOUNT_KEY, api, type AccountResponse } from "@/lib/use-kredit-account";
 import { useSession } from "@/lib/use-session";
 
 type Destination = { name: string; href: string; icon: (props: { className?: string }) => React.ReactNode };

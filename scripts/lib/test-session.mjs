@@ -10,7 +10,7 @@ import { SignJWT } from "jose";
 export const secret =
   process.env.SESSION_SECRET ?? fs.readFileSync(".env.local", "utf8").match(/SESSION_SECRET=(.+)/)[1].trim();
 
-export const databasePath = process.env.DATABASE_PATH ?? "data/fuel.db";
+export const databasePath = process.env.DATABASE_PATH ?? "data/kredit.db";
 
 export async function sessionCookie(address) {
   const sid = randomUUID();
