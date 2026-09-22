@@ -22,7 +22,7 @@ export function ContractAddress({ style }: { style?: CSSProperties }) {
         href={tokenUrl()}
         target="_blank"
         rel="noopener noreferrer"
-        title={`${TOKEN.symbol} on the explorer`}
+        title={`$${TOKEN.symbol} on Pons`}
         className="group flex items-center gap-2 py-1.5 pr-2.5 pl-3 text-fog transition-colors hover:bg-fog/[0.04]"
       >
         <span className="font-semibold tracking-wide text-accent">CA</span>
