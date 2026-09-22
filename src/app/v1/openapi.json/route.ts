@@ -1,5 +1,6 @@
 import { ECHO_MODEL, preflight, RATE_LIMIT, v1 } from "@/lib/gateway";
 import { CREDITS_PER_USD, MARGIN } from "@/lib/pricing";
+import { SITE_URL } from "@/lib/site";
 
 // The API described in OpenAPI 3.1, for generating clients and for tools that
 // read a spec. Public: it says how to call, never who may.
@@ -24,8 +25,9 @@ const charged = {
   "x-request-id": { schema: { type: "string" }, description: "An id for this request, for support." },
 };
 
-export const GET = v1((request) => {
-  const origin = new URL(request.url).origin;
+export const GET = v1(() => {
+  // The public address, not the request's: behind Render the request's origin is an internal port.
+  const origin = SITE_URL;
   const spec = {
     openapi: "3.1.0",
     info: {
