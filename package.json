@@ -17,13 +17,16 @@
     "test:gateway": "node scripts/gateway-test.mjs",
     "test:royalties": "node scripts/royalties-test.mjs",
     "test:platform": "node scripts/platform-test.mjs",
-    "test:guard": "node scripts/guard-test.mjs"
+    "test:guard": "node scripts/guard-test.mjs",
+    "demo": "node scripts/gateway-demo.mjs"
   },
   "dependencies": {
+    "@ai-sdk/gateway": "^4.0.88",
     "@base-org/account": "^2.5.10",
     "@coinbase/wallet-sdk": "^4.3.7",
     "@rainbow-me/rainbowkit": "^2.2.11",
     "@tanstack/react-query": "^5.103.1",
+    "ai": "^7.0.109",
     "jose": "^6.2.12",
     "next": "16.3.5",
     "react": "19.2.8",

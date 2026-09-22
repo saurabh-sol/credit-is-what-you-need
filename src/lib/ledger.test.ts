@@ -88,7 +88,7 @@ test("a key made before the rename still works", async () => {
   db()
     .prepare("INSERT INTO api_keys (id, address, key_hash, prefix, name) VALUES (?, ?, ?, ?, ?)")
     .run("legacy-key", BOB.toLowerCase(), createHash("sha256").update(legacy).digest("hex"), "fuel_sk_made…name", "legacy");
-  assert.deepEqual({ ...findKey(legacy) }, { id: "legacy-key", address: BOB.toLowerCase() });
+  assert.deepEqual({ ...findKey(legacy) }, { id: "legacy-key", address: BOB.toLowerCase(), name: "legacy", prefix: "fuel_sk_made…name" });
   assert.equal(revokeKey(BOB, "legacy-key"), true);
   assert.equal(findKey(legacy), null);
 });

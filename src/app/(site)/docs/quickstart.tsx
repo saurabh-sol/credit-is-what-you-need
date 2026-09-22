@@ -41,7 +41,11 @@ export function ModelsExample() {
       code={`curl ${origin}/v1/models \\
   -H "Authorization: Bearer $KREDIT_KEY"
 
-# { "object": "list", "data": [{ "id": "kredit/echo", "object": "model", "owned_by": "kredit" }] }`}
+# { "object": "list", "data": [{ "id": "anthropic/claude-sonnet-4.5", "type": "language",
+#     "pricing": { "credits_per_million_input": 3600, "credits_per_million_output": 18000 } }, …] }
+
+curl ${origin}/v1/account -H "Authorization: Bearer $KREDIT_KEY"
+# { "balance": 4988, "held": 0, "available": 4988, "usd_value": 4.988, … }`}
     />
   );
 }

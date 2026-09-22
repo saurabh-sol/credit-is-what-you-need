@@ -18,14 +18,24 @@ export const metadata = { title: "API — Kredit" };
 export const dynamic = "force-dynamic";
 
 const endpoints = [
-  { method: "POST", path: "/v1/chat/completions", text: "Chat with a model. Same request and response shape as OpenAI, including streaming." },
-  { method: "GET", path: "/v1/models", text: "The models your key can reach on this server." },
+  { method: "POST", path: "/v1/chat/completions", text: "OpenAI Chat Completions. Same request and response shape, including streaming, tools and images." },
+  { method: "POST", path: "/v1/responses", text: "OpenAI Responses, the default of the newer OpenAI SDKs." },
+  { method: "POST", path: "/v1/messages", text: "Anthropic Messages, for Anthropic SDKs and Claude Code. The key can go in x-api-key." },
+  { method: "POST", path: "/v1/embeddings", text: "OpenAI embeddings. Billed on input tokens." },
+  { method: "POST", path: "/v1/images/generations", text: "OpenAI images: { model, prompt, n, size } in, base64 pictures out. Priced per image or by token, as the model is sold." },
+  { method: "POST", path: "/v1/videos/generations", text: "Text to video: { model, prompt, duration, resolution, aspect_ratio, generate_audio }. Priced per second, known before it starts." },
+  { method: "GET", path: "/v1/models", text: "Every model you can call, with its type and price: per million tokens, per image or per second." },
+  { method: "GET", path: "/v1/account", text: "The balance behind your key, and what is held by calls still running." },
+  { method: "GET", path: "/v1/usage", text: "Your calls, newest first, with spend per model. Filter with from, to and limit." },
+  { method: "GET", path: "/v1/openapi.json", text: "The OpenAPI 3.1 description of all of the above, for generating a client." },
 ];
 
 const errors = [
   ["401", "invalid_api_key", "The key is missing, mistyped or revoked."],
   ["402", "insufficient_credits", "Your balance can't cover this call. When it is low, answers are kept short enough to pay for; when even that doesn't fit, the call is refused."],
-  ["400", "invalid_body", "The JSON needs a model and a non-empty messages array."],
+  ["400", "invalid_body", "The JSON is missing what the endpoint needs, such as model and messages."],
+  ["404", "model_not_found", "No model of that id is on this server. GET /v1/models lists them."],
+  ["400", "model_not_supported", "The model exists but is the wrong kind for the endpoint, such as an embedding model sent to chat."],
   ["429", "rate_limit_exceeded", "More than 60 requests in a minute on one key."],
   ["503", "provider_not_configured", `This server has no AI provider yet; only ${ECHO_MODEL} answers.`],
   ["502", "provider_unreachable", "The AI provider could not be reached. You were not charged."],
@@ -37,9 +47,13 @@ const billingHeaders = [
 ];
 
 const tools = [
-  ["Cursor", "Settings, Models, then override the OpenAI base URL with the one shown here and paste your Kredit key as the OpenAI API key."],
-  ["Postman", "POST to /v1/chat/completions, set Auth to Bearer Token, and send a JSON body with model and messages."],
   ["OpenAI SDKs", "Pass base_url (Python) or baseURL (Node) and your Kredit key as api_key. Nothing else changes."],
+  ["Anthropic SDKs", "Same idea: base_url or baseURL, and your Kredit key as api_key. Errors come back in Anthropic's shape."],
+  ["Claude Code", "export ANTHROPIC_BASE_URL=<this host>/v1 and ANTHROPIC_API_KEY=<your Kredit key>, then pick a model id from /v1/models."],
+  ["Vercel AI SDK", "createOpenAICompatible({ baseURL: '<this host>/v1', apiKey }) or createAnthropic({ baseURL: '<this host>/v1', apiKey })."],
+  ["Cursor, Continue, Open WebUI", "Wherever the tool asks for an OpenAI base URL and key, use this host's /v1 and your Kredit key."],
+  ["LangChain, LiteLLM", "Configure the OpenAI provider with openai_api_base (or api_base) set to this host's /v1."],
+  ["Postman, curl, anything else", "POST to /v1/chat/completions with Authorization: Bearer <key> and a JSON body with model and messages."],
 ];
 
 // The same bodies the gateway sends, so what you read here is what your client gets.
@@ -184,7 +198,10 @@ x-kredit-balance: ${5_000 - typicalCharge}`;
           </Section>
 
           <Section id="endpoints" title="Endpoints" code={<ModelsExample />}>
-            <p>Two endpoints, both under the base URL and both authenticated the same way.</p>
+            <p>
+              One API in the dialects your tools already speak: OpenAI Chat Completions, OpenAI Responses and
+              Anthropic Messages. All under the base URL, all with the same key, all billed the same way.
+            </p>
             <ul className="mt-5 border-t border-line/60">
               {endpoints.map((endpoint) => (
                 <li key={endpoint.path} className="entity max-w-none items-start">
@@ -247,8 +264,8 @@ x-kredit-balance: ${5_000 - typicalCharge}`;
               </table>
             </div>
             <p className="text-xs">
-              Worked out with the same pricing function that bills you, at Kredit&apos;s fallback token price. When the
-              provider reports its own price for a call, you are billed at that instead.
+              Worked out with the same pricing function that bills you, for a mid-priced model ($3 in, $15 out per
+              million tokens). Every model&apos;s own price is on <code>GET /v1/models</code>, in credits per million tokens.
             </p>
 
             <Label>Headers on every response</Label>

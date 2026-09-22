@@ -43,3 +43,8 @@ next-env.d.ts
 
 # local database
 /data
+
+# agent skill tooling (npx skills add)
+/.agents
+/skills-lock.json
+/.claude
