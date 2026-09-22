@@ -276,7 +276,7 @@ export async function Models() {
           Present when the provider publishes it.
         </Param>
         <Param name="pricing" type="object | null">
-          Credits with Kredit&apos;s {marginPercent}% margin already included. Per million tokens for language and
+          Credits at the provider&apos;s price with Kredit&apos;s {marginPercent}% fee, so what you see is what you pay. Per million tokens for language and
           embedding models, per image for image models, per second (from the cheapest resolution) for video. A
           model whose price is unknown is listed with <code>null</code> and cannot be called: nothing is ever billed by
           guesswork.
@@ -307,9 +307,9 @@ export async function Models() {
 
 export function Billing() {
   return (
-    <Doc slug="api/billing" lede={`${number(CREDITS_PER_USD)} credits pay for $1 of AI usage. A call costs what the provider charged for it plus a ${marginPercent}% service fee, rounded up to a whole credit.`}>
+    <Doc slug="api/billing" lede={`${number(CREDITS_PER_USD)} credits pay for $1 of AI usage. A call costs exactly what the provider charged for it, with a ${marginPercent}% fee, rounded up to a whole credit.`}>
       <H2>The formula</H2>
-      <CodeBlock title="Credits for a call" code={`credits = max(${MIN_CREDITS_PER_REQUEST}, ceil(provider_usd × ${1 + MARGIN} × ${number(CREDITS_PER_USD)}))`} />
+      <CodeBlock title="Credits for a call" code={`credits = max(${MIN_CREDITS_PER_REQUEST}, ceil(provider_usd × ${number(CREDITS_PER_USD)}))${MARGIN > 0 ? `  # plus ${marginPercent}%` : "  # no fee on top"}`} />
       <p>
         <code>provider_usd</code> is the model&apos;s published price applied to the tokens the provider reports:
         input tokens at the input price, output tokens at the output price, cached input at the model&apos;s cache
@@ -501,7 +501,7 @@ export function Account() {
 {
   "object": "account",
   "address": "0x71c7…976f",
-  "key": { "name": "Cursor", "prefix": "kredit_sk_ab12…wxyz" },
+  "key": { "name": "Cursor", "prefix": "kred_sk_ab12…wxyz" },
   "balance": 4988,
   "held": 120,
   "available": 4868,

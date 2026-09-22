@@ -1,6 +1,6 @@
 // What a model call costs in credits. 1,000 credits = $1.
 export const CREDITS_PER_USD = 1000;
-export const MARGIN = 0.2; // Kredit's cut on top of the provider's price
+export const MARGIN = 0; // No fee: a call costs exactly what the provider charged, rounded up to a whole credit
 export const MIN_CREDITS_PER_REQUEST = 1;
 
 // A price step: tokens from `min` up to (not including) `max` cost `usd` each.
@@ -64,7 +64,7 @@ const tierFor = (tiers: PriceTier[] | undefined, promptTokens: number, flat: num
   return tier?.usd ?? flat;
 };
 
-// The provider's price for a call, before Kredit's margin.
+// The provider's price for a call, in USD.
 export function usdFor(price: ModelPrice, usage: TokenUsage) {
   const cacheRead = usage.cacheReadTokens ?? 0;
   const cacheWrite = usage.cacheWriteTokens ?? 0;
@@ -81,9 +81,11 @@ export function usdFor(price: ModelPrice, usage: TokenUsage) {
   );
 }
 
-// Provider price in USD -> credits, with the margin, rounded up, at least one.
+// Provider price in USD -> credits, rounded up, at least one.
+// Rounded to a millionth of a credit first, so $0.123 is 123 credits and not
+// 124 because of floating point (0.123 x 1000 = 123.00000000000001).
 export const creditsForUsd = (usd: number) =>
-  Math.max(MIN_CREDITS_PER_REQUEST, Math.ceil(usd * (1 + MARGIN) * CREDITS_PER_USD));
+  Math.max(MIN_CREDITS_PER_REQUEST, Math.ceil(Number((usd * (1 + MARGIN) * CREDITS_PER_USD).toFixed(6))));
 
 export const creditsFor = (price: ModelPrice, usage: TokenUsage) => creditsForUsd(usdFor(price, usage));
 

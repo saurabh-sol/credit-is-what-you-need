@@ -198,7 +198,7 @@ export function Security() {
 
       <H2>API keys</H2>
       <ul>
-        <li>Keys are 24 random bytes behind the <code>kredit_sk_</code> prefix. Only a SHA-256 hash is stored; the key is shown once.</li>
+        <li>Keys are 24 random bytes behind the <code>kred_sk_</code> prefix. Only a SHA-256 hash is stored; the key is shown once.</li>
         <li>A key can spend its wallet&apos;s credits and read that wallet&apos;s balance and usage. It cannot see other keys, earnings or the wallet&apos;s record.</li>
         <li>Revocation is immediate. Up to {MAX_ACTIVE_KEYS} keys, so one per tool is practical.</li>
         <li>Provider-routing fields in a request (<code>provider</code>, <code>route</code>, <code>byok</code> and friends) are stripped, so a caller cannot change what they are billed for.</li>

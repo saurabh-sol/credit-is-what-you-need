@@ -5,20 +5,20 @@ import { creditsFor, creditsForUsd, ECHO_PRICE, type ModelPrice, usdFor } from "
 // $3 in, $15 out per million tokens: the echo model's stand-in price.
 const MID = ECHO_PRICE;
 
-test("a provider's price gets Kredit's margin, rounded up", () => {
-  assert.equal(creditsForUsd(0.01), 12); // $0.01 * 1.2 = 12 credits
+test("a provider's price becomes credits with no fee, rounded up", () => {
+  assert.equal(creditsForUsd(0.01), 10); // $0.01 = 10 credits, nothing added
 });
 
 test("tokens are priced from the model's list", () => {
-  // 1M in + 1M out = $18, * 1.2 = $21.60
-  assert.equal(creditsFor(MID, { inputTokens: 1_000_000, outputTokens: 1_000_000 }), 21_600);
+  // 1M in + 1M out = $18
+  assert.equal(creditsFor(MID, { inputTokens: 1_000_000, outputTokens: 1_000_000 }), 18_000);
 });
 
 test("a longer question or a longer answer costs more", () => {
   const short = creditsFor(MID, { inputTokens: 20, outputTokens: 60 });
   const long = creditsFor(MID, { inputTokens: 2_000, outputTokens: 1_500 });
   const huge = creditsFor(MID, { inputTokens: 60_000, outputTokens: 8_000 });
-  assert.deepEqual([short, long, huge], [2, 35, 360]);
+  assert.deepEqual([short, long, huge], [1, 29, 300]);
   // Output is the expensive side: the same tokens cost more as an answer than as a question.
   assert.ok(creditsFor(MID, { inputTokens: 0, outputTokens: 1_000 }) > creditsFor(MID, { inputTokens: 1_000, outputTokens: 0 }));
 });

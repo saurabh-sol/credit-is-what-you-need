@@ -7,7 +7,9 @@ import { planClaim, type ClaimPlan, type ClaimState, type ScoredTask } from "./s
 import { MAX_ACTIVE_KEYS } from "./limits.ts";
 
 export { MAX_ACTIVE_KEYS };
-const KEY_PREFIX = "kredit_sk_";
+const KEY_PREFIX = "kred_sk_";
+// Keys made before the rename still work: lookup is by hash, only the prefix check needs both.
+const KEY_PREFIXES = [KEY_PREFIX, "kredit_sk_"];
 
 const lower = (address: string) => address.toLowerCase();
 const hashKey = (key: string) => createHash("sha256").update(key).digest("hex");
@@ -206,7 +208,7 @@ export async function revokeKey(address: string, id: string) {
 }
 
 export async function findKey(key: string) {
-  if (!key.startsWith(KEY_PREFIX)) return null;
+  if (!KEY_PREFIXES.some((prefix) => key.startsWith(prefix))) return null;
   const row = await one<{ id: string; address: string; name: string; prefix: string }>(
     "SELECT id, address, name, prefix FROM api_keys WHERE key_hash = ? AND revoked_at IS NULL",
     [hashKey(key)],

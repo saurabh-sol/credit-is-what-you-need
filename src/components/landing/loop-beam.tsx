@@ -63,7 +63,7 @@ function ModelProof() {
   return (
     <>
       <div className="flex items-center justify-between gap-3">
-        <span className="truncate text-fog">kredit_sk_9fQk…h2Lw</span>
+        <span className="truncate text-fog">kred_sk_9fQk…h2Lw</span>
         <span className="shrink-0">API key</span>
       </div>
       <div className="mt-1.5 flex items-center justify-between gap-3">

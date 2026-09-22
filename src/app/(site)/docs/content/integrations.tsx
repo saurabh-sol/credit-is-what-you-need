@@ -72,7 +72,7 @@ const { text } = await generateText({ model: kredit("anthropic/claude-sonnet-4.5
             name: "LangChain",
             code: `from langchain_openai import ChatOpenAI
 
-llm = ChatOpenAI(model="openai/gpt-4o", openai_api_base="{origin}/v1", openai_api_key="kredit_sk_…")
+llm = ChatOpenAI(model="openai/gpt-4o", openai_api_base="{origin}/v1", openai_api_key="kred_sk_…")
 print(llm.invoke("hi").content)`,
           },
           {
@@ -82,7 +82,7 @@ print(llm.invoke("hi").content)`,
 reply = litellm.completion(
     model="openai/openai/gpt-4o",          # "openai/" tells LiteLLM the dialect; the rest is the Kredit id
     api_base="{origin}/v1",
-    api_key="kredit_sk_…",
+    api_key="kred_sk_…",
     messages=[{"role": "user", "content": "hi"}],
 )`,
           },

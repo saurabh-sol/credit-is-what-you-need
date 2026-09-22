@@ -54,7 +54,7 @@ export default async function Introduction() {
           ["Deploy, call contracts, send transfers", `Pays ${TASK_CREDITS.deploy} / ${TASK_CREDITS.contract_call} / ${TASK_CREDITS.transfer} credits per task, up to ${number(DAILY_TASK_CAP)} a day, plus milestones`],
           ["Show up day after day", `Adds a streak bonus, up to ${STREAK_MAX_BONUS} credits a day`],
           ["Invite a friend", `Sends you ${REFERRAL_PERCENT}% of every claim they make`],
-          ["Call a model with your key", `Charges the provider's price plus ${marginPercent}%, and tells you in two headers`],
+          ["Call a model with your key", `Charges the provider's price with a ${marginPercent}% fee, and tells you in two headers`],
         ]}
         min="28rem"
       />

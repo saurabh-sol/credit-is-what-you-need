@@ -81,7 +81,7 @@ const provider = http.createServer(async (request, response) => {
   send({
     id: "mock-1", object: "chat.completion", model: "mock/pricey",
     choices: [{ index: 0, message: { role: "assistant", content: "ok" }, finish_reason: "stop" }],
-    usage: { prompt_tokens: 10, completion_tokens: 20, cost: 0.001 }, // 2 credits with the margin
+    usage: { prompt_tokens: 10, completion_tokens: 20, cost: 0.002 }, // 2 credits at the provider's price
   });
 });
 await new Promise((resolve) => provider.listen(Number(process.env.MOCK_PORT ?? 3462), resolve));
@@ -202,7 +202,7 @@ check("a streamed message is passed through untouched and billed when it ends", 
 const msgNoMax = await post("/v1/messages", { "x-api-key": created.key }, { ...anthropicBody, max_tokens: undefined });
 const msgErr = await msgNoMax.json();
 check("errors use Anthropic's shape on /v1/messages", msgNoMax.status === 400 && msgErr.type === "error" && msgErr.error.type === "invalid_request_error", JSON.stringify(msgErr));
-const msgBadKey = await post("/v1/messages", { "x-api-key": "kredit_sk_nope" }, anthropicBody);
+const msgBadKey = await post("/v1/messages", { "x-api-key": "kred_sk_nope" }, anthropicBody);
 check("a wrong key on /v1/messages is an authentication_error", msgBadKey.status === 401 && (await msgBadKey.json()).error.type === "authentication_error");
 
 start = await balance();

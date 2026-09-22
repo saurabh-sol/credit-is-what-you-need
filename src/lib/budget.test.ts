@@ -8,12 +8,12 @@ const MODEL: ModelPrice = { input: 3e-6, output: 15e-6, maxOutputTokens: 8000 };
 
 test("a healthy balance leaves the request alone and holds its worst case", () => {
   const plan = planSpend({ available: 10_000, inputTokens: 1000, price: MODEL });
-  assert.deepEqual(plan, { ok: true, maxTokens: null, hold: 148 }); // (1000 x $3 + 8000 x $15) / 1M x 1.2 x 1000, rounded up
+  assert.deepEqual(plan, { ok: true, maxTokens: null, hold: 123 }); // (1000 x $3 + 8000 x $15) / 1M x 1000
 });
 
 test("a requested limit lowers the hold", () => {
   const plan = planSpend({ available: 10_000, inputTokens: 1000, requestedMaxTokens: 500, price: MODEL });
-  assert.deepEqual(plan, { ok: true, maxTokens: null, hold: 13 });
+  assert.deepEqual(plan, { ok: true, maxTokens: null, hold: 11 }); // (1000 x $3 + 500 x $15) / 1M x 1000 = 10.5
 });
 
 test("a thin balance shortens the answer to what it can pay for", () => {
@@ -33,7 +33,7 @@ test("a request asking for more than the balance covers is cut down too", () => 
 
 test("a prompt the balance cannot cover is refused with what it needs", () => {
   const plan = planSpend({ available: 3, inputTokens: 100_000, price: MODEL });
-  assert.deepEqual(plan, { ok: false, needed: 361 });
+  assert.deepEqual(plan, { ok: false, needed: 301 });
   assert.equal(planSpend({ available: 0, inputTokens: 1, price: MODEL }).ok, false);
 });
 
@@ -44,7 +44,7 @@ test("free models are never shortened", () => {
 
 test("a model with no known answer limit is planned with an assumed length", () => {
   const plan = planSpend({ available: 100_000, inputTokens: 0, price: { ...ECHO_PRICE, maxOutputTokens: undefined } });
-  assert.deepEqual(plan, { ok: true, maxTokens: null, hold: 295 }); // 16,384 x $15 / 1M x 1.2 x 1000, rounded up
+  assert.deepEqual(plan, { ok: true, maxTokens: null, hold: 246 }); // 16,384 x $15 / 1M x 1000, rounded up
 });
 
 test("attachments count flat, not by the size of their base64", () => {

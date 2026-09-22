@@ -33,7 +33,7 @@ export const GET = v1((request) => {
       version: "1",
       description: [
         "AI model calls paid with Kredit credits. 1,000 credits = $1 of usage.",
-        `Calls are billed at the provider's price plus ${Math.round(MARGIN * 100)}%, rounded up to a whole credit.`,
+        `Calls are billed at the provider's price with a ${Math.round(MARGIN * 100)}% fee, rounded up to a whole credit.`,
         "Three dialects, one key: OpenAI Chat Completions, OpenAI Responses and Anthropic Messages. Point any of their SDKs at this base URL.",
         `The model "${ECHO_MODEL}" answers without a provider and can be used to test a key.`,
       ].join(" "),
@@ -242,7 +242,7 @@ export const GET = v1((request) => {
     },
     components: {
       securitySchemes: {
-        bearerAuth: { type: "http", scheme: "bearer", description: "A Kredit API key (`kredit_sk_…`) from the dashboard." },
+        bearerAuth: { type: "http", scheme: "bearer", description: "A Kredit API key (`kred_sk_…`) from the dashboard." },
         anthropicKey: { type: "apiKey", in: "header", name: "x-api-key", description: "The same key, as Anthropic clients send it." },
       },
       schemas: {

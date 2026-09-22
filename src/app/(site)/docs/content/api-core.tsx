@@ -20,7 +20,7 @@ export function Authentication() {
       <H2>Keys</H2>
       <p>
         Keys are created on the dashboard, under <Link href="/dashboard/keys">Keys</Link>, or from the{" "}
-        <Link href="/docs">docs home</Link> once you are signed in. A key starts with <code>kredit_sk_</code> and is 42
+        <Link href="/docs">docs home</Link> once you are signed in. A key starts with <code>kred_sk_</code> and is 42
         characters long. It is shown exactly once, when it is created: Kredit stores only a SHA-256 hash of it, so
         nobody, including us, can read it back later.
       </p>
@@ -38,7 +38,7 @@ export function Authentication() {
         Send it as a bearer token. Every <code>/v1</code> endpoint also accepts it in <code>x-api-key</code>, which is
         what Anthropic SDKs send, so both of these work everywhere:
       </p>
-      <CodeBlock title="Headers" code={`Authorization: Bearer kredit_sk_…\n\n# or, as Anthropic clients do\nx-api-key: kredit_sk_…`} />
+      <CodeBlock title="Headers" code={`Authorization: Bearer kred_sk_…\n\n# or, as Anthropic clients do\nx-api-key: kred_sk_…`} />
       <BaseUrl />
 
       <H2>Managing keys from your own code</H2>

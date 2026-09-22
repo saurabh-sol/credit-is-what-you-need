@@ -79,10 +79,10 @@ test("addresses are case-insensitive", async () => {
 
 test("keys: created once, found by value, gone when revoked", async () => {
   const created = await createKey(ALICE, "postman");
-  assert.ok(created.key.startsWith("kredit_sk_"));
-  assert.ok(created.prefix.startsWith(created.key.slice(0, "kredit_sk_".length + 4)));
+  assert.ok(created.key.startsWith("kred_sk_"));
+  assert.ok(created.prefix.startsWith(created.key.slice(0, "kred_sk_".length + 4)));
   assert.equal((await findKey(created.key))?.address, ALICE.toLowerCase());
-  assert.equal(await findKey("kredit_sk_wrong"), null);
+  assert.equal(await findKey("kred_sk_wrong"), null);
   assert.equal(await findKey("not-a-kredit-key"), null);
 
   assert.equal(await revokeKey(BOB, created.id), false); // someone else can't revoke it

@@ -1,6 +1,6 @@
 // The same request in three languages. Shared by the landing demo and the API docs.
 
-export const KEY_PLACEHOLDER = "kredit_sk_••••••••";
+export const KEY_PLACEHOLDER = "kred_sk_••••••••";
 
 type SnippetOptions = { origin: string; key?: string; model?: string; message?: string };
 

@@ -8,7 +8,7 @@ export const metadata = { title: "Credits — Kredit" };
 
 const rules = [
   [`${formatCredits(CREDITS_PER_USD)} credits`, "pay for $1 of AI usage"],
-  [`+${Math.round(MARGIN * 100)}%`, "service fee on top of what the model's provider charges"],
+  [`${Math.round(MARGIN * 100)}% fee`, "you pay exactly what the model's provider charges, nothing on top"],
   [`${MIN_CREDITS_PER_REQUEST} credit`, "is the least any request costs; failed requests are free"],
 ];
 

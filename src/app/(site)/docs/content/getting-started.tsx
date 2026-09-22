@@ -130,7 +130,7 @@ export function HowItWorks() {
       <H2>5. Credits pay for AI</H2>
       <p>
         {number(CREDITS_PER_USD)} credits buy $1 of AI usage. A key or the playground calls any model the server
-        offers; the call costs what the provider charged plus a {marginPercent}% service fee, at least{" "}
+        offers; the call costs exactly what the provider charged, with a {marginPercent}% fee on top, at least{" "}
         {MIN_CREDITS_PER_REQUEST} credit, and the bill arrives in the response headers. Kredit never lets an answer
         die halfway because credits ran out: a thin balance shortens the answer before the call goes out. See{" "}
         <Link href="/docs/api/billing">Pricing and billing</Link>.
@@ -154,7 +154,7 @@ export function Rules() {
         head={["Rule", "Value"]}
         rows={[
           ["Credit value", `${number(CREDITS_PER_USD)} credits = $1 of AI usage`],
-          ["Service fee on AI calls", `${marginPercent}% on top of the provider's price`],
+          ["Fee on AI calls", `${marginPercent}%: you pay the provider's price`],
           ["Minimum charge per call", `${MIN_CREDITS_PER_REQUEST} credit`],
           ["Rounding", "Up to the next whole credit"],
           ["Failed calls", "Free"],

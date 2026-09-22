@@ -25,7 +25,7 @@ const start = await (await app("/api/account")).json();
 check("new account starts at zero", start.balance === 0 && start.keys.length === 0);
 
 const created = await (await app("/api/keys", { method: "POST", body: JSON.stringify({ name: "test" }) })).json();
-check("key is created and shown once", created.key?.startsWith("kredit_sk_"));
+check("key is created and shown once", created.key?.startsWith("kred_sk_"));
 const broke = await chat(created.key, hello);
 check("gateway refuses a wallet with no credits", broke.status === 402, `(${(await broke.json()).error.code})`);
 
@@ -45,7 +45,7 @@ check("receipt now shows nothing left to claim", rescanned.claimable === 0);
 // --- gateway
 const noKey = await fetch(`${base}/v1/chat/completions`, { method: "POST", body: JSON.stringify(hello) });
 check("gateway rejects a missing key", noKey.status === 401);
-const wrongKey = await chat("kredit_sk_not_a_real_key", hello);
+const wrongKey = await chat("kred_sk_not_a_real_key", hello);
 check("gateway rejects a wrong key", wrongKey.status === 401);
 const bad = await chat(created.key, { model: "kredit/echo" });
 check("gateway rejects a body without messages", bad.status === 400);

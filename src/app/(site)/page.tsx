@@ -184,7 +184,7 @@ const topUpPoints = [
 const faqs = [
   {
     question: "What is a credit worth?",
-    answer: `${formatCredits(CREDITS_PER_USD)} credits pay for $1 of AI usage. Each call is charged by what the model's provider charged plus a ${Math.round(MARGIN * 100)}% service fee, with a ${MIN_CREDITS_PER_REQUEST}-credit minimum, and every response tells you what it cost and what is left.`,
+    answer: `${formatCredits(CREDITS_PER_USD)} credits pay for $1 of AI usage. Each call is charged exactly what the model's provider charged, with a ${Math.round(MARGIN * 100)}% fee on top and a ${MIN_CREDITS_PER_REQUEST}-credit minimum, and every response tells you what it cost and what is left.`,
   },
   {
     question: "Does connecting my wallet cost anything?",

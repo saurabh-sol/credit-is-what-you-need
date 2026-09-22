@@ -143,14 +143,14 @@ session, so you never paste a key into a web page.
 
 **The API** (for your own apps and scripts):
 
-1. On the dashboard create an API key. It starts with `kredit_sk_`. The full key is shown
+1. On the dashboard create an API key. It starts with `kred_sk_`. The full key is shown
    once; the server stores only a hash of it. You can have up to **5 active keys** and
    revoke any of them at any time.
 2. Point any OpenAI client at this site:
 
    ```python
    from openai import OpenAI
-   client = OpenAI(base_url="https://<this-site>/v1", api_key="kredit_sk_...")
+   client = OpenAI(base_url="https://<this-site>/v1", api_key="kred_sk_...")
    reply = client.chat.completions.create(
        model="kredit/echo",
        messages=[{"role": "user", "content": "hi"}],
@@ -163,7 +163,7 @@ session, so you never paste a key into a web page.
 **What a call costs** (`src/lib/pricing.ts`):
 
 ```
-credits = provider's price in USD × 1.20 (Kredit's 20% margin) × 1,000, rounded up, minimum 1
+credits = provider's price in USD × 1,000, rounded up, minimum 1 (no fee on top)
 ```
 
 - A call the provider prices at $0.01 costs 12 credits.
@@ -233,7 +233,7 @@ it again.
 | Daily cap on task rewards | 1,000 credits per wallet |
 | Streak bonus | 10 credits × streak day, from day 2, at most 100 a day |
 | Referral share | 10% of every claim by a wallet you invited |
-| Kredit's margin on AI calls | 20% |
+| Kredit's fee on AI calls | 0% |
 | Minimum charge per call | 1 credit |
 | Rate limit | 60 requests per minute per key |
 | Active API keys per wallet | 5 |
