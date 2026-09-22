@@ -6,7 +6,8 @@ import { erc20Abi, formatEther, type Address } from "viem";
 import { useAccount, useBalance, useReadContract, useSwitchChain, useWriteContract } from "wagmi";
 import { CheckIcon, CoinsIcon } from "@/components/icons";
 import { CHECKOUT_ABI } from "@/lib/checkout-abi";
-import { formatCredits } from "@/lib/format";
+import { formatCredits, shortAddress } from "@/lib/format";
+import { networks } from "@/lib/networks";
 import { costOfCredits, formatTokenAmount, formatUsd, parseCredits, type TopUpConfig } from "@/lib/topup";
 import { QUOTER_V2_ABI } from "@/lib/uniswap";
 import { ACCOUNT_KEY, api } from "@/lib/use-kredit-account";
@@ -132,8 +133,10 @@ export function TopUp() {
   );
 }
 
+type Bought = { credits: number; hash: string };
+
 // Polls the server until the transaction is mined and credited. Returns the credits added.
-async function confirm(hash: string, setStep: (step: Step) => void) {
+async function confirm(hash: string, setStep: (step: Step) => void): Promise<Bought> {
   setStep("confirming");
   for (let attempt = 0; ; attempt++) {
     const response = await fetch("/api/topup", {
@@ -144,7 +147,7 @@ async function confirm(hash: string, setStep: (step: Step) => void) {
     const result = await response.json();
     if (response.ok) {
       setStep("crediting");
-      return result.credits as number;
+      return { credits: result.credits as number, hash };
     }
     if (!result.retry || attempt >= 20) {
       throw new Error(`${result.error} Your payment is safe: keep this transaction hash, ${hash}, and try again.`);
@@ -157,7 +160,7 @@ function usePurchase() {
   const queryClient = useQueryClient();
   const [step, setStep] = useState<Step>("idle");
   const [error, setError] = useState<string | null>(null);
-  const [bought, setBought] = useState(0);
+  const [bought, setBought] = useState<Bought | null>(null);
   const busy = step !== "idle" && step !== "done";
 
   async function run(send: () => Promise<string>, after?: () => void) {
@@ -368,7 +371,7 @@ function formatEth(wei: bigint) {
   return text >= 1 ? text.toFixed(3) : text.toPrecision(3).replace(/\.?0+$/, "");
 }
 
-function Status({ step, bought, error }: { step: Step; bought: number; error: string | null }) {
+function Status({ step, bought, error }: { step: Step; bought: Bought | null; error: string | null }) {
   const busy = step !== "idle" && step !== "done";
   return (
     <>
@@ -377,9 +380,18 @@ function Status({ step, bought, error }: { step: Step; bought: number; error: st
           {stepText[step]}
         </p>
       )}
-      {step === "done" && (
-        <p className="pop-in mt-4 flex items-center gap-2 rounded-xl border border-accent/30 bg-accent/5 px-4 py-3 text-sm" role="status">
-          <CheckIcon className="text-accent" /> {formatCredits(bought)} credits added to your balance.
+      {step === "done" && bought && (
+        <p className="pop-in mt-4 flex flex-wrap items-center gap-2 rounded-xl border border-accent/30 bg-accent/5 px-4 py-3 text-sm" role="status">
+          <CheckIcon className="text-accent" /> {formatCredits(bought.credits)} credits added to your balance.
+          <a
+            href={`${networks.mainnet.explorerUrl}/tx/${bought.hash}`}
+            target="_blank"
+            rel="noreferrer"
+            title="Your payment on the block explorer"
+            className="font-mono text-xs text-mist underline-offset-4 hover:text-accent hover:underline"
+          >
+            receipt {shortAddress(bought.hash)}
+          </a>
         </p>
       )}
       {error && (

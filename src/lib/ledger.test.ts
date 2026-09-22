@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 await (await import("./test-db.ts")).useTestDatabase();
-const { claim, createKey, findKey, getBalance, KeyLimitError, listKeys, listLedger, MAX_ACTIVE_KEYS, recordUsage, revokeKey } =
+const { claim, createKey, findKey, getBalance, KeyLimitError, listKeys, listLedger, MAX_ACTIVE_KEYS, recordTopUp, recordUsage, revokeKey, TopUpUsedError } =
   await import("./ledger.ts");
 const { listInvited, ReferralError, referralTotals, setReferrer } = await import("./referrals.ts");
 import type { ScoredTask } from "./scoring.ts";
@@ -173,4 +173,17 @@ test("an inviter is named once, before the first claim, and never in a loop", as
   await assert.rejects(() => setReferrer(a, c), ReferralError); // a -> b -> c -> a would be a loop
   await assert.rejects(() => setReferrer(ALICE, a), ReferralError); // Alice has claimed already
   assert.equal((await referralTotals(a)).count, 1);
+});
+
+test("a top-up credits once and its ledger row links the payment", async () => {
+  const dave = "0xDDDDddddDDDDddddDDDDddddDDDDddddDDDDdddd";
+  const hash = `0x${"ab".repeat(32)}`;
+  const entry = { network: "mainnet" as const, hash, address: dave, token: "0xUSDG", symbol: "USDG", decimals: 6, amount: 800_000n, credits: 1000 };
+  assert.equal(await recordTopUp(entry), 1000);
+  const [row] = await listLedger(dave, 1);
+  assert.equal(row.kind, "topup");
+  assert.equal(row.network, "mainnet");
+  assert.equal(row.txHash, hash);
+  await assert.rejects(recordTopUp(entry), TopUpUsedError);
+  assert.equal(await getBalance(dave), 1000);
 });

@@ -386,10 +386,13 @@ export function recordTopUp(entry: {
       ],
     );
     if (written === 0) throw new TopUpUsedError("This payment has already been turned into credits.");
-    await run("INSERT INTO ledger (address, amount, kind, memo) VALUES (?, ?, 'topup', ?)", [
+    // The ledger row carries the payment's hash so the dashboard links its receipt.
+    await run("INSERT INTO ledger (address, amount, kind, memo, network, tx_hash) VALUES (?, ?, 'topup', ?, ?, ?)", [
       lower(entry.address),
       entry.credits,
       `Paid in ${entry.symbol} on ${entry.network}`,
+      entry.network,
+      lower(entry.hash),
     ]);
     return getBalance(entry.address);
   });
