@@ -1,374 +1,112 @@
 import Link from "next/link";
-import { CodeBlock } from "@/components/code-block";
 import { ArrowRightIcon, PlayIcon } from "@/components/icons";
-import { MakerLogo, ModelLogo } from "@/components/model-logo";
 import { catalog } from "@/lib/catalog";
-import { costExamples } from "@/lib/cost-examples";
 import { ECHO_MODEL } from "@/lib/gateway";
-import { MAX_ACTIVE_KEYS } from "@/lib/limits";
-import { CREDITS_PER_USD, MARGIN, MIN_CREDITS_PER_REQUEST } from "@/lib/pricing";
-import { featuredProviders, makerInfo, makerOf } from "@/lib/providers";
+import { CREDITS_PER_USD, MARGIN } from "@/lib/pricing";
+import { REFERRAL_PERCENT } from "@/lib/referral-rules";
+import { DAILY_TASK_CAP, TASK_CREDITS } from "@/lib/scoring";
+import { STREAK_MAX_BONUS } from "@/lib/streaks";
 import { KeyPanel } from "./key-panel";
-import { BaseUrl, ModelsExample, Quickstart, StreamingExample } from "./quickstart";
-import { SectionNav } from "./section-nav";
-import type { SectionId } from "./sections";
+import { Quickstart } from "./quickstart";
+import { Card, Cards, Doc, H2, number, Table } from "./ui";
 
-export const metadata = { title: "API — Kredit" };
-// The model list depends on how this server is configured, so it is read per request.
+export const metadata = {
+  title: "Docs — Kredit",
+  description: "Everything about Kredit: earning AI credits from on-chain activity on Robinhood Chain, and spending them through one OpenAI-compatible API.",
+};
+// The model count depends on how this server is configured, so it is read per request.
 export const dynamic = "force-dynamic";
 
-const endpoints = [
-  { method: "POST", path: "/v1/chat/completions", text: "OpenAI Chat Completions. Same request and response shape, including streaming, tools and images." },
-  { method: "POST", path: "/v1/responses", text: "OpenAI Responses, the default of the newer OpenAI SDKs." },
-  { method: "POST", path: "/v1/messages", text: "Anthropic Messages, for Anthropic SDKs and Claude Code. The key can go in x-api-key." },
-  { method: "POST", path: "/v1/embeddings", text: "OpenAI embeddings. Billed on input tokens." },
-  { method: "POST", path: "/v1/systemone", text: "TypeSafe evaluations (Jev): state and typed questions in, probabilities, choices and scores out. Also at /typesafe/v1/systemone for the TypeSafe SDK." },
-  { method: "POST", path: "/v1/images/generations", text: "OpenAI images: { model, prompt, n, size } in, base64 pictures out. Priced per image or by token, as the model is sold." },
-  { method: "POST", path: "/v1/videos/generations", text: "Text to video: { model, prompt, duration, resolution, aspect_ratio, generate_audio }. Priced per second, known before it starts." },
-  { method: "GET", path: "/v1/models", text: "Every model you can call, with its type and price: per million tokens, per image or per second." },
-  { method: "GET", path: "/v1/account", text: "The balance behind your key, and what is held by calls still running." },
-  { method: "GET", path: "/v1/usage", text: "Your calls, newest first, with spend per model. Filter with from, to and limit." },
-  { method: "GET", path: "/v1/openapi.json", text: "The OpenAPI 3.1 description of all of the above, for generating a client." },
-];
+const marginPercent = Math.round(MARGIN * 100);
 
-const errors = [
-  ["401", "invalid_api_key", "The key is missing, mistyped or revoked."],
-  ["402", "insufficient_credits", "Your balance can't cover this call. When it is low, answers are kept short enough to pay for; when even that doesn't fit, the call is refused."],
-  ["400", "invalid_body", "The JSON is missing what the endpoint needs, such as model and messages."],
-  ["404", "model_not_found", "No model of that id is on this server. GET /v1/models lists them."],
-  ["400", "model_not_supported", "The model exists but is the wrong kind for the endpoint, such as an embedding model sent to chat."],
-  ["429", "rate_limit_exceeded", "More than 60 requests in a minute on one key."],
-  ["503", "provider_not_configured", `This server has no AI provider yet; only ${ECHO_MODEL} answers.`],
-  ["502", "provider_unreachable", "The AI provider could not be reached. You were not charged."],
-];
-
-const billingHeaders = [
-  ["x-kredit-credits-charged", "What this request cost, in credits."],
-  ["x-kredit-balance", "Your balance after the charge."],
-];
-
-const tools = [
-  ["OpenAI SDKs", "Pass base_url (Python) or baseURL (Node) and your Kredit key as api_key. Nothing else changes."],
-  ["Anthropic SDKs", "Same idea: base_url or baseURL, and your Kredit key as api_key. Errors come back in Anthropic's shape."],
-  ["Claude Code", "export ANTHROPIC_BASE_URL=<this host>/v1 and ANTHROPIC_API_KEY=<your Kredit key>, then pick a model id from /v1/models."],
-  ["Vercel AI SDK", "createOpenAICompatible({ baseURL: '<this host>/v1', apiKey }) or createAnthropic({ baseURL: '<this host>/v1', apiKey })."],
-  ["Cursor, Continue, Open WebUI", "Wherever the tool asks for an OpenAI base URL and key, use this host's /v1 and your Kredit key."],
-  ["LangChain, LiteLLM", "Configure the OpenAI provider with openai_api_base (or api_base) set to this host's /v1."],
-  ["Postman, curl, anything else", "POST to /v1/chat/completions with Authorization: Bearer <key> and a JSON body with model and messages."],
-];
-
-// The same bodies the gateway sends, so what you read here is what your client gets.
-const errorExample = `HTTP/1.1 402 Payment Required
-
-{
-  "error": {
-    "message": "You are out of credits. Earn more on your Kredit dashboard.",
-    "type": "invalid_request_error",
-    "code": "insufficient_credits"
-  }
-}`;
-
-const limitExample = `HTTP/1.1 429 Too Many Requests
-
-{
-  "error": {
-    "message": "Rate limit reached: 60 requests per minute per key.",
-    "type": "invalid_request_error",
-    "code": "rate_limit_exceeded"
-  }
-}`;
-
-const number = (value: number) => value.toLocaleString("en-US");
-
-type SectionProps = {
-  id: SectionId;
-  title: string;
-  /** Shown beside the prose on wide screens, below it everywhere else. */
-  code?: React.ReactNode;
-  /** Lets the content run under the code column too, for grids that want the room. */
-  wide?: boolean;
-  children: React.ReactNode;
-};
-
-// Prose on the left, its code on the right and staying in view while you read.
-function Section({ id, title, code, wide, children }: SectionProps) {
-  return (
-    <section
-      id={id}
-      // The page already scrolls past the header; the extra margin clears the pill row on small screens.
-      className="scroll-mt-8 border-t border-line py-10 first:border-t-0 first:pt-0 xl:grid xl:grid-cols-[minmax(0,1fr)_27rem] xl:gap-12 2xl:grid-cols-[minmax(0,1fr)_32rem]"
-    >
-      <div className={`prose-docs min-w-0 text-sm ${wide ? "xl:col-span-2" : "max-w-[45rem]"}`}>
-        <h2 className="text-lg leading-7 font-semibold tracking-tight">{title}</h2>
-        {children}
-      </div>
-      {code && <div className="mt-6 min-w-0 space-y-4 xl:sticky xl:top-24 xl:mt-0 xl:self-start">{code}</div>}
-    </section>
-  );
-}
-
-// A small heading inside a section. The utilities win over the prose heading styles.
-function Label({ children, note }: { children: React.ReactNode; note?: string }) {
-  return (
-    <h3 className="section-label mt-8 text-[0.8125rem] font-medium">
-      {children}
-      {note && <span className="font-normal text-mist">{note}</span>}
-    </h3>
-  );
-}
-
-export default async function Docs() {
+export default async function Introduction() {
   const { live, models } = await catalog();
-  const modelCount = models.length - 1; // the echo model is ours, not the provider's
-
-  // How many models each maker has on this server, biggest first.
-  const counts = new Map<string, number>();
-  for (const model of models) {
-    const maker = makerOf(model.id);
-    counts.set(maker, (counts.get(maker) ?? 0) + 1);
-  }
-  counts.delete(makerOf(ECHO_MODEL));
-  // The first row is fixed (OpenAI, then TypeSafe AI's Jev); everyone else follows by size.
-  const pinned = ["openai", "typesafe-ai"];
-  const rank = (id: string) => (pinned.includes(id) ? pinned.indexOf(id) - pinned.length : 0);
-  const makers = live
-    ? [...counts.keys()].map(makerInfo).sort((a, b) => rank(a.id) - rank(b.id) || counts.get(b.id)! - counts.get(a.id)! || a.name.localeCompare(b.name))
-    : featuredProviders;
-
-  const typicalCharge = costExamples[1].credits;
-  const billingExample = `HTTP/1.1 200 OK
-content-type: application/json
-x-kredit-credits-charged: ${typicalCharge}
-x-kredit-balance: ${5_000 - typicalCharge}`;
 
   return (
-    <div className="mx-auto max-w-6xl px-4 pt-10 pb-24 xl:max-w-[88rem]">
-      <header className="flex flex-wrap items-end justify-between gap-x-10 gap-y-6 pb-8 lg:border-b lg:border-line">
-        <div>
-          <p className="eyebrow">API</p>
-          <h1 className="page-title mt-3">One key for the models you already use</h1>
-          <p className="page-lede">
-            Kredit speaks the OpenAI API format. Change the base URL, paste your key, and your credits pay for the
-            call. Every response tells you what it cost and what is left.
-          </p>
-          <span className="chip mt-4">
-            <span className={`live-dot ${live ? "" : "opacity-50"}`} />
-            {live ? `Provider connected · ${number(modelCount)} models` : `Test mode · ${ECHO_MODEL} only`}
-          </span>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <a href="#key" className="btn-sm btn-sm-primary">
-            Get your key <ArrowRightIcon className="size-3.5" />
-          </a>
-          <Link href="/playground" className="btn-sm">
-            <PlayIcon className="size-3.5 text-mist" /> Open playground
-          </Link>
-        </div>
-      </header>
-
-      <div className="lg:mt-10 lg:grid lg:grid-cols-[11rem_minmax(0,1fr)] lg:gap-12">
-        <SectionNav />
-
-        <div className="mt-8 min-w-0 lg:mt-0">
-          <Section id="key" title="Get your key" code={<KeyPanel />}>
-            <p>
-              Keys belong to your wallet. Create up to {MAX_ACTIVE_KEYS}, one per tool, and revoke any of them at once
-              if it leaks. A key is shown a single time, when you create it.
-            </p>
-          </Section>
-
-          <Section id="quickstart" title="Quickstart" code={<Quickstart />}>
-            <p>
-              Send your first request with <code>{ECHO_MODEL}</code>, a built-in model that repeats your message. It
-              works on every Kredit server and is billed by length like any other model, so it is the fastest way to
-              check a key end to end.
-            </p>
-          </Section>
-
-          <Section
-            id="auth"
-            title="Authentication"
-            code={
-              <>
-                <BaseUrl />
-                <CodeBlock title="Header" code="Authorization: Bearer kredit_sk_…" />
-              </>
-            }
-          >
-            <p>
-              Send your key as a bearer token in the <code>Authorization</code> header. Keys start with{" "}
-              <code>kredit_sk_</code>. Keep them on a server or in a tool you trust, never in code that runs in someone
-              else&apos;s browser.
-            </p>
-          </Section>
-
-          <Section id="endpoints" title="Endpoints" code={<ModelsExample />}>
-            <p>
-              One API in the dialects your tools already speak: OpenAI Chat Completions, OpenAI Responses and
-              Anthropic Messages. All under the base URL, all with the same key, all billed the same way.
-            </p>
-            <ul className="mt-5 border-t border-line/60">
-              {endpoints.map((endpoint) => (
-                <li key={endpoint.path} className="entity max-w-none items-start">
-                  <span className="chip mt-0.5 w-12 justify-center px-0 text-fog">{endpoint.method}</span>
-                  <div className="min-w-0">
-                    <p className="mt-0 font-mono text-[0.8125rem] leading-6 break-all text-fog">{endpoint.path}</p>
-                    <p className="mt-0 text-[0.8125rem] leading-relaxed">{endpoint.text}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </Section>
-
-          <Section id="streaming" title="Streaming" code={<StreamingExample />}>
-            <p>
-              Set <code>stream</code> to <code>true</code> and the reply arrives as server-sent events, token by
-              token. The charge is settled when the stream ends, or when you disconnect, for what was produced up to
-              then.
-            </p>
-          </Section>
-
-          <Section id="billing" title="Credits and billing" code={<CodeBlock title="Response headers" code={billingExample} />}>
-            <p>
-              <strong>{number(CREDITS_PER_USD)} credits pay for $1 of AI usage.</strong> A call costs what the provider
-              charged for it plus a {Math.round(MARGIN * 100)}% service fee, rounded up to a whole credit, with a
-              minimum of {MIN_CREDITS_PER_REQUEST} credit per request. Failed calls are free.
-            </p>
-            <p>
-              You pay for length: <strong>longer questions and longer answers cost more</strong>, because both the
-              tokens you send and the tokens that come back are counted. <code>{ECHO_MODEL}</code> is billed by length
-              in exactly the same way, so a test call shows you a real charge.
-            </p>
-
-            <Label note={`${number(CREDITS_PER_USD)} credits = $1`}>What requests cost</Label>
-            <div className="overflow-x-auto">
-              <table className="grid-table min-w-[30rem]">
-                <thead>
-                  <tr>
-                    <th>Request</th>
-                    <th className="num">In / out tokens</th>
-                    <th className="num">Credits</th>
-                    <th className="num">≈ USD</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {costExamples.map((example) => (
-                    <tr key={example.name}>
-                      <td>
-                        <span className="block text-fog">{example.name}</span>
-                        <span className="block text-xs text-mist">{example.detail}</span>
-                      </td>
-                      <td className="num whitespace-nowrap text-mist">
-                        {number(example.inputTokens)} / {number(example.outputTokens)}
-                      </td>
-                      <td className="num text-fog">{number(example.credits)}</td>
-                      <td className="num text-mist">${example.usd.toFixed(3)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <p className="text-xs">
-              Worked out with the same pricing function that bills you, for a mid-priced model ($3 in, $15 out per
-              million tokens). Every model&apos;s own price is on <code>GET /v1/models</code>, in credits per million tokens.
-            </p>
-
-            <Label>Headers on every response</Label>
-            <ul>
-              {billingHeaders.map(([header, text]) => (
-                <li key={header} className="entity max-w-none flex-wrap gap-x-4 gap-y-1">
-                  <code className="w-fit sm:w-52 sm:shrink-0 sm:border-0 sm:bg-transparent sm:p-0">{header}</code>
-                  <span className="text-[0.8125rem] leading-relaxed">{text}</span>
-                </li>
-              ))}
-            </ul>
-            <p className="text-xs">Non-streamed responses carry both, so your code always knows where it stands.</p>
-          </Section>
-
-          <Section id="errors" title="Errors" code={<CodeBlock title="Error body" code={errorExample} />}>
-            <p>
-              Errors use the OpenAI shape, <code>{`{ "error": { "message", "type", "code" } }`}</code>, so existing
-              clients show them properly.
-            </p>
-            <div className="mt-5 overflow-x-auto">
-              <table className="grid-table min-w-[32rem]">
-                <thead>
-                  <tr>
-                    <th>Status</th>
-                    <th>Code</th>
-                    <th>What happened</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {errors.map(([status, code, text]) => (
-                    <tr key={code}>
-                      <td className="font-mono text-fog">{status}</td>
-                      <td className="font-mono whitespace-nowrap text-fog">{code}</td>
-                      <td className="text-mist">{text}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Section>
-
-          <Section id="limits" title="Limits" code={<CodeBlock title="Over the limit" code={limitExample} />}>
-            <p>
-              Each key may make <strong>60 requests per minute</strong>. A wallet can hold{" "}
-              <strong>{MAX_ACTIVE_KEYS} active keys</strong>; revoke one to make room for another. Revoking takes effect
-              on the very next request.
-            </p>
-          </Section>
-
-          <Section id="models" title="Models" wide>
-            <p>
-              {live
-                ? "This server is connected to its AI provider. Use any model id from the list your key returns at /v1/models."
-                : `This server has no AI provider connected yet, so only ${ECHO_MODEL} answers. Once one is connected, models from these makers become available under ids like openai/… or anthropic/….`}
-            </p>
-            <Label note={live ? `${number(modelCount)} models in total` : "Waiting for a provider"}>
-              {live ? "Makers on this server" : "Makers Kredit can reach"}
-            </Label>
-            {/* Cells draw their own right and bottom rules, so an uneven last row leaves no filler block. */}
-            <ul className="mt-4 grid grid-cols-2 overflow-hidden rounded-xl border border-line sm:grid-cols-3 md:grid-cols-4 2xl:grid-cols-5 [&>li]:-mr-px [&>li]:-mb-px [&>li]:max-w-none [&>li]:border-r [&>li]:border-b [&>li]:border-line">
-              <li className="flex items-center gap-3 px-4 py-3.5">
-                <ModelLogo model={ECHO_MODEL} className="size-5" />
-                <div className="min-w-0 leading-5">
-                  <span className="block truncate text-[0.8125rem] font-medium text-fog">Kredit</span>
-                  <span className="block truncate font-mono text-xs">echo · always on</span>
-                </div>
-              </li>
-              {makers.map((maker) => (
-                <li key={maker.id} className="group flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-fog/[0.03]">
-                  <MakerLogo maker={maker} className="size-5 text-mist transition-colors group-hover:text-fog" />
-                  <div className="min-w-0 leading-5">
-                    <span className="block truncate text-[0.8125rem] font-medium text-fog">{maker.name}</span>
-                    <span className="block truncate font-mono text-xs tabular-nums">
-                      {live ? `${number(counts.get(maker.id) ?? 0)} models` : `${maker.id}/…`}
-                    </span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-            <p className="max-w-[45rem] text-xs">
-              Logos belong to their owners and only show whose models can be reached. Availability depends on the
-              provider this server is connected to.
-            </p>
-          </Section>
-
-          <Section id="tools" title="Use it in your tools" code={<BaseUrl />}>
-            <p>Use a key anywhere that speaks the OpenAI API: point the tool at the base URL and paste your key.</p>
-            <ul className="mt-5 border-t border-line/60">
-              {tools.map(([name, text]) => (
-                <li key={name} className="entity max-w-none flex-wrap items-baseline gap-x-4 gap-y-1">
-                  <span className="w-28 shrink-0 font-medium text-fog">{name}</span>
-                  <span className="min-w-0 flex-1 basis-64 text-[0.8125rem] leading-relaxed">{text}</span>
-                </li>
-              ))}
-            </ul>
-          </Section>
-        </div>
+    <Doc
+      slug=""
+      title="Kredit documentation"
+      lede="Kredit turns what a wallet has done on Robinhood Chain into credits, and credits pay for AI. One key, every model, the bill in the response headers."
+    >
+      <div className="not-prose flex flex-wrap items-center gap-2">
+        <Link href="/docs/quickstart" className="btn-sm btn-sm-primary">
+          Quickstart <ArrowRightIcon className="size-3.5" />
+        </Link>
+        <Link href="/playground" className="btn-sm">
+          <PlayIcon className="size-3.5 text-mist" /> Open playground
+        </Link>
+        <span className="chip">
+          <span className={`live-dot ${live ? "" : "opacity-50"}`} />
+          {live ? `Provider connected · ${number(models.length - 1)} models` : `Test mode · ${ECHO_MODEL} only`}
+        </span>
       </div>
-    </div>
+
+      <H2>What Kredit is</H2>
+      <p>
+        A wallet signs in with one free message. Kredit reads its record on Robinhood Chain, prices it with public
+        rules, and pays the result into a balance of credits. {number(CREDITS_PER_USD)} credits buy $1 of AI usage
+        through an API that speaks the OpenAI and Anthropic formats, so Cursor, Claude Code, the SDKs and every
+        tool you already use work by changing the base URL.
+      </p>
+      <Table
+        head={["You do", "Kredit does"]}
+        rows={[
+          ["Deploy, call contracts, send transfers", `Pays ${TASK_CREDITS.deploy} / ${TASK_CREDITS.contract_call} / ${TASK_CREDITS.transfer} credits per task, up to ${number(DAILY_TASK_CAP)} a day, plus milestones`],
+          ["Show up day after day", `Adds a streak bonus, up to ${STREAK_MAX_BONUS} credits a day`],
+          ["Invite a friend", `Sends you ${REFERRAL_PERCENT}% of every claim they make`],
+          ["Call a model with your key", `Charges the provider's price plus ${marginPercent}%, and tells you in two headers`],
+        ]}
+        min="28rem"
+      />
+
+      <H2>Start here</H2>
+      <Cards>
+        <Card href="/docs/quickstart" title="Quickstart">
+          Wallet to working API call in five minutes.
+        </Card>
+        <Card href="/docs/how-it-works" title="How it works">
+          The earn, claim, spend loop and the rules behind it.
+        </Card>
+        <Card href="/docs/earn/scoring" title="Earn credits">
+          Tasks, milestones, the daily cap, streaks, referrals, on-chain receipts.
+        </Card>
+        <Card href="/docs/api/chat-completions" title="API reference">
+          Every endpoint, parameter, header and error, with runnable examples.
+        </Card>
+        <Card href="/docs/integrations" title="Integrations">
+          OpenAI and Anthropic SDKs, Claude Code, the AI SDK, Cursor, LangChain.
+        </Card>
+        <Card href="/docs/self-hosting/docker" title="Run your own">
+          One container, one SQLite file, every environment variable explained.
+        </Card>
+      </Cards>
+
+      <H2>Your first request</H2>
+      <p>
+        Create a key, then send this. <code>{ECHO_MODEL}</code> repeats your message, works on every server, and is
+        billed by length like a real model, so the headers you get back are real.
+      </p>
+      <KeyPanel />
+      <Quickstart />
+
+      <H2>Principles</H2>
+      <ul>
+        <li>
+          <strong>Rules, not discretion.</strong> Every number on this site is read from the code that does the
+          scoring and billing, and the <Link href="/docs/rules">rules page</Link> lists all of them.
+        </li>
+        <li>
+          <strong>Everything pays once.</strong> A transaction, a milestone, a streak day, a payment: each is paid
+          exactly one time, enforced in a single database transaction.
+        </li>
+        <li>
+          <strong>Earnings are public, spending is private.</strong> The{" "}
+          <Link href="/distribution">distribution board</Link> shows who earned what; nobody sees what you spent it on.
+        </li>
+        <li>
+          <strong>No custody.</strong> Signing in costs no gas and grants nothing. Kredit never holds your tokens.
+        </li>
+      </ul>
+    </Doc>
   );
 }

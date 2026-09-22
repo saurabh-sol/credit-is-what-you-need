@@ -12,7 +12,7 @@ export default function Keys() {
         title="API keys"
         lede={`Up to ${MAX_ACTIVE_KEYS} active keys, one per tool. A key is shown once, when you create it, and stops working the moment you revoke it.`}
       >
-        <Link href="/docs#quickstart" className="btn-sm">
+        <Link href="/docs/quickstart" className="btn-sm">
           Read the quickstart
         </Link>
       </PageHeader>

@@ -3,13 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { OrbMark } from "@/components/brand/orb-mark";
 import { CloseIcon, MenuIcon, PlayIcon } from "@/components/icons";
-import { KreditMark } from "@/components/model-logo";
 import { WalletButton } from "@/components/wallet-button";
 
 const links = [
   ["How it works", "/#how"],
-  ["API", "/docs"],
+  ["Docs", "/docs"],
   ["Distribution", "/distribution"],
   ["FAQ", "/#faq"],
 ];
@@ -17,7 +17,7 @@ const links = [
 export function Logo() {
   return (
     <Link href="/" className="group flex items-center gap-2 text-lg font-semibold tracking-tight">
-      <KreditMark className="size-7 transition duration-500 group-hover:-rotate-6" />
+      <OrbMark className="size-7 transition duration-500 group-hover:-rotate-6" />
       Kredit
     </Link>
   );

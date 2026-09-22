@@ -76,7 +76,7 @@ export function ActivityTable({ limit }: { limit?: number }) {
                   </td>
                   <td className="max-w-64 truncate text-mist">
                     {entry.memo}
-                    {entry.txHash && entry.network && (
+                    {entry.txHash && entry.network && networks[entry.network] && (
                       <>
                         {" · "}
                         <a

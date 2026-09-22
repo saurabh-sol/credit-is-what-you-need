@@ -1,9 +1,10 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useSyncExternalStore } from "react";
+import { useState } from "react";
 import { CopyButton } from "@/components/code-block";
 import { formatCredits, shortAddress } from "@/lib/format";
+import { SITE_URL } from "@/lib/site";
 import { api } from "@/lib/use-kredit-account";
 
 type ReferralsResponse = {
@@ -16,14 +17,8 @@ type ReferralsResponse = {
 
 const REFERRALS_KEY = ["referrals"];
 
-// The site's own origin, known only in the browser; empty while rendering on the server.
-const noop = () => () => {};
-const useOrigin = () =>
-  useSyncExternalStore(
-    noop,
-    () => window.location.origin,
-    () => "",
-  );
+// Invite links always carry the public address, wherever the dashboard is viewed.
+const useOrigin = () => SITE_URL;
 
 // Invite a wallet, earn a share of every claim it makes. The card shows the
 // link to send, who came through it, and what they brought in.

@@ -1,7 +1,8 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState, useSyncExternalStore } from "react";
+import { useState } from "react";
+import { SITE_URL } from "@/lib/site";
 import { ACCOUNT_KEY, api, useKreditAccount } from "@/lib/use-kredit-account";
 
 type NewKey = { id: string; key: string; name: string };
@@ -31,13 +32,7 @@ export function ApiKeys() {
     },
   });
 
-  // Empty on the server, the real origin in the browser, without a hydration mismatch.
-  const origin = useSyncExternalStore(
-    () => () => {},
-    () => window.location.origin,
-    () => "",
-  );
-  const snippet = `curl ${origin}/v1/chat/completions \\
+  const snippet = `curl ${SITE_URL}/v1/chat/completions \\
   -H "Authorization: Bearer ${fresh?.key ?? "YOUR_KREDIT_KEY"}" \\
   -H "Content-Type: application/json" \\
   -d '{"model": "kredit/echo", "messages": [{"role": "user", "content": "hello"}]}'`;

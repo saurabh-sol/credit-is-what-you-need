@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { CheckIcon, CopyIcon } from "@/components/icons";
 import { Identicon } from "@/components/identicon";
-import type { DistributionRow, EarningKind, TokenPaid } from "@/lib/distribution";
+import { ModelLogo } from "@/components/model-logo";
+import type { DistributionRow, EarningKind, ModelUsed, TokenPaid } from "@/lib/distribution";
 import { formatCredits, shortAddress } from "@/lib/format";
 import { CREDITS_PER_USD } from "@/lib/pricing";
+import { providerOf } from "@/lib/providers";
 import { formatTokenAmount } from "@/lib/topup";
 
 // Earned credits share one colour at falling strength; bought credits stand apart.
@@ -32,6 +34,45 @@ export function ago(iso: string) {
     if (Math.abs(seconds) >= size) return relative.format(Math.round(seconds / size), unit);
   }
   return "just now";
+}
+
+const plural = (count: number, word: string) => `${formatCredits(count)} ${word}${count === 1 ? "" : "s"}`;
+
+// "openai/gpt-4o-mini · 1,200 credits · 3 calls"
+const describeModel = (used: ModelUsed) => `${used.model} · ${plural(used.credits, "credit")} · ${plural(used.calls, "call")}`;
+
+// Marks for the models a wallet has spent on, one per maker so no mark repeats,
+// the maker that took the most credits first. Hover a mark for its models.
+export function ModelStack({ models, max = 4 }: { models: ModelUsed[]; max?: number }) {
+  if (models.length === 0) return null;
+  const makers = new Map<string, ModelUsed[]>();
+  for (const used of models) {
+    const maker = providerOf(used.model)?.name ?? "Kredit";
+    makers.set(maker, [...(makers.get(maker) ?? []), used]);
+  }
+  const shown = [...makers].slice(0, max);
+  const hidden = [...makers].slice(max).flatMap(([, list]) => list);
+  return (
+    <ul className="flex items-center" aria-label={`Models used: ${models.map((used) => used.model).join(", ")}`}>
+      {shown.map(([maker, list]) => (
+        <li
+          key={maker}
+          title={`${maker}\n${list.map(describeModel).join("\n")}`}
+          className="-ml-1.5 grid size-6 place-items-center rounded-full border border-line bg-surface text-fog first:ml-0"
+        >
+          <ModelLogo model={list[0].model} className="size-3.5" />
+        </li>
+      ))}
+      {hidden.length > 0 && (
+        <li
+          title={hidden.map(describeModel).join("\n")}
+          className="-ml-1.5 grid h-6 min-w-6 place-items-center rounded-full border border-line bg-surface px-1 font-mono text-[0.625rem] text-mist"
+        >
+          +{makers.size - shown.length}
+        </li>
+      )}
+    </ul>
+  );
 }
 
 // Icon only, so it carries its own name for screen readers.
@@ -108,6 +149,16 @@ export function WalletRow({ wallet, rank, share, you }: WalletRowProps) {
           <span className="max-w-44 truncate text-xs text-mist">{earnedFrom.map((source) => source.label).join(", ")}</span>
         </div>
       </td>
+      <td>
+        {wallet.used > 0 ? (
+          <div className="flex items-center justify-end gap-2.5">
+            <span className="num font-mono text-fog tabular-nums">{formatCredits(wallet.used)}</span>
+            <ModelStack models={wallet.models} />
+          </div>
+        ) : (
+          <span className="block text-right text-mist">—</span>
+        )}
+      </td>
       <td className="font-mono text-xs whitespace-nowrap text-mist">
         {wallet.tokensPaid.length ? tokens(wallet.tokensPaid).join(", ") : "—"}
       </td>
@@ -138,6 +189,12 @@ export function SkeletonRow() {
       ))}
       <td>
         <span className="skeleton h-1.5 w-40" />
+      </td>
+      <td>
+        <div className="flex items-center justify-end gap-2.5">
+          <span className="skeleton h-3 w-10" />
+          <span className="skeleton size-6 rounded-full" />
+        </div>
       </td>
       <td>
         <span className="skeleton h-3 w-14" />

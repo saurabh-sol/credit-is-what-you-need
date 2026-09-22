@@ -8,6 +8,7 @@ const { receiptIdOf, receiptsConfig, recordRoot, signerAccount } = await import(
 const { RECEIPT_TYPES, receiptDomain } = await import("./receipts-abi.ts");
 const { applyPlan, getBalance, listLedger } = await import("./ledger.ts");
 const { db } = await import("./db.ts");
+const { isOwnContractCall } = await import("./record.ts");
 
 const KEY = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
 const CONTRACT = "0x00000000000000000000000000000000000000AA";
@@ -34,13 +35,12 @@ test("a duplicate hash counts once in the root", () => {
 });
 
 test("receipts stay off until the contract and the signer key are set", () => {
-  assert.equal(receiptsConfig("testnet", {}), null);
-  assert.equal(receiptsConfig("testnet", { RECEIPTS_ADDRESS_TESTNET: CONTRACT }), null);
-  assert.equal(receiptsConfig("testnet", { RECEIPTS_ADDRESS_TESTNET: "nope", RECEIPT_SIGNER_KEY: KEY }), null);
-  const config = receiptsConfig("testnet", { RECEIPTS_ADDRESS_TESTNET: CONTRACT, RECEIPT_SIGNER_KEY: KEY });
-  assert.deepEqual(config, { network: "testnet", contract: CONTRACT.toLowerCase(), chainId: 46630 });
-  assert.equal(receiptsConfig("mainnet", { RECEIPTS_ADDRESS_TESTNET: CONTRACT, RECEIPT_SIGNER_KEY: KEY }), null);
-  assert.equal(receiptsConfig("mainnet", { RECEIPTS_ADDRESS_MAINNET: CONTRACT, RECEIPT_SIGNER_KEY: KEY })?.chainId, 4663);
+  assert.equal(receiptsConfig("mainnet", {}), null);
+  assert.equal(receiptsConfig("mainnet", { RECEIPTS_ADDRESS_MAINNET: CONTRACT }), null);
+  assert.equal(receiptsConfig("mainnet", { RECEIPTS_ADDRESS_MAINNET: "nope", RECEIPT_SIGNER_KEY: KEY }), null);
+  assert.equal(receiptsConfig("mainnet", { RECEIPT_SIGNER_KEY: KEY }), null);
+  const config = receiptsConfig("mainnet", { RECEIPTS_ADDRESS_MAINNET: CONTRACT, RECEIPT_SIGNER_KEY: KEY });
+  assert.deepEqual(config, { network: "mainnet", contract: CONTRACT.toLowerCase(), chainId: 4663 });
 });
 
 test("a receipt signed by the server verifies against the contract's domain", async () => {
@@ -57,11 +57,11 @@ test("a receipt signed by the server verifies against the contract's domain", as
     nonce: 3n,
     deadline: 1760000600n,
   } as const;
-  const domain = receiptDomain(46630, CONTRACT);
+  const domain = receiptDomain(4663, CONTRACT);
   const signature = await signer.signTypedData({ domain, types: RECEIPT_TYPES, primaryType: "Receipt", message });
   assert.ok(await verifyTypedData({ address: signer.address, domain, types: RECEIPT_TYPES, primaryType: "Receipt", message, signature }));
   // The same receipt on another chain is a different message.
-  const elsewhere = receiptDomain(4663, CONTRACT);
+  const elsewhere = receiptDomain(46630, CONTRACT);
   assert.equal(await verifyTypedData({ address: signer.address, domain: elsewhere, types: RECEIPT_TYPES, primaryType: "Receipt", message, signature }), false);
 });
 
@@ -77,18 +77,25 @@ test("applying one plan twice pays once and keeps the receipt's transaction", ()
     total: 670,
   };
   const tx = "0x" + "ee".repeat(32);
-  const first = applyPlan(wallet, "testnet", plan, { network: "testnet", txHash: tx });
+  const first = applyPlan(wallet, "mainnet", plan, { network: "mainnet", txHash: tx });
   assert.equal(first.granted, 670);
   assert.equal(getBalance(wallet), 670);
   const rows = listLedger(wallet);
   assert.equal(rows.length, 3);
-  assert.ok(rows.every((row) => row.txHash === tx && row.network === "testnet"));
+  assert.ok(rows.every((row) => row.txHash === tx && row.network === "mainnet"));
 
-  const again = applyPlan(wallet, "testnet", plan, { network: "testnet", txHash: tx });
+  const again = applyPlan(wallet, "mainnet", plan, { network: "mainnet", txHash: tx });
   assert.equal(again.granted, 0);
   assert.equal(getBalance(wallet), 670);
 
   // Old databases get the new ledger columns on open.
   const columns = (db().prepare("PRAGMA table_info(ledger)").all() as { name: string }[]).map((row) => row.name);
   assert.ok(columns.includes("tx_hash") && columns.includes("network"));
+});
+
+test("a call to the receipts contract is not a task", () => {
+  const tx = { hash: "0x1", timestamp: "2026-09-22T00:00:00Z", ok: true, to: CONTRACT, toIsContract: true, toName: null, method: "claim", createdContract: null, feeWei: "0" };
+  assert.equal(isOwnContractCall(tx, CONTRACT.toLowerCase()), true);
+  assert.equal(isOwnContractCall({ ...tx, to: "0x00000000000000000000000000000000000000BB" }, CONTRACT.toLowerCase()), false);
+  assert.equal(isOwnContractCall(tx, undefined), false);
 });

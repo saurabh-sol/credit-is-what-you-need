@@ -12,7 +12,7 @@ export async function POST(request: Request) {
 
   const body = (await request.json().catch(() => null)) as { network?: unknown; hash?: unknown } | null;
   if (!isNetworkId(body?.network)) {
-    return Response.json({ error: "network must be testnet or mainnet" }, { status: 400 });
+    return Response.json({ error: "network must be mainnet" }, { status: 400 });
   }
   const hash = typeof body?.hash === "string" && /^0x[0-9a-fA-F]{64}$/.test(body.hash) ? (body.hash as Hash) : null;
   if (!hash) return Response.json({ error: "Send the hash of your claim transaction." }, { status: 400 });

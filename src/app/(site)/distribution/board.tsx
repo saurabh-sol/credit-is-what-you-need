@@ -10,7 +10,7 @@ import { formatCredits, shortAddress } from "@/lib/format";
 import { CREDITS_PER_USD } from "@/lib/pricing";
 import { api } from "@/lib/use-kredit-account";
 import { useSession } from "@/lib/use-session";
-import { ago, SkeletonRow, sources, tokens, usd, WalletRow } from "./wallet-row";
+import { ago, ModelStack, SkeletonRow, sources, tokens, usd, WalletRow } from "./wallet-row";
 
 // The server sends at most this many rows, so a wallet missing from a full list may simply sit below it.
 const BOARD_LIMIT = 100;
@@ -115,6 +115,8 @@ export function Board({ initial }: { initial: Distribution }) {
                         <>
                           used
                           <span className="font-mono text-fog tabular-nums">{formatCredits(wallet.used)}</span>
+                          on
+                          <ModelStack models={wallet.models} max={3} />
                         </>
                       )}
                       <span className="text-mist/70" suppressHydrationWarning>
@@ -225,7 +227,7 @@ export function Board({ initial }: { initial: Distribution }) {
         ) : (
           // Below lg the table scrolls sideways; from lg up its header sticks under the site header instead.
           <div className={`transition-opacity max-lg:overflow-x-auto ${stale ? "opacity-60" : ""}`} aria-busy={!rows || stale}>
-            <table className="grid-table min-w-[60rem] lg:[&_th]:top-16">
+            <table className="grid-table min-w-[68rem] lg:[&_th]:top-16">
               <thead>
                 <tr>
                   <th className="num">#</th>
@@ -234,6 +236,7 @@ export function Board({ initial }: { initial: Distribution }) {
                   <th className="num">Worth</th>
                   <th className="num">Share</th>
                   <th>Sources</th>
+                  <th className="text-right">Used on</th>
                   <th>Paid in</th>
                   <th className="text-right">Last earned</th>
                 </tr>
@@ -255,7 +258,7 @@ export function Board({ initial }: { initial: Distribution }) {
         <Link href="/dashboard" className="text-fog underline decoration-line underline-offset-4 transition-colors hover:decoration-mist">
           Set a display name on your dashboard
         </Link>
-        . Spending never appears here.
+        . Prompts and outputs never appear here.
       </p>
     </>
   );

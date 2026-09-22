@@ -16,6 +16,7 @@ type RecordResponse = ReceiptData & {
   address: string;
   network: { id: NetworkId; name: string; explorerUrl: string };
   truncated: boolean;
+  unindexed?: number; // sent transactions the RPC index hasn't caught up with yet
   claimable: number;
   onchain: { contract: Address; chainId: number } | null;
 };
@@ -34,13 +35,9 @@ const stepText: Record<Step, string> = {
 };
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const networkTabs: { id: NetworkId; label: string }[] = [
-  { id: "testnet", label: "Testnet" },
-  { id: "mainnet", label: "Mainnet" },
-];
+const network: NetworkId = "mainnet";
 
 export function RecordScanner() {
-  const [network, setNetwork] = useState<NetworkId>("testnet");
 
   const record = useQuery({
     queryKey: ["record", network],
@@ -59,21 +56,6 @@ export function RecordScanner() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex rounded-full border border-line bg-raised p-1 text-sm" role="tablist">
-            {networkTabs.map((tab) => (
-              <button
-                key={tab.id}
-                role="tab"
-                aria-selected={network === tab.id}
-                onClick={() => setNetwork(tab.id)}
-                className={`rounded-full px-3 py-1 transition ${
-                  network === tab.id ? "bg-accent font-semibold text-ink" : "text-mist hover:text-fog"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
           <button
             onClick={() => record.refetch()}
             disabled={record.isFetching}
@@ -220,10 +202,11 @@ function ScanResult({ data, onClaimed }: { data: RecordResponse; onClaimed: () =
         )}
         <p className="mt-4 max-w-sm text-xs leading-relaxed text-mist">
           {data.successfulTxs} successful and {data.failedTxs} failed transactions scanned.
-          {data.truncated && " Only your latest 1,000 transactions were read."} Each transaction
+          {data.truncated && " Only your latest 1,000 transactions were read."}
+          {!!data.unindexed && ` ${data.unindexed} very recent ${data.unindexed === 1 ? "transaction is" : "transactions are"} still being indexed; scan again in a moment.`} Each transaction
           pays out once; new activity can be claimed any time. Days in a row with activity
           add a streak bonus, paid once per day.
-          {data.onchain && " Claims on this network are written to Robinhood Chain as a receipt you can check on Blockscout."}
+          {data.onchain && " Every claim is written to Robinhood Chain as a receipt you can check on Blockscout."}
         </p>
       </div>
 
