@@ -1,4 +1,4 @@
-import { mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, renameSync } from "node:fs";
 import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 
@@ -125,9 +125,13 @@ const holder = globalThis as { kreditDb?: DatabaseSync };
 
 export function db() {
   if (!holder.kreditDb) {
-    // The file name predates the rename to Kredit; existing local data lives there.
-    const path = process.env.DATABASE_PATH ?? "data/fuel.db";
-    if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true });
+    const path = process.env.DATABASE_PATH ?? "data/kredit.db";
+    if (path !== ":memory:") {
+      mkdirSync(dirname(path), { recursive: true });
+      // Data written under the product's old name moves over on first open.
+      const old = path.replace(/kredit\.db$/, "fuel.db");
+      if (old !== path && !existsSync(path) && existsSync(old)) renameSync(old, path);
+    }
     const database = new DatabaseSync(path);
     database.exec("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;");
     database.exec(SCHEMA);

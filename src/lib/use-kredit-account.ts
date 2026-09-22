@@ -24,5 +24,5 @@ export async function api<T>(url: string, init?: RequestInit): Promise<T> {
   return data as T;
 }
 
-export const useFuelAccount = () =>
+export const useKreditAccount = () =>
   useQuery({ queryKey: ACCOUNT_KEY, queryFn: () => api<AccountResponse>("/api/account") });

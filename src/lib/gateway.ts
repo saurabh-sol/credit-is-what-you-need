@@ -4,8 +4,6 @@ import { creditsForUsd, estimateTokens, type ModelPrice, type TokenUsage, usdFor
 // A built-in model that repeats your message. It lets anyone test a key
 // end-to-end before a real AI provider is configured.
 export const ECHO_MODEL = "kredit/echo";
-// The id the echo model had before the rename. Requests for it are still answered.
-export const LEGACY_ECHO_MODEL = "fuel/echo";
 
 const RATE_WINDOW_MS = 60_000;
 export const RATE_LIMIT = 60; // requests per key per minute

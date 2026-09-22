@@ -8,7 +8,7 @@ import { CountUp } from "@/components/motion/count-up";
 import type { Distribution } from "@/lib/distribution";
 import { formatCredits, shortAddress } from "@/lib/format";
 import { CREDITS_PER_USD } from "@/lib/pricing";
-import { api } from "@/lib/use-fuel-account";
+import { api } from "@/lib/use-kredit-account";
 import { useSession } from "@/lib/use-session";
 import { ago, SkeletonRow, sources, tokens, usd, WalletRow } from "./wallet-row";
 

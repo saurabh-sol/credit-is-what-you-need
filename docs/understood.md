@@ -1,11 +1,11 @@
-# Fuel, understood
+# Kredit, understood
 
 A plain explanation of what this website is and how it works for every kind of user.
 Every number here is taken from the code, and the file it comes from is named next to it.
 
 ## The idea in one paragraph
 
-Fuel turns what a wallet has done on Robinhood Chain into **credits**, and credits pay
+Kredit turns what a wallet has done on Robinhood Chain into **credits**, and credits pay
 for **AI model calls**. You connect a wallet, the site reads your on-chain history, works
 out what you have earned by fixed rules, and you claim it. Then you create an API key and
 use it like an OpenAI key: every call takes a few credits off your balance.
@@ -121,35 +121,35 @@ session, so you never paste a key into a web page.
 
 **The API** (for your own apps and scripts):
 
-1. On the dashboard create an API key. It starts with `fuel_sk_`. The full key is shown
+1. On the dashboard create an API key. It starts with `kredit_sk_`. The full key is shown
    once; the server stores only a hash of it. You can have up to **5 active keys** and
    revoke any of them at any time.
 2. Point any OpenAI client at this site:
 
    ```python
    from openai import OpenAI
-   client = OpenAI(base_url="https://<this-site>/v1", api_key="fuel_sk_...")
+   client = OpenAI(base_url="https://<this-site>/v1", api_key="kredit_sk_...")
    reply = client.chat.completions.create(
-       model="fuel/echo",
+       model="kredit/echo",
        messages=[{"role": "user", "content": "hi"}],
    )
    ```
 
-3. `GET /v1/models` lists the models. `fuel/echo` is a built-in test model that repeats
+3. `GET /v1/models` lists the models. `kredit/echo` is a built-in test model that repeats
    your message, so you can test a key before using a real model.
 
 **What a call costs** (`src/lib/pricing.ts`):
 
 ```
-credits = provider's price in USD × 1.20 (Fuel's 20% margin) × 1,000, rounded up, minimum 1
+credits = provider's price in USD × 1.20 (Kredit's 20% margin) × 1,000, rounded up, minimum 1
 ```
 
 - A call the provider prices at $0.01 costs 12 credits.
-- If the provider does not report a price, Fuel uses $3 per million input tokens and $15
+- If the provider does not report a price, Kredit uses $3 per million input tokens and $15
   per million output tokens. A normal chat turn (300 tokens in, 500 out) is 11 credits;
   a one-line question is about 2.
-- A normal (non-streaming) answer carries two headers: `x-fuel-credits-charged` and
-  `x-fuel-balance`. The bill arrives with the answer. Streamed answers from real models
+- A normal (non-streaming) answer carries two headers: `x-kredit-credits-charged` and
+  `x-kredit-balance`. The bill arrives with the answer. Streamed answers from real models
   are charged the same way but do not carry these headers; check the dashboard instead.
 
 **Limits and errors** (`src/lib/gateway.ts`, `src/lib/completions.ts`):
@@ -180,7 +180,7 @@ it again.
 
 ## For the person running the site
 
-- All balances live in one **ledger** table in SQLite (`data/fuel.db` by default). Your
+- All balances live in one **ledger** table in SQLite (`data/kredit.db` by default). Your
   balance is simply the sum of your rows: claims, milestones, streak bonuses, referral shares and
   top-ups are positive, spending is negative. Nothing is ever edited, only added.
   (`src/lib/db.ts`, `src/lib/ledger.ts`)
@@ -189,7 +189,7 @@ it again.
 - Settings come from the environment (see `.env.example`):
   - `SESSION_SECRET`: required, 32+ characters.
   - `UPSTREAM_BASE_URL`, `UPSTREAM_API_KEY`: the AI provider behind the API. Any
-    OpenAI-compatible service works. Without a key, only `fuel/echo` works.
+    OpenAI-compatible service works. Without a key, only `kredit/echo` works.
   - `EXPLORER_API_*`, `BLOCKSCOUT_API_KEY`: where wallet history is read from.
   - `TOPUP_*`: token, treasury and price. Top-ups stay off until all are set.
 - Checks: `npm test` (unit tests for every money rule), `npm run lint`, `npm run build`.
@@ -205,7 +205,7 @@ it again.
 | Daily cap on task rewards | 1,000 credits per wallet |
 | Streak bonus | 10 credits × streak day, from day 2, at most 100 a day |
 | Referral share | 10% of every claim by a wallet you invited |
-| Fuel's margin on AI calls | 20% |
+| Kredit's margin on AI calls | 20% |
 | Minimum charge per call | 1 credit |
 | Rate limit | 60 requests per minute per key |
 | Active API keys per wallet | 5 |

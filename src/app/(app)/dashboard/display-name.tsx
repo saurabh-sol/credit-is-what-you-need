@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
 import { CheckIcon } from "@/components/icons";
-import { api } from "@/lib/use-fuel-account";
+import { api } from "@/lib/use-kredit-account";
 
 const PROFILE_KEY = ["profile"];
 

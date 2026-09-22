@@ -6,7 +6,7 @@ import { Receipt } from "@/components/receipt";
 import { formatCredits, shortAddress } from "@/lib/format";
 import type { NetworkId } from "@/lib/networks";
 import type { Receipt as ReceiptData } from "@/lib/scoring";
-import { ACCOUNT_KEY, api } from "@/lib/use-fuel-account";
+import { ACCOUNT_KEY, api } from "@/lib/use-kredit-account";
 
 type RecordResponse = ReceiptData & {
   address: string;

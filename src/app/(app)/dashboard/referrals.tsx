@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useSyncExternalStore } from "react";
 import { CopyButton } from "@/components/code-block";
 import { formatCredits, shortAddress } from "@/lib/format";
-import { api } from "@/lib/use-fuel-account";
+import { api } from "@/lib/use-kredit-account";
 
 type ReferralsResponse = {
   percent: number;
