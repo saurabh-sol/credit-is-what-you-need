@@ -1,12 +1,16 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+  costInTokens,
   costOfCredits,
   creditsForPayment,
+  creditsForTokens,
   formatTokenAmount,
   formatUsd,
+  KRED_MAINNET,
   parseCredits,
   purchaseIn,
+  tokenTopUpConfig,
   topUpConfig,
   USDG_MAINNET,
   type ReceiptLog,
@@ -124,4 +128,58 @@ test("the config defaults to USDG at $0.0008 through the 0.01% pool", () => {
   assert.equal(custom?.poolFee, 500);
   assert.equal(custom?.maxCreditsPerBuy, 5_000);
   assert.equal(custom?.token, BOB.toLowerCase());
+});
+
+test("paying with KRED is off until its checkout and the treasury are set, and defaults to KRED", () => {
+  assert.equal(tokenTopUpConfig({}), null);
+  assert.equal(tokenTopUpConfig({ TOPUP_TOKEN_CHECKOUT_ADDRESS: CHECKOUT }), null);
+  assert.equal(tokenTopUpConfig({ TOPUP_TOKEN_CHECKOUT_ADDRESS: "nope", TOPUP_TREASURY_ADDRESS: TREASURY }), null);
+  assert.deepEqual(tokenTopUpConfig({ TOPUP_TOKEN_CHECKOUT_ADDRESS: CHECKOUT.toUpperCase().replace("0X", "0x"), TOPUP_TREASURY_ADDRESS: TREASURY }), {
+    network: "mainnet",
+    checkout: CHECKOUT,
+    token: KRED_MAINNET.address,
+    treasury: TREASURY,
+    symbol: "KRED",
+    decimals: 18,
+  });
+  const other = tokenTopUpConfig({
+    TOPUP_TOKEN_CHECKOUT_ADDRESS: CHECKOUT,
+    TOPUP_TREASURY_ADDRESS: TREASURY,
+    TOPUP_TOKEN_ADDRESS: BOB,
+    TOPUP_TOKEN_SYMBOL: "ABC",
+    TOPUP_TOKEN_DECIMALS: "6",
+  });
+  assert.equal(other?.token, BOB.toLowerCase());
+  assert.equal(other?.symbol, "ABC");
+  assert.equal(other?.decimals, 6);
+  assert.equal(tokenTopUpConfig({ TOPUP_TOKEN_CHECKOUT_ADDRESS: CHECKOUT, TOPUP_TREASURY_ADDRESS: TREASURY, TOPUP_TOKEN_ADDRESS: BOB, TOPUP_TOKEN_DECIMALS: "x" }), null);
+  // The USDG checkout is separate: the token one alone does not switch it on.
+  assert.equal(topUpConfig({ TOPUP_TOKEN_CHECKOUT_ADDRESS: CHECKOUT, TOPUP_TREASURY_ADDRESS: TREASURY }), null);
+});
+
+test("KRED credits follow the contract's rate and round down", () => {
+  const rate = BigInt(125) * BigInt(10) ** BigInt(18); // 125 KRED per credit
+  assert.equal(costInTokens(1_000, rate), BigInt(125_000) * BigInt(10) ** BigInt(18));
+  assert.equal(creditsForTokens(costInTokens(1_000, rate), rate), 1_000);
+  assert.equal(creditsForTokens(rate - BigInt(1), rate), 0);
+  assert.equal(creditsForTokens(rate * BigInt(2) - BigInt(1), rate), 1);
+  assert.equal(creditsForTokens(BigInt(1), BigInt(0)), 0);
+  assert.equal(formatTokenAmount(costInTokens(1_000, rate), 18, 2), "125,000");
+  // The receipt reader is the same one, keyed on the token checkout and the token.
+  const buy = purchased(CHECKOUT, ALICE, KRED_MAINNET.address, BigInt(0), costInTokens(1_000, rate), BigInt(1_000));
+  assert.deepEqual(purchaseIn([buy], { checkout: CHECKOUT, token: KRED_MAINNET.address, buyer: ALICE }), {
+    ethIn: BigInt(0),
+    amount: costInTokens(1_000, rate),
+    credits: BigInt(1_000),
+  });
+  assert.equal(purchaseIn([buy], want), null); // not a USDG purchase
+});
+
+test("the curve's spot price turns into a tokens-per-credit rate", async () => {
+  const { tokensPerCreditFromCurve } = await import("./kred-curve.ts");
+  const eth = BigInt(10) ** BigInt(18);
+  // 2 ETH against 1,000,000,000 KRED, ETH at $2,500: 1 KRED = $0.000005, so $0.0008 = 160 KRED.
+  const rate = tokensPerCreditFromCurve({ ethReserve: BigInt(2) * eth, tokenReserve: BigInt(1_000_000_000) * eth, usdgPerEth: BigInt(2_500_000_000), usdgPerCredit: BigInt(800) });
+  assert.equal(rate, BigInt(160) * eth);
+  assert.equal(tokensPerCreditFromCurve({ ethReserve: BigInt(0), tokenReserve: eth, usdgPerEth: BigInt(1), usdgPerCredit: BigInt(800) }), BigInt(0));
 });

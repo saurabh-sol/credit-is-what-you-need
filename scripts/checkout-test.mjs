@@ -1,15 +1,17 @@
-// Two real purchases on Robinhood Chain mainnet: CREDITS (default 1,000) paid
+// Real purchases on Robinhood Chain mainnet: CREDITS (default 1,000) paid
 // in ETH through KreditCheckout, then the same paid in USDG (approve + buy),
-// each handed to the server and checked to have landed as credits. Needs a
-// server with top-ups on and a wallet holding a little ETH and, for the second
-// leg, the USDG (the treasury wallet gets the first leg's USDG, so it can pay
-// the second):
+// then in KRED through KreditTokenCheckout when that is on and the wallet
+// holds enough, each handed to the server and checked to have landed as
+// credits. Needs a server with top-ups on and a wallet holding a little ETH
+// and, for the second leg, the USDG (the treasury wallet gets the first leg's
+// USDG, so it can pay the second):
 //   BASE_URL=http://localhost:3459 SESSION_SECRET=… DATABASE_URL=postgres://… \
 //   WALLET_KEY=<key> node --env-file=.env.local scripts/checkout-test.mjs
 import { createPublicClient, createWalletClient, erc20Abi, formatEther, formatUnits, http, parseEventLogs } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { robinhood } from "viem/chains";
 import { CHECKOUT_ABI } from "../src/lib/checkout-abi.ts";
+import { TOKEN_CHECKOUT_ABI } from "../src/lib/token-checkout-abi.ts";
 import { QUOTER_V2_ABI } from "../src/lib/uniswap.ts";
 import { sessionCookie } from "./lib/test-session.mjs";
 
@@ -19,7 +21,7 @@ const account = privateKeyToAccount(process.env.WALLET_KEY);
 const client = createPublicClient({ chain: robinhood, transport: http(rpc) });
 const wallet = createWalletClient({ account, chain: robinhood, transport: http(rpc) });
 const credits = BigInt(process.env.CREDITS ?? 1000);
-const only = process.env.ONLY; // "eth" or "usdg" to run one leg
+const only = process.env.ONLY; // "eth", "usdg" or "kred" to run one leg
 
 const cookie = await sessionCookie(account.address);
 const api = async (path, init = {}) => {
@@ -27,17 +29,17 @@ const api = async (path, init = {}) => {
   return { status: response.status, body: await response.json() };
 };
 
-const { body: { config } } = await api("/api/topup");
-if (!config) throw new Error("top-ups are not on: set TOPUP_CHECKOUT_ADDRESS and TOPUP_TREASURY_ADDRESS");
-console.log("checkout", config.checkout, "usdg", config.token, "pool fee", config.poolFee, "price", config.usdgPerCredit);
-const cost = await client.readContract({ abi: CHECKOUT_ABI, address: config.checkout, functionName: "costOf", args: [credits] });
-console.log(`${credits} credits cost ${formatUnits(cost, config.decimals)} USDG`);
+const { body: { config, token } } = await api("/api/topup");
+if (!config && only !== "kred") throw new Error("top-ups are not on: set TOPUP_CHECKOUT_ADDRESS and TOPUP_TREASURY_ADDRESS");
+if (config) console.log("checkout", config.checkout, "usdg", config.token, "pool fee", config.poolFee, "price", config.usdgPerCredit);
+const cost = config && (await client.readContract({ abi: CHECKOUT_ABI, address: config.checkout, functionName: "costOf", args: [credits] }));
+if (config) console.log(`${credits} credits cost ${formatUnits(cost, config.decimals)} USDG`);
 
 async function settle(hash, wantCredits) {
   console.log("tx", hash);
   const receipt = await client.waitForTransactionReceipt({ hash });
   if (receipt.status !== "success") throw new Error("the purchase reverted");
-  const [purchased] = parseEventLogs({ abi: CHECKOUT_ABI, eventName: "Purchased", logs: receipt.logs });
+  const [purchased] = parseEventLogs({ abi: CHECKOUT_ABI, eventName: "Purchased", logs: receipt.logs }); // same event on both checkouts
   console.log("Purchased", { ethIn: purchased.args.ethIn.toString(), amount: purchased.args.amount.toString(), credits: purchased.args.credits.toString() });
   if (purchased.args.credits < wantCredits) throw new Error("the contract recorded fewer credits than asked");
 
@@ -57,7 +59,7 @@ async function settle(hash, wantCredits) {
   console.log("ok: credited once, replay refused\n");
 }
 
-if (only !== "usdg") {
+if (config && only !== "usdg" && only !== "kred") {
   console.log("--- pay with ETH");
   const [quoted] = await client.readContract({
     abi: QUOTER_V2_ABI,
@@ -72,7 +74,7 @@ if (only !== "usdg") {
   await settle(hash, credits);
 }
 
-if (only !== "eth") {
+if (config && only !== "eth" && only !== "kred") {
   console.log("--- pay with USDG");
   const held = await client.readContract({ abi: erc20Abi, address: config.token, functionName: "balanceOf", args: [account.address] });
   console.log(`wallet holds ${formatUnits(held, config.decimals)} USDG`);
@@ -85,5 +87,32 @@ if (only !== "eth") {
   }
   const hash = await wallet.writeContract({ abi: CHECKOUT_ABI, address: config.checkout, functionName: "buyWithUsdg", args: [credits] });
   await settle(hash, credits);
+}
+if (only !== "eth" && only !== "usdg") {
+  console.log("--- pay with KRED");
+  if (!token) {
+    console.log("skipped: TOPUP_TOKEN_CHECKOUT_ADDRESS is not set");
+  } else if (!token.tokensPerCredit) {
+    throw new Error("the server could not read the token checkout's terms");
+  } else {
+    const rate = BigInt(token.tokensPerCredit);
+    const tokenCost = rate * credits;
+    console.log("token checkout", token.checkout, token.symbol, token.token, "rate", formatUnits(rate, token.decimals), "per credit");
+    const held = await client.readContract({ abi: erc20Abi, address: token.token, functionName: "balanceOf", args: [account.address] });
+    console.log(`wallet holds ${formatUnits(held, token.decimals)} ${token.symbol}, ${credits} credits cost ${formatUnits(tokenCost, token.decimals)}`);
+    if (held < tokenCost) {
+      if (only === "kred") throw new Error(`not enough ${token.symbol} for the KRED leg`);
+      console.log(`skipped: not enough ${token.symbol}`);
+    } else {
+      const allowance = await client.readContract({ abi: erc20Abi, address: token.token, functionName: "allowance", args: [account.address, token.checkout] });
+      if (allowance < tokenCost) {
+        const approve = await wallet.writeContract({ abi: erc20Abi, address: token.token, functionName: "approve", args: [token.checkout, tokenCost] });
+        console.log("approve", approve);
+        await client.waitForTransactionReceipt({ hash: approve });
+      }
+      const hash = await wallet.writeContract({ abi: TOKEN_CHECKOUT_ABI, address: token.checkout, functionName: "buyWithToken", args: [credits] });
+      await settle(hash, credits);
+    }
+  }
 }
 console.log("all good");

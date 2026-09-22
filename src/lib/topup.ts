@@ -60,6 +60,55 @@ export function topUpConfig(env: Record<string, string | undefined> = process.en
   };
 }
 
+// The Kredit token (KRED) on Robinhood Chain, 18 decimals. It is still on
+// its launch curve with no Uniswap pool, so KreditTokenCheckout sells credits
+// for it at a rate the owner sets by hand (`tokensPerCredit`, read live from
+// the contract) instead of a swap.
+export const KRED_MAINNET = { address: "0x1b69ba93b8da9cf4cbc8f9c40e7ed25347f86dd1", symbol: "KRED", decimals: 18 } as const;
+
+export type TokenTopUpConfig = {
+  network: NetworkId;
+  checkout: string; // lowercase KreditTokenCheckout address
+  token: string; // lowercase address of the token it accepts
+  treasury: string; // lowercase address that receives payments
+  symbol: string;
+  decimals: number;
+};
+
+// Paying with the token stays switched off until its checkout contract and the
+// treasury are set. The token defaults to KRED; TOPUP_TOKEN_ADDRESS,
+// TOPUP_TOKEN_SYMBOL and TOPUP_TOKEN_DECIMALS override it together.
+export function tokenTopUpConfig(env: Record<string, string | undefined> = process.env): TokenTopUpConfig | null {
+  const checkout = env.TOPUP_TOKEN_CHECKOUT_ADDRESS;
+  const treasury = env.TOPUP_TREASURY_ADDRESS;
+  if (!isAddress(checkout) || !isAddress(treasury)) return null;
+  const token = env.TOPUP_TOKEN_ADDRESS;
+  const custom = isAddress(token);
+  const decimals = custom ? Number(env.TOPUP_TOKEN_DECIMALS ?? KRED_MAINNET.decimals) : KRED_MAINNET.decimals;
+  if (!Number.isInteger(decimals) || decimals < 0 || decimals > 36) return null;
+  return {
+    network: "mainnet",
+    checkout: checkout.toLowerCase(),
+    token: (custom ? token : KRED_MAINNET.address).toLowerCase(),
+    treasury: treasury.toLowerCase(),
+    symbol: custom ? (env.TOPUP_TOKEN_SYMBOL?.trim() || "TOKEN") : KRED_MAINNET.symbol,
+    decimals,
+  };
+}
+
+// Whole credits for `amount` token base units at `tokensPerCredit` base units
+// per credit, rounded down. Mirrors KreditTokenCheckout.creditsFor.
+export function creditsForTokens(amount: bigint, tokensPerCredit: bigint) {
+  if (tokensPerCredit < BigInt(1)) return 0;
+  const credits = amount / tokensPerCredit;
+  return credits > BigInt(Number.MAX_SAFE_INTEGER) ? Number.MAX_SAFE_INTEGER : Number(credits);
+}
+
+// Token base units that `credits` credits cost. Mirrors KreditTokenCheckout.costOf.
+export function costInTokens(credits: number, tokensPerCredit: bigint) {
+  return BigInt(credits) * tokensPerCredit;
+}
+
 export type ReceiptLog = { address: string; topics: readonly string[]; data: string };
 
 const topicAddress = (topic: string) => `0x${topic.slice(-40)}`.toLowerCase();

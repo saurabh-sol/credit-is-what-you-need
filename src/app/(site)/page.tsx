@@ -201,7 +201,7 @@ const faqs = [
   },
   {
     question: "Can I buy credits instead of earning them?",
-    answer: "Earning is the main way and costs nothing. Once top-ups are open you can also buy credits at a fixed price, 1,000 credits for $0.80, paid in USDG or ETH from your own wallet, and they land when the chain confirms the payment. Every top-up is listed on the public distribution page.",
+    answer: "Earning is the main way and costs nothing. Once top-ups are open you can also buy credits at a fixed price, 1,000 credits for $0.80, paid in USDG, ETH or KRED from your own wallet, and they land when the chain confirms the payment. Every top-up is listed on the public distribution page.",
   },
   {
     question: "What if a key leaks?",
