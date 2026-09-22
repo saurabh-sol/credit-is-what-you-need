@@ -1,16 +1,10 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
 import { CodeBlock, CodeTabs } from "@/components/code-block";
+import { SITE_URL } from "@/lib/site";
 import { snippetNames, snippets } from "@/lib/snippets";
 
-// The real origin in the browser, a stand-in on the server, with no hydration mismatch.
-const useOrigin = () =>
-  useSyncExternalStore(
-    () => () => {},
-    () => window.location.origin,
-    () => "https://your-kredit-host",
-  );
+const useOrigin = () => SITE_URL;
 
 export function Quickstart() {
   const origin = useOrigin();
