@@ -24,11 +24,12 @@ export async function GET(request: Request) {
 
   try {
     // You can only scan the wallet you proved you own.
-    const { receipt, truncated } = await scanRecord(network, session.address);
+    const { receipt, truncated, unindexed } = await scanRecord(network, session.address);
     return Response.json({
       address: session.address,
       network: { id: network.id, name: network.name, explorerUrl: network.explorerUrl },
       truncated,
+      unindexed,
       ...receipt,
       tasks: receipt.tasks.slice(0, RECENT_TASKS),
       claimable: previewClaim(session.address, networkId, receipt.tasks).total,
