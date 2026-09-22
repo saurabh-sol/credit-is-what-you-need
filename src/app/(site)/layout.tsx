@@ -17,7 +17,7 @@ const footerLinks = [
     links: [
       ["Docs", "/docs"],
       ["Playground", "/playground"],
-      ["Models", "/docs/api/models"],
+      ["Models", "/models"],
     ],
   },
   {

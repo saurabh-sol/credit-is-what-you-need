@@ -360,8 +360,8 @@ export default function Home() {
           ))}
         </div>
         <Reveal className="mt-10">
-          <Link href="/docs/api/models" className={quietLink}>
-            See which models this server can reach
+          <Link href="/models" className={quietLink}>
+            See every model, with the price of a turn
             <ArrowRightIcon className={quietArrow} />
           </Link>
         </Reveal>

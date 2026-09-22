@@ -9,6 +9,7 @@ import { WalletButton } from "@/components/wallet-button";
 
 const links = [
   ["How it works", "/#how"],
+  ["Models", "/models"],
   ["Docs", "/docs"],
   ["Distribution", "/distribution"],
   ["FAQ", "/#faq"],

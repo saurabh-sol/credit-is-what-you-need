@@ -41,15 +41,17 @@ async function readStream(body: ReadableStream<Uint8Array>, onText: (text: strin
   }
 }
 
-export function Playground() {
+type PlaygroundProps = { initialModel?: string; initialMode?: Mode };
+
+export function Playground({ initialModel, initialMode }: PlaygroundProps = {}) {
   const session = useSession();
   const queryClient = useQueryClient();
   const signedIn = Boolean(session.address);
   const account = useQuery({ queryKey: ACCOUNT_KEY, queryFn: fetchAccount, enabled: signedIn });
 
   // Text, Image or Video, each remembering its own model.
-  const [mode, setMode] = useState<Mode>("text");
-  const [models, setModels] = useState(DEFAULT_MODELS);
+  const [mode, setMode] = useState<Mode>(initialMode ?? "text");
+  const [models, setModels] = useState(() => (initialModel ? { ...DEFAULT_MODELS, [initialMode ?? "text"]: initialModel } : DEFAULT_MODELS));
   const model = models[mode];
   const setModel = (id: string) => setModels((current) => ({ ...current, [mode]: id }));
   const [image, setImage] = useState<ImageOptions>({ size: "1024x1024", n: 1 });
