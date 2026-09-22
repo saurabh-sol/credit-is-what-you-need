@@ -5,7 +5,6 @@ import { Claims, Record, ReferralsPage, Scoring, StreaksPage, TopUps } from "./e
 import { HowItWorks, QuickstartPage, Rules } from "./getting-started";
 import { Integrations } from "./integrations";
 import { Dashboard, Distribution, Playground, Security, SignIn } from "./platform";
-import { Configuration, Data, Docker, Render, Testing } from "./self-hosting";
 
 // Slug → page. The slugs must match nav.ts; the route 404s for anything else.
 export const pages: Record<string, ComponentType> = {
@@ -39,9 +38,4 @@ export const pages: Record<string, ComponentType> = {
   "platform/playground": Playground,
   "platform/distribution": Distribution,
   "platform/security": Security,
-  "self-hosting/configuration": Configuration,
-  "self-hosting/docker": Docker,
-  "self-hosting/render": Render,
-  "self-hosting/data": Data,
-  "self-hosting/testing": Testing,
 };
