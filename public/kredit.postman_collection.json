@@ -1,0 +1,113 @@
+{
+  "info": {
+    "name": "Kredit API",
+    "description": "Spend Kredit credits on any model through the OpenAI-compatible API.\n\nSet two collection variables: `base_url` (the origin of your Kredit server, for example https://kredit.example.com) and `kredit_key` (a key from your dashboard, starting with kredit_sk_).\n\nEvery non-streamed response carries `x-kredit-credits-charged` and `x-kredit-balance`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{kredit_key}}", "type": "string" }]
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:3000", "type": "string" },
+    { "key": "kredit_key", "value": "kredit_sk_...", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "List models",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{base_url}}/v1/models", "host": ["{{base_url}}"], "path": ["v1", "models"] },
+        "description": "Every model your key can reach, with its price in credits per million tokens."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('key is accepted', () => pm.response.to.have.status(200));",
+              "pm.test('the echo model is always listed', () => {",
+              "  pm.expect(pm.response.json().data.map((m) => m.id)).to.include('kredit/echo');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Echo (free test model)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "{{base_url}}/v1/chat/completions", "host": ["{{base_url}}"], "path": ["v1", "chat", "completions"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"model\": \"kredit/echo\",\n  \"messages\": [{ \"role\": \"user\", \"content\": \"hello from Postman\" }]\n}"
+        },
+        "description": "Repeats your message. Works on every Kredit server and costs a credit, so it proves the whole loop."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('answers in the OpenAI shape', () => {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(pm.response.json().choices[0].message.content).to.include('hello from Postman');",
+              "});",
+              "pm.test('says what it cost', () => {",
+              "  pm.expect(pm.response.headers.get('x-kredit-credits-charged')).to.exist;",
+              "  pm.expect(pm.response.headers.get('x-kredit-balance')).to.exist;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Chat with a real model",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "{{base_url}}/v1/chat/completions", "host": ["{{base_url}}"], "path": ["v1", "chat", "completions"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"model\": \"openai/gpt-4.1-nano\",\n  \"messages\": [{ \"role\": \"user\", \"content\": \"Say hi in three words.\" }],\n  \"max_tokens\": 64\n}"
+        },
+        "description": "Any model id from List models. `max_tokens` caps the answer and so the credits the call can use."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the model answered', () => {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(pm.response.json().choices[0].message.content).to.be.a('string');",
+              "});",
+              "pm.test('the charge is on the response', () => {",
+              "  pm.expect(Number(pm.response.headers.get('x-kredit-credits-charged'))).to.be.above(0);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Stream a reply",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "{{base_url}}/v1/chat/completions", "host": ["{{base_url}}"], "path": ["v1", "chat", "completions"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"model\": \"openai/gpt-4.1-nano\",\n  \"messages\": [{ \"role\": \"user\", \"content\": \"Count from one to ten.\" }],\n  \"max_tokens\": 64,\n  \"stream\": true\n}"
+        },
+        "description": "Server-sent events, one token at a time, ending with `data: [DONE]`. The charge is settled when the stream ends."
+      }
+    }
+  ]
+}

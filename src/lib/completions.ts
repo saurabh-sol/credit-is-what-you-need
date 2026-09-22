@@ -1,5 +1,7 @@
+import { priceOf } from "./catalog.ts";
 import { apiError, chargeHeaders, ECHO_MODEL, LEGACY_ECHO_MODEL, settle, upstream, type Caller } from "./gateway.ts";
 import { getBalance } from "./ledger.ts";
+import { estimateTokens, reserveFor, type ModelPrice } from "./pricing.ts";
 
 // One chat completion for a caller who has already been identified: by API key
 // on /v1, or by their signed-in session in the playground.
@@ -9,6 +11,8 @@ type ChatBody = {
   messages: { role: string; content: unknown }[];
   stream?: boolean;
   stream_options?: Record<string, unknown>;
+  max_tokens?: number;
+  max_completion_tokens?: number;
 };
 
 const textOf = (content: unknown) => (typeof content === "string" ? content : JSON.stringify(content ?? ""));
@@ -33,6 +37,20 @@ export async function complete(caller: Caller, request: Request) {
       503,
       `No AI provider is configured on this server yet. Use the model "${ECHO_MODEL}" to test your key.`,
       "provider_not_configured",
+    );
+  }
+
+  // The call is paid for from Kredit's own balance at the provider, so it only
+  // goes out when the caller could afford the longest answer it might get.
+  const price = await priceOf(body.model);
+  const maxOutput = body.max_completion_tokens ?? body.max_tokens;
+  const reserve = reserveFor(price, { input: estimateTokens(promptText(body)), maxOutput });
+  const balance = getBalance(caller.address);
+  if (balance < reserve) {
+    return apiError(
+      402,
+      `This call could cost up to ${reserve} credits and you have ${balance}. Ask for a shorter answer with max_tokens, or earn more on your Kredit dashboard.`,
+      "insufficient_credits",
     );
   }
 
@@ -63,17 +81,17 @@ export async function complete(caller: Caller, request: Request) {
     });
   }
 
-  if (body.stream) return streamThrough(response.body, caller, body);
+  if (body.stream) return streamThrough(response.body, caller, body, price);
 
   const data = await response.json();
   const output = textOf(data.choices?.[0]?.message?.content);
-  const charge = settle(caller, body.model, data.usage, { input: promptText(body), output });
+  const charge = settle(caller, body.model, data.usage, { input: promptText(body), output }, price);
   return Response.json(data, { headers: chargeHeaders(charge) });
 }
 
 // Passes the provider's stream straight to the client while watching it for
 // the usage report, then charges once the stream ends or the client leaves.
-function streamThrough(source: ReadableStream<Uint8Array>, caller: Caller, body: ChatBody) {
+function streamThrough(source: ReadableStream<Uint8Array>, caller: Caller, body: ChatBody, price?: ModelPrice) {
   const reader = source.getReader();
   const decoder = new TextDecoder();
   let pending = "";
@@ -99,7 +117,7 @@ function streamThrough(source: ReadableStream<Uint8Array>, caller: Caller, body:
   const finish = () => {
     if (settled) return;
     settled = true;
-    settle(caller, body.model, usage, { input: promptText(body), output });
+    settle(caller, body.model, usage, { input: promptText(body), output }, price);
   };
 
   const stream = new ReadableStream<Uint8Array>({

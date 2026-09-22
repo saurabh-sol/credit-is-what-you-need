@@ -6,7 +6,7 @@ import { catalog } from "@/lib/catalog";
 import { costExamples } from "@/lib/cost-examples";
 import { ECHO_MODEL } from "@/lib/gateway";
 import { MAX_ACTIVE_KEYS } from "@/lib/limits";
-import { CREDITS_PER_USD, MARGIN, MIN_CREDITS_PER_REQUEST } from "@/lib/pricing";
+import { CREDITS_PER_USD, DEFAULT_RESERVED_OUTPUT_TOKENS, MARGIN, MIN_CREDITS_PER_REQUEST } from "@/lib/pricing";
 import { featuredProviders, makerOf } from "@/lib/providers";
 import { KeyPanel } from "./key-panel";
 import { BaseUrl, ModelsExample, Quickstart, StreamingExample } from "./quickstart";
@@ -19,12 +19,12 @@ export const dynamic = "force-dynamic";
 
 const endpoints = [
   { method: "POST", path: "/v1/chat/completions", text: "Chat with a model. Same request and response shape as OpenAI, including streaming." },
-  { method: "GET", path: "/v1/models", text: "The models your key can reach on this server." },
+  { method: "GET", path: "/v1/models", text: "The models your key can reach on this server, each with its price in credits per million tokens." },
 ];
 
 const errors = [
   ["401", "invalid_api_key", "The key is missing, mistyped or revoked."],
-  ["402", "insufficient_credits", "Your balance is empty. Earn or buy more, then retry."],
+  ["402", "insufficient_credits", "Your balance is empty, or below what this call could cost. Earn or buy more, or lower max_tokens."],
   ["400", "invalid_body", "The JSON needs a model and a non-empty messages array."],
   ["429", "rate_limit_exceeded", "More than 60 requests in a minute on one key."],
   ["503", "provider_not_configured", `This server has no AI provider yet; only ${ECHO_MODEL} answers.`],
@@ -36,10 +36,33 @@ const billingHeaders = [
   ["x-kredit-balance", "Your balance after the charge."],
 ];
 
-const tools = [
-  ["Cursor", "Settings, Models, then override the OpenAI base URL with the one shown here and paste your Kredit key as the OpenAI API key."],
-  ["Postman", "POST to /v1/chat/completions, set Auth to Bearer Token, and send a JSON body with model and messages."],
-  ["OpenAI SDKs", "Pass base_url (Python) or baseURL (Node) and your Kredit key as api_key. Nothing else changes."],
+const tools: { name: string; text: React.ReactNode }[] = [
+  {
+    name: "Cursor",
+    text: (
+      <>
+        Settings, Models: override the OpenAI base URL with the one shown here, paste your Kredit key as the OpenAI API
+        key, and add the models you want by id (for example <code>anthropic/claude-sonnet-5</code>). Cursor calls the
+        API from its own servers, so this only works with a public Kredit address, not localhost.
+      </>
+    ),
+  },
+  {
+    name: "Postman",
+    text: (
+      <>
+        <a href="/kredit.postman_collection.json" download className="text-fog underline decoration-line underline-offset-4 hover:decoration-fog">
+          Import the ready-made collection
+        </a>{" "}
+        and set its <code>base_url</code> and <code>kredit_key</code> variables. Or by hand: POST to /v1/chat/completions
+        with Auth set to Bearer Token and a JSON body with model and messages.
+      </>
+    ),
+  },
+  {
+    name: "OpenAI SDKs",
+    text: "Pass base_url (Python) or baseURL (Node) and your Kredit key as api_key. Nothing else changes.",
+  },
 ];
 
 // The same bodies the gateway sends, so what you read here is what your client gets.
@@ -247,8 +270,15 @@ x-kredit-balance: ${5_000 - typicalCharge}`;
               </table>
             </div>
             <p className="text-xs">
-              Worked out with the same pricing function that bills you, at Kredit&apos;s fallback token price. When the
-              provider reports its own price for a call, you are billed at that instead.
+              Worked out with the same pricing function that bills you, at Kredit&apos;s fallback token price. Real
+              models are billed at the exact cost the provider reports for the call; /v1/models shows each one&apos;s
+              list price in credits.
+            </p>
+            <p>
+              A call is only sent when your balance covers the prompt plus the longest answer it allows:{" "}
+              <code>max_tokens</code> if you set it, otherwise {number(DEFAULT_RESERVED_OUTPUT_TOKENS)} tokens. If it
+              does not, you get a 402 before anything is spent, so set <code>max_tokens</code> to run big models on a
+              small balance.
             </p>
 
             <Label>Headers on every response</Label>
@@ -337,10 +367,10 @@ x-kredit-balance: ${5_000 - typicalCharge}`;
           <Section id="tools" title="Use it in your tools" code={<BaseUrl />}>
             <p>Use a key anywhere that speaks the OpenAI API: point the tool at the base URL and paste your key.</p>
             <ul className="mt-5 border-t border-line/60">
-              {tools.map(([name, text]) => (
-                <li key={name} className="entity max-w-none flex-wrap items-baseline gap-x-4 gap-y-1">
-                  <span className="w-28 shrink-0 font-medium text-fog">{name}</span>
-                  <span className="min-w-0 flex-1 basis-64 text-[0.8125rem] leading-relaxed">{text}</span>
+              {tools.map((tool) => (
+                <li key={tool.name} className="entity max-w-none flex-wrap items-baseline gap-x-4 gap-y-1">
+                  <span className="w-28 shrink-0 font-medium text-fog">{tool.name}</span>
+                  <span className="min-w-0 flex-1 basis-64 text-[0.8125rem] leading-relaxed">{tool.text}</span>
                 </li>
               ))}
             </ul>
