@@ -1,5 +1,5 @@
 import { findKey, recordUsage } from "./ledger.ts";
-import { creditsForUsd, estimateTokens, type ModelPrice, usdFor } from "./pricing.ts";
+import { creditsForUsd, estimateTokens, type ModelPrice, type TokenUsage, usdFor } from "./pricing.ts";
 
 // A built-in model that repeats your message. It lets anyone test a key
 // end-to-end before a real AI provider is configured.
@@ -17,7 +17,7 @@ let lastSweep = 0;
 export const CORS_HEADERS = {
   "access-control-allow-origin": "*",
   "access-control-allow-methods": "GET, POST, OPTIONS",
-  "access-control-allow-headers": "authorization, content-type, x-kredit-user",
+  "access-control-allow-headers": "authorization, x-api-key, anthropic-version, content-type, x-kredit-user",
   "access-control-expose-headers": "x-kredit-credits-charged, x-kredit-balance, x-request-id, x-ratelimit-limit, x-ratelimit-remaining",
   "access-control-max-age": "86400",
 };
@@ -49,21 +49,25 @@ export function apiError(status: number, message: string, code: string) {
 
 export type Caller = { keyId: string; address: string; keyName?: string; keyPrefix?: string };
 
-export function authenticate(request: Request): Caller | Response {
-  const header = request.headers.get("authorization") ?? "";
+export type ErrorShape = typeof apiError;
+
+// `error` shapes the refusals: OpenAI's by default, or the dialect's own.
+export function authenticate(request: Request, error: ErrorShape = apiError): Caller | Response {
+  // OpenAI-style clients send a bearer token; Anthropic-style clients send x-api-key.
+  const header = request.headers.get("authorization") ?? `Bearer ${request.headers.get("x-api-key") ?? ""}`;
   const key = header.startsWith("Bearer ") ? findKey(header.slice(7).trim()) : null;
   if (!key) {
-    return apiError(401, "Invalid or revoked API key. Create one on your Kredit dashboard.", "invalid_api_key");
+    return error(401, "Invalid or revoked API key. Create one on your Kredit dashboard.", "invalid_api_key");
   }
 
-  const limited = rateLimited(key.id);
+  const limited = rateLimited(key.id, error);
   if (limited) return limited;
   rateRemaining.set(request, RATE_LIMIT - (recentRequests.get(key.id)?.length ?? 0)); // for v1() to report
   return { keyId: key.id, address: key.address, keyName: key.name, keyPrefix: key.prefix };
 }
 
 // Counts a request against `id` (a key, or a playground user). Returns the 429 once over the limit.
-export function rateLimited(id: string) {
+export function rateLimited(id: string, error: ErrorShape = apiError) {
   const now = Date.now();
   // Once a minute, forget callers who have gone quiet so the map can't grow forever.
   if (now - lastSweep > RATE_WINDOW_MS) {
@@ -74,7 +78,7 @@ export function rateLimited(id: string) {
   }
   const recent = (recentRequests.get(id) ?? []).filter((time) => time > now - RATE_WINDOW_MS);
   if (recent.length >= RATE_LIMIT) {
-    return apiError(429, `Rate limit reached: ${RATE_LIMIT} requests per minute per key.`, "rate_limit_exceeded");
+    return error(429, `Rate limit reached: ${RATE_LIMIT} requests per minute per key.`, "rate_limit_exceeded");
   }
   recentRequests.set(id, [...recent, now]);
   return null;
@@ -108,16 +112,31 @@ export function settle(
   usage: ProviderUsage,
   text: { input: string; output: string },
 ) {
-  const inputTokens = usage?.prompt_tokens ?? estimateTokens(text.input);
-  const outputTokens = usage?.completion_tokens ?? estimateTokens(text.output);
-  const cacheReadTokens = usage?.prompt_tokens_details?.cached_tokens ?? 0;
-  const cacheWriteTokens = usage?.prompt_tokens_details?.cache_write_tokens ?? 0;
-  const usd =
-    typeof usage?.cost === "number"
-      ? usage.cost
-      : usdFor(price, { inputTokens, outputTokens, cacheReadTokens, cacheWriteTokens });
-  const credits = creditsForUsd(usd);
-  const balance = recordUsage({ ...caller, model, inputTokens, outputTokens, credits });
+  return settleTokens(
+    caller,
+    model,
+    price,
+    {
+      inputTokens: usage?.prompt_tokens ?? estimateTokens(text.input),
+      outputTokens: usage?.completion_tokens ?? estimateTokens(text.output),
+      cacheReadTokens: usage?.prompt_tokens_details?.cached_tokens ?? 0,
+      cacheWriteTokens: usage?.prompt_tokens_details?.cache_write_tokens ?? 0,
+    },
+    typeof usage?.cost === "number" ? usage.cost : undefined,
+  );
+}
+
+// The charge itself, from token counts in our own shape. `usd` overrides the
+// price list when the provider reported the exact cost.
+export function settleTokens(caller: Caller, model: string, price: ModelPrice, tokens: TokenUsage, usd?: number) {
+  const credits = creditsForUsd(usd ?? usdFor(price, tokens));
+  const balance = recordUsage({
+    ...caller,
+    model,
+    inputTokens: tokens.inputTokens,
+    outputTokens: tokens.outputTokens,
+    credits,
+  });
   return { credits, balance };
 }
 
