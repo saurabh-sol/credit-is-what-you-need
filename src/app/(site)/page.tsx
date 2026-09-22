@@ -6,12 +6,12 @@ import { ActivityIcon, ArrowRightIcon, ArrowUpRightIcon, CheckIcon, PlusIcon, Sp
 import { DashboardPreview } from "@/components/landing/dashboard-preview";
 import { LoopBeam } from "@/components/landing/loop-beam";
 import { ModelOrbit } from "@/components/landing/model-orbit";
+import { RoyaltyStream } from "@/components/landing/royalty-stream";
 import { SectionHeading } from "@/components/landing/section-heading";
 import { HeaderFocus, KeyStatus, ModelStream, PromptBar, TaskFeed } from "@/components/live-bento";
 import { CountUp } from "@/components/motion/count-up";
 import { Reveal } from "@/components/motion/reveal";
 import { Tilt } from "@/components/motion/tilt";
-import { ExampleReceipt } from "@/components/receipt";
 import { TopUpTeaser } from "@/components/top-up-teaser";
 import { WalletButton } from "@/components/wallet-button";
 import { costExamples } from "@/lib/cost-examples";
@@ -306,9 +306,9 @@ export default function Home() {
       <section id="earn" className="border-y border-line bg-surface">
         <div className="mx-auto grid max-w-6xl items-center gap-x-16 gap-y-14 px-4 py-24 md:grid-cols-[0.85fr_1.15fr] md:py-32">
           {/* Reads second on a phone, where the explanation should come first. */}
-          <Reveal variant="mark" className="print-on-view order-last flex justify-center md:order-first md:justify-start">
+          <Reveal className="order-last flex justify-center md:order-first md:justify-start">
             <Tilt className="w-full max-w-sm">
-              <ExampleReceipt />
+              <RoyaltyStream />
             </Tilt>
           </Reveal>
 
