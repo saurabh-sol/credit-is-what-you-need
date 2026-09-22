@@ -25,7 +25,7 @@ const tasks = [
   { label: "Swapped on a partner protocol", credits: 250 },
   { label: "Contract interaction", credits: 50 },
   { label: "Reached 50 transactions", credits: 300 },
-  { label: "Gas-Back on 12 transactions", credits: 84 },
+  { label: "Streak bonus, day 7 in a row", credits: 70 },
 ];
 
 // The newest task keeps arriving at the top while the rest glide down a row.
@@ -136,7 +136,7 @@ const keys = [
 export const KeyStatus = memo(function KeyStatus() {
   const [notice, setNotice] = useState(0);
   useLoop(() => setNotice((count) => count + 1), 3400);
-  const notices = ["Gas-Back +84", "Royalties +1,130", "Milestone +300"];
+  const notices = ["Streak +70", "Referral +113", "Milestone +300"];
   const showing = notice % 2 === 1;
 
   return (

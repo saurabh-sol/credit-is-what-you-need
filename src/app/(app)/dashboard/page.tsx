@@ -14,7 +14,7 @@ const nextSteps = [
   { icon: BoltIcon, title: "Scan your on-chain record", text: "Turn past transactions into credits", href: "/dashboard/earn", action: "Scan record" },
   { icon: KeyIcon, title: "Create an API key", text: "Use your credits in Cursor, Postman or code", href: "/dashboard/keys", action: "Create key" },
   { icon: PlayIcon, title: "Try a model", text: "Spend a few credits in the playground", href: "/playground", action: "Open playground" },
-  { icon: UsersIcon, title: "Check builder royalties", text: "Earn when others use your contracts", href: "/dashboard/earn#royalties", action: "Check contracts" },
+  { icon: UsersIcon, title: "Invite a friend", text: "Earn a share of every claim they make", href: "/dashboard/earn#referrals", action: "Get link" },
   { icon: CoinsIcon, title: "Top up with tokens", text: "For when a job needs more than you earned", href: "/dashboard/credits", action: "Buy credits" },
 ];
 

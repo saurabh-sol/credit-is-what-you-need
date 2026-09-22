@@ -32,13 +32,9 @@ const record = await (await app("/api/record?network=testnet")).json();
 check("scan shows claimable credits", record.claimable > 0 && record.claimable === record.total, `(${record.claimable})`);
 const claimed = await (await app("/api/claim", { method: "POST", body: JSON.stringify({ network: "testnet" }) })).json();
 check("claim pays exactly what the receipt showed", claimed.granted === record.claimable && claimed.balance === record.claimable);
-if (record.gasBackAvailable) {
-  const line = record.lines.find((l) => l.label.startsWith("Gas-Back"));
-  check("gas-back is on the receipt and paid with the claim", line?.credits > 0 && claimed.gasBack === line.credits, `(${claimed.gasBack} credits)`);
-} else {
-  check("testnet pays no gas-back unless switched on", record.gasBackOffered || (claimed.gasBack === 0 && !record.lines.some((l) => l.label.startsWith("Gas-Back"))));
-  if (record.gasBackOffered) console.log("SKIP  gas-back (ETH price feed unreachable)");
-}
+const streakLine = record.lines.find((l) => l.label.startsWith("Streak bonus"));
+check("the streak bonus on the receipt is paid with the claim", (streakLine?.credits ?? 0) === claimed.streak, `(${claimed.streak} credits)`);
+check("a wallet nobody invited pays no referral", claimed.referral === 0);
 const again = await (await app("/api/claim", { method: "POST", body: JSON.stringify({ network: "testnet" }) })).json();
 check("claiming twice pays nothing the second time", again.granted === 0 && again.balance === claimed.balance);
 const rescanned = await (await app("/api/record?network=testnet")).json();

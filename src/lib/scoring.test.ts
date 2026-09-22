@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { gasBackMicro, splitMicro } from "./gasback.ts";
-import { buildReceipt, DAILY_TASK_CAP, GAS_BACK_LABEL, scoreTx, type ScannedTx } from "./scoring.ts";
+import { buildReceipt, DAILY_TASK_CAP, scoreTx, type ScannedTx } from "./scoring.ts";
+import { STREAK_LABEL } from "./streaks.ts";
 
 let counter = 0;
 const tx = (over: Partial<ScannedTx> = {}): ScannedTx => ({
@@ -53,7 +53,10 @@ test("milestones are added once the wallet has enough successful transactions", 
   assert.ok(labels.includes("Reached 10 transactions"));
   assert.ok(labels.includes("Reached 50 transactions"));
   assert.ok(!labels.includes("Reached 100 transactions"));
-  assert.equal(receipt.total, 50 * 10 + 100 + 300);
+  // 28 days in a row also earn a streak bonus: days 2-10 grow by 10, then 100 a day.
+  const streak = (20 + 30 + 40 + 50 + 60 + 70 + 80 + 90 + 100) + 18 * 100;
+  assert.equal(receipt.lines.find((line) => line.label.startsWith(STREAK_LABEL))?.credits, streak);
+  assert.equal(receipt.total, 50 * 10 + 100 + 300 + streak);
 });
 
 test("daily cap limits what one day of activity can earn", () => {
@@ -78,20 +81,27 @@ test("an empty record gives an empty receipt", () => {
   assert.equal(receipt.total, 0);
 });
 
-test("gas-back maths: 1 ETH of gas at $2,706.12 returns 40% of its value", () => {
-  const micro = gasBackMicro(BigInt(10) ** BigInt(18), BigInt(270_612));
-  assert.deepEqual(splitMicro(micro), { credits: 1_082_448, carryMicro: 0 }); // $1,082.448
+test("the receipt shows a streak line only for consecutive active days", () => {
+  const sameDay = buildReceipt([tx(), tx(), tx()]);
+  assert.ok(!sameDay.lines.some((line) => line.label.startsWith(STREAK_LABEL)));
+
+  const threeDays = buildReceipt([
+    tx({ timestamp: "2026-09-01T10:00:00Z" }),
+    tx({ timestamp: "2026-09-02T23:59:00Z" }),
+    tx({ timestamp: "2026-09-03T00:01:00Z" }),
+  ]);
+  const line = threeDays.lines.find((label) => label.label.startsWith(STREAK_LABEL));
+  assert.equal(line?.label, `${STREAK_LABEL} (3 days in a row)`);
+  assert.equal(line?.credits, 20 + 30);
+  assert.equal(threeDays.total, 3 * 10 + 50);
 });
 
-test("the receipt shows a gas-back line only when a price is known", () => {
-  const txs = [tx({ feeWei: "1000000000000000" })]; // 0.001 ETH
-  assert.ok(!buildReceipt(txs).lines.some((line) => line.label === GAS_BACK_LABEL));
-  const withPrice = buildReceipt(txs, {}, BigInt(250_000));
-  assert.equal(withPrice.lines.find((line) => line.label === GAS_BACK_LABEL)?.credits, 1000);
-  assert.equal(withPrice.total, 10 + 1000);
-});
-
-test("failed transactions get no gas-back", () => {
-  const receipt = buildReceipt([tx({ ok: false, feeWei: "1000000000000000" })], {}, BigInt(250_000));
-  assert.equal(receipt.total, 0);
+test("failed transactions do not keep a streak alive", () => {
+  const receipt = buildReceipt([
+    tx({ timestamp: "2026-09-01T10:00:00Z" }),
+    tx({ timestamp: "2026-09-02T10:00:00Z", ok: false }),
+    tx({ timestamp: "2026-09-03T10:00:00Z" }),
+  ]);
+  assert.ok(!receipt.lines.some((line) => line.label.startsWith(STREAK_LABEL)));
+  assert.equal(receipt.total, 20);
 });

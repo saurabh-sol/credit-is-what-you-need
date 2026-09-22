@@ -8,7 +8,7 @@ const SCHEMA = `
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     address TEXT NOT NULL,
     amount INTEGER NOT NULL,
-    kind TEXT NOT NULL,          -- claim | milestone | gasback | royalty | topup | spend
+    kind TEXT NOT NULL,          -- claim | milestone | streak | referral | topup | spend
     memo TEXT NOT NULL,
     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
   );
@@ -22,47 +22,28 @@ const SCHEMA = `
     day TEXT NOT NULL,
     earned INTEGER NOT NULL,
     granted INTEGER NOT NULL,
-    gas_back_paid INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (network, hash)
   );
   CREATE INDEX IF NOT EXISTS claimed_txs_day ON claimed_txs (address, network, day);
 
-  -- The fraction of a credit of Gas-Back left over from the last claim.
-  CREATE TABLE IF NOT EXISTS gas_back_carry (
+  -- A day's streak bonus is paid once.
+  CREATE TABLE IF NOT EXISTS claimed_streak_days (
     address TEXT NOT NULL,
     network TEXT NOT NULL,
-    micro INTEGER NOT NULL,
-    PRIMARY KEY (address, network)
+    day TEXT NOT NULL,
+    PRIMARY KEY (address, network, day)
   );
 
-  -- Contracts a wallet deployed. Remembered so royalties keep flowing after
-  -- the deployment drops out of the wallet's latest 1,000 transactions.
-  CREATE TABLE IF NOT EXISTS contracts (
-    network TEXT NOT NULL,
-    address TEXT NOT NULL,
-    builder TEXT NOT NULL,
-    deployed_at TEXT NOT NULL,
-    last_checked_at TEXT,
-    PRIMARY KEY (network, address)
+  -- Who invited a wallet, named once before its first claim. "claimed" is what
+  -- the wallet has claimed since, "paid" the inviter's share of it.
+  CREATE TABLE IF NOT EXISTS referrals (
+    address TEXT PRIMARY KEY,
+    referrer TEXT NOT NULL,
+    claimed INTEGER NOT NULL DEFAULT 0,
+    paid INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
   );
-  CREATE INDEX IF NOT EXISTS contracts_builder ON contracts (builder, network);
-
-  -- A call to a contract pays its builder once.
-  CREATE TABLE IF NOT EXISTS royalty_txs (
-    network TEXT NOT NULL,
-    hash TEXT NOT NULL,
-    contract TEXT NOT NULL,
-    builder TEXT NOT NULL,
-    PRIMARY KEY (network, hash)
-  );
-  CREATE INDEX IF NOT EXISTS royalty_txs_contract ON royalty_txs (network, contract);
-
-  CREATE TABLE IF NOT EXISTS royalty_carry (
-    address TEXT NOT NULL,
-    network TEXT NOT NULL,
-    micro INTEGER NOT NULL,
-    PRIMARY KEY (address, network)
-  );
+  CREATE INDEX IF NOT EXISTS referrals_referrer ON referrals (referrer);
 
   CREATE TABLE IF NOT EXISTS claimed_milestones (
     address TEXT NOT NULL,
@@ -135,17 +116,9 @@ const SCHEMA = `
   );
 `;
 
-// Bring databases created by earlier phases up to date.
-function migrate(database: DatabaseSync) {
-  const columns = database.prepare("PRAGMA table_info(claimed_txs)").all() as { name: string }[];
-  if (!columns.some((column) => column.name === "gas_back_paid")) {
-    database.exec("ALTER TABLE claimed_txs ADD COLUMN gas_back_paid INTEGER NOT NULL DEFAULT 0");
-  }
-  const contractColumns = database.prepare("PRAGMA table_info(contracts)").all() as { name: string }[];
-  if (!contractColumns.some((column) => column.name === "last_checked_at")) {
-    database.exec("ALTER TABLE contracts ADD COLUMN last_checked_at TEXT");
-  }
-}
+// Databases from before streaks and referrals keep their old tables (contracts,
+// royalty_txs, gas_back_carry...) untouched; the ledger rows they produced still
+// count toward balances. Nothing needs altering, only the new tables above.
 
 // One connection per process; survives hot reloads in dev.
 const holder = globalThis as { kreditDb?: DatabaseSync };
@@ -158,7 +131,6 @@ export function db() {
     const database = new DatabaseSync(path);
     database.exec("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;");
     database.exec(SCHEMA);
-    migrate(database);
     holder.kreditDb = database;
   }
   return holder.kreditDb;

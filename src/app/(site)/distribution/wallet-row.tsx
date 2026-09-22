@@ -12,8 +12,8 @@ import { formatTokenAmount } from "@/lib/topup";
 export const sources: { kind: EarningKind; label: string; shade: string }[] = [
   { kind: "claim", label: "Tasks", shade: "bg-accent/80" },
   { kind: "milestone", label: "Milestones", shade: "bg-accent/55" },
-  { kind: "gasback", label: "Gas-Back", shade: "bg-accent/35" },
-  { kind: "royalty", label: "Royalties", shade: "bg-accent/20" },
+  { kind: "streak", label: "Streaks", shade: "bg-accent/35" },
+  { kind: "referral", label: "Referrals", shade: "bg-accent/20" },
   { kind: "topup", label: "Bought", shade: "bg-fog/35" },
 ];
 export const sourceLabel: Record<string, string> = Object.fromEntries(sources.map((source) => [source.kind, source.label]));

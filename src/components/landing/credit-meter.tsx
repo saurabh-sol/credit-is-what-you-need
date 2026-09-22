@@ -1,17 +1,21 @@
 import { CountUp } from "@/components/motion/count-up";
 import { formatCredits } from "@/lib/format";
-import { GAS_BACK_PERCENT } from "@/lib/gasback";
+import { REFERRAL_PERCENT } from "@/lib/referral-rules";
 import { MILESTONES, TASK_CREDITS } from "@/lib/scoring";
+import { streakBonus } from "@/lib/streaks";
 
 // One wallet's month, as an illustration. Not real data, but every task value
 // is read from the scoring rules so the picture can't drift from them.
+const STREAK_DAYS = 12;
+const streak = Array.from({ length: STREAK_DAYS }, (_, day) => streakBonus(day + 1)).reduce((sum, bonus) => sum + bonus, 0);
+
 const sources = [
-  { label: "Builder Royalties", note: "others used your contract", credits: 1130 },
+  { label: "Referrals", note: `${REFERRAL_PERCENT}% of 3 friends' claims`, credits: 1130 },
   { label: "Contract interactions", note: "12 calls", credits: 12 * TASK_CREDITS.contract_call },
+  { label: "Streak bonus", note: `${STREAK_DAYS} days in a row`, credits: streak },
   { label: "Deployed a contract", note: "1 deploy", credits: TASK_CREDITS.deploy },
   { label: "Milestone", note: `${MILESTONES[1].txs} transactions`, credits: MILESTONES[1].credits },
   { label: "Partner protocol", note: "1 swap", credits: 250 },
-  { label: "Gas-Back", note: `${GAS_BACK_PERCENT}% of gas spent`, credits: 84 },
 ];
 
 const total = sources.reduce((sum, source) => sum + source.credits, 0);
