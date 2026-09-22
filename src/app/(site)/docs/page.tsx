@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { CodeBlock } from "@/components/code-block";
 import { ArrowRightIcon, PlayIcon } from "@/components/icons";
-import { ModelLogo, ProviderLogo } from "@/components/model-logo";
+import { MakerLogo, ModelLogo } from "@/components/model-logo";
 import { catalog } from "@/lib/catalog";
 import { costExamples } from "@/lib/cost-examples";
 import { ECHO_MODEL } from "@/lib/gateway";
 import { MAX_ACTIVE_KEYS } from "@/lib/limits";
 import { CREDITS_PER_USD, MARGIN, MIN_CREDITS_PER_REQUEST } from "@/lib/pricing";
-import { featuredProviders, makerOf } from "@/lib/providers";
+import { featuredProviders, makerInfo, makerOf } from "@/lib/providers";
 import { KeyPanel } from "./key-panel";
 import { BaseUrl, ModelsExample, Quickstart, StreamingExample } from "./quickstart";
 import { SectionNav } from "./section-nav";
@@ -126,8 +126,9 @@ export default async function Docs() {
     const maker = makerOf(model.id);
     counts.set(maker, (counts.get(maker) ?? 0) + 1);
   }
+  counts.delete(makerOf(ECHO_MODEL));
   const makers = live
-    ? featuredProviders.filter((maker) => counts.has(maker.id)).sort((a, b) => counts.get(b.id)! - counts.get(a.id)!)
+    ? [...counts.keys()].map(makerInfo).sort((a, b) => counts.get(b.id)! - counts.get(a.id)! || a.name.localeCompare(b.name))
     : featuredProviders;
 
   const typicalCharge = costExamples[1].credits;
@@ -335,7 +336,7 @@ x-kredit-balance: ${5_000 - typicalCharge}`;
               </li>
               {makers.map((maker) => (
                 <li key={maker.id} className="group flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-fog/[0.03]">
-                  <ProviderLogo logo={maker.logo} className="size-5 text-mist transition-colors group-hover:text-fog" />
+                  <MakerLogo maker={maker} className="size-5 text-mist transition-colors group-hover:text-fog" />
                   <div className="min-w-0 leading-5">
                     <span className="block truncate text-[0.8125rem] font-medium text-fog">{maker.name}</span>
                     <span className="block truncate font-mono text-xs tabular-nums">

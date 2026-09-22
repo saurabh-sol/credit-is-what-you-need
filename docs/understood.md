@@ -208,6 +208,8 @@ it again.
   - `SESSION_SECRET`: required, 32+ characters.
   - `UPSTREAM_BASE_URL`, `UPSTREAM_API_KEY`: the AI provider behind the API. Any
     OpenAI-compatible service works. Without a key, only `kredit/echo` works.
+  - `OPENROUTER_API_KEY`: optional second provider; its models join the list and each
+    call goes to whichever provider lists the model.
   - `EXPLORER_API_*`, `BLOCKSCOUT_API_KEY`: where wallet history is read from.
   - `RECEIPTS_ADDRESS_*`, `RECEIPT_SIGNER_KEY`: the on-chain receipts contract and the
     key that signs receipts. Empty means claims stay off-chain.
