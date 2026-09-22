@@ -3,6 +3,10 @@ import { streakDays, streakLabel } from "./streaks.ts";
 // Turns a wallet's on-chain record into credits. Pure logic, no I/O, so the
 // rules are easy to test and to change. 1,000 credits = $1 of AI usage.
 
+// Bumped whenever a number below changes. An on-chain receipt carries it, so
+// it is always clear which rules priced a claim.
+export const RULES_VERSION = 1;
+
 export type ScannedTx = {
   hash: string;
   timestamp: string; // ISO

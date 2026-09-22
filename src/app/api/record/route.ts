@@ -1,10 +1,16 @@
 import { ExplorerError } from "@/lib/explorer";
 import { previewClaim } from "@/lib/ledger";
 import { isNetworkId, networks } from "@/lib/networks";
+import { receiptsConfig } from "@/lib/receipts";
 import { scanRecord } from "@/lib/record";
 import { getSession } from "@/lib/session";
 
 const RECENT_TASKS = 25;
+
+function onchainInfo(networkId: "testnet" | "mainnet") {
+  const config = receiptsConfig(networkId);
+  return config && { contract: config.contract, chainId: config.chainId };
+}
 
 export async function GET(request: Request) {
   const session = await getSession();
@@ -26,6 +32,8 @@ export async function GET(request: Request) {
       ...receipt,
       tasks: receipt.tasks.slice(0, RECENT_TASKS),
       claimable: previewClaim(session.address, networkId, receipt.tasks).total,
+      // Set when claims on this network go through the KreditReceipts contract.
+      onchain: onchainInfo(networkId),
     });
   } catch (error) {
     if (error instanceof ExplorerError) {

@@ -84,6 +84,24 @@ The rules that keep it fair:
 - A scan is remembered for 60 seconds, so claiming right after scanning pays exactly what
   the receipt showed.
 
+### 3b. On-chain receipts (when the contract is set up)
+
+On a network where the `KreditReceipts` contract is deployed (`contracts/`), **Claim**
+no longer writes credits straight away. The server signs the receipt it worked out, your
+wallet submits it to the contract in one small transaction, and the server pays the
+credits once the chain has it. So every claim is a transaction on Blockscout, with a
+`Claimed` event that names the wallet, the credits, how many transactions they cover, a
+hash of those transactions (the record root) and the rules version they were priced under.
+(`contracts/src/KreditReceipts.sol`, `src/lib/receipts.ts`)
+
+- A receipt is good for 10 minutes and can be used once: each wallet has a counter on the
+  contract, and every receipt names the next number.
+- Only the wallet named in the receipt can submit it, and only on the chain it was signed for.
+- If your browser closes after the transaction but before the server hears about it, the
+  next claim finds the receipt on-chain and pays it first.
+- The activity list links every credit that came from a receipt to its transaction.
+- A network with no contract address set keeps the plain off-chain claim.
+
 ### 4. Inviting others (referrals)
 
 Every wallet has an invite link, `/r/<your wallet>`, shown on the Earn page. When a wallet
@@ -191,8 +209,12 @@ it again.
   - `UPSTREAM_BASE_URL`, `UPSTREAM_API_KEY`: the AI provider behind the API. Any
     OpenAI-compatible service works. Without a key, only `kredit/echo` works.
   - `EXPLORER_API_*`, `BLOCKSCOUT_API_KEY`: where wallet history is read from.
+  - `RECEIPTS_ADDRESS_*`, `RECEIPT_SIGNER_KEY`: the on-chain receipts contract and the
+    key that signs receipts. Empty means claims stay off-chain.
   - `TOPUP_*`: token, treasury and price. Top-ups stay off until all are set.
-- Checks: `npm test` (unit tests for every money rule), `npm run lint`, `npm run build`.
+- Checks: `npm test` (unit tests for every money rule), `npm run lint`, `npm run build`,
+  `npm run test:contracts` (the contract), `npm run test:receipts` (the whole on-chain
+  claim on a local chain; see `contracts/README.md`).
 
 ## The rules on one screen
 

@@ -2,7 +2,7 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { db, transaction } from "./db.ts";
 import type { NetworkId } from "./networks.ts";
 import { payReferral } from "./referrals.ts";
-import { planClaim, type ClaimState, type ScoredTask } from "./scoring.ts";
+import { planClaim, type ClaimPlan, type ClaimState, type ScoredTask } from "./scoring.ts";
 
 import { MAX_ACTIVE_KEYS } from "./limits.ts";
 
@@ -29,12 +29,20 @@ export function getTotals(address: string) {
   return { earned: row.earned, spent: row.spent };
 }
 
-export type LedgerEntry = { id: number; amount: number; kind: string; memo: string; createdAt: string };
+export type LedgerEntry = {
+  id: number;
+  amount: number;
+  kind: string;
+  memo: string;
+  createdAt: string;
+  network: NetworkId | null;
+  txHash: string | null; // the on-chain receipt this row came from, if any
+};
 
 export function listLedger(address: string, limit = 20) {
   return db()
     .prepare(
-      "SELECT id, amount, kind, memo, created_at AS createdAt FROM ledger WHERE address = ? ORDER BY id DESC LIMIT ?",
+      "SELECT id, amount, kind, memo, created_at AS createdAt, network, tx_hash AS txHash FROM ledger WHERE address = ? ORDER BY id DESC LIMIT ?",
     )
     .all(lower(address), limit) as LedgerEntry[];
 }
@@ -84,51 +92,73 @@ export function previewClaim(address: string, network: NetworkId, tasks: ScoredT
 // both be paid for the same work.
 export function claim(address: string, network: NetworkId, tasks: ScoredTask[]) {
   const owner = lower(address);
-  return transaction(() => {
-    const plan = previewClaim(owner, network, tasks);
-    const database = db();
+  return transaction(() => applyPlan(owner, network, previewClaim(owner, network, tasks), { network }));
+}
 
-    const insertTx = database.prepare(
-      "INSERT INTO claimed_txs (network, hash, address, day, earned, granted) VALUES (?, ?, ?, ?, ?, ?)",
-    );
-    for (const grant of plan.txGrants) {
-      insertTx.run(network, grant.hash, owner, grant.day, grant.earned, grant.granted);
-    }
-    const taskCredits = plan.txGrants.reduce((sum, grant) => sum + grant.granted, 0);
-    const insertLedger = database.prepare(
-      "INSERT INTO ledger (address, amount, kind, memo) VALUES (?, ?, ?, ?)",
-    );
-    if (taskCredits > 0) {
-      const count = plan.txGrants.length;
-      insertLedger.run(owner, taskCredits, "claim", `${count} ${count === 1 ? "task" : "tasks"} on ${network}`);
-    }
-    for (const milestone of plan.milestones) {
-      database
-        .prepare("INSERT INTO claimed_milestones (address, network, txs) VALUES (?, ?, ?)")
-        .run(owner, network, milestone.txs);
-      insertLedger.run(owner, milestone.credits, "milestone", `Reached ${milestone.txs} transactions on ${network}`);
-    }
+export type ClaimSource = { network: NetworkId; txHash?: string };
 
-    const streakCredits = plan.streakDays.reduce((sum, bonus) => sum + bonus.credits, 0);
-    if (plan.streakDays.length > 0) {
-      const insertDay = database.prepare("INSERT INTO claimed_streak_days (address, network, day) VALUES (?, ?, ?)");
-      for (const bonus of plan.streakDays) insertDay.run(owner, network, bonus.day);
-      const count = plan.streakDays.length;
-      insertLedger.run(owner, streakCredits, "streak", `${count} streak ${count === 1 ? "day" : "days"} on ${network}`);
-    }
+// Writes a plan into the ledger. Every transaction, milestone and streak day
+// pays once: anything already in the tables is skipped, not paid again. Call
+// it inside a transaction.
+export function applyPlan(address: string, network: NetworkId, plan: ClaimPlan, source: ClaimSource) {
+  const owner = lower(address);
+  const database = db();
+  const txHash = source.txHash ? lower(source.txHash) : null;
 
-    // The wallet that invited this one gets its share of the same claim.
-    const referral = payReferral(owner, plan.total, network);
+  const insertTx = database.prepare(
+    "INSERT OR IGNORE INTO claimed_txs (network, hash, address, day, earned, granted) VALUES (?, ?, ?, ?, ?, ?)",
+  );
+  let taskCredits = 0;
+  let taskCount = 0;
+  for (const grant of plan.txGrants) {
+    const written = insertTx.run(network, grant.hash, owner, grant.day, grant.earned, grant.granted).changes > 0;
+    if (!written) continue;
+    taskCount += 1;
+    taskCredits += grant.granted;
+  }
+  const insertLedger = database.prepare(
+    "INSERT INTO ledger (address, amount, kind, memo, network, tx_hash) VALUES (?, ?, ?, ?, ?, ?)",
+  );
+  if (taskCredits > 0) {
+    insertLedger.run(owner, taskCredits, "claim", `${taskCount} ${taskCount === 1 ? "task" : "tasks"} on ${network}`, network, txHash);
+  }
 
-    return {
-      granted: plan.total,
-      tasks: plan.txGrants.length,
-      milestones: plan.milestones.length,
-      streak: streakCredits,
-      referral,
-      balance: getBalance(owner),
-    };
-  });
+  const insertMilestone = database.prepare("INSERT OR IGNORE INTO claimed_milestones (address, network, txs) VALUES (?, ?, ?)");
+  let milestoneCount = 0;
+  let milestoneCredits = 0;
+  for (const milestone of plan.milestones) {
+    if (insertMilestone.run(owner, network, milestone.txs).changes === 0) continue;
+    milestoneCount += 1;
+    milestoneCredits += milestone.credits;
+    insertLedger.run(owner, milestone.credits, "milestone", `Reached ${milestone.txs} transactions on ${network}`, network, txHash);
+  }
+
+  const insertDay = database.prepare("INSERT OR IGNORE INTO claimed_streak_days (address, network, day) VALUES (?, ?, ?)");
+  let streakCredits = 0;
+  let streakCount = 0;
+  for (const bonus of plan.streakDays) {
+    if (insertDay.run(owner, network, bonus.day).changes === 0) continue;
+    streakCount += 1;
+    streakCredits += bonus.credits;
+  }
+  if (streakCount > 0) {
+    insertLedger.run(owner, streakCredits, "streak", `${streakCount} streak ${streakCount === 1 ? "day" : "days"} on ${network}`, network, txHash);
+  }
+
+  const total = taskCredits + milestoneCredits + streakCredits;
+  // The wallet that invited this one gets its share of the same claim.
+  const referral = payReferral(owner, total, network);
+
+  return {
+    granted: total,
+    total,
+    tasks: taskCount,
+    milestones: milestoneCount,
+    streak: streakCredits,
+    referral,
+    txHash,
+    balance: getBalance(owner),
+  };
 }
 
 // --- API keys --------------------------------------------------------------

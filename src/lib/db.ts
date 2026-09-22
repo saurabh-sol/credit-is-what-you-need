@@ -104,6 +104,22 @@ const SCHEMA = `
     expires_at INTEGER NOT NULL    -- unix seconds
   );
 
+  -- A receipt the server signed for the KreditReceipts contract. Its plan is
+  -- written into the ledger once the chain has it (settled_at, tx_hash).
+  CREATE TABLE IF NOT EXISTS pending_claims (
+    receipt_id TEXT PRIMARY KEY,   -- the EIP-712 struct hash, as the contract reports it
+    network TEXT NOT NULL,
+    address TEXT NOT NULL,
+    nonce INTEGER NOT NULL,
+    credits INTEGER NOT NULL,
+    plan TEXT NOT NULL,            -- JSON ClaimPlan
+    deadline INTEGER NOT NULL,     -- unix seconds
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    tx_hash TEXT,
+    settled_at TEXT
+  );
+  CREATE INDEX IF NOT EXISTS pending_claims_address ON pending_claims (address, network);
+
   CREATE TABLE IF NOT EXISTS usage (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     key_id TEXT NOT NULL,
@@ -135,6 +151,7 @@ export function db() {
     const database = new DatabaseSync(path);
     database.exec("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;");
     database.exec(SCHEMA);
+    migrate(database);
     holder.kreditDb = database;
   }
   return holder.kreditDb;
@@ -142,6 +159,17 @@ export function db() {
 
 // node:sqlite is synchronous, so nothing else in this process runs between
 // BEGIN and COMMIT. IMMEDIATE also locks out other processes.
+// Columns added after the first release. CREATE TABLE IF NOT EXISTS leaves an
+// existing table alone, so each is added by hand when missing.
+function migrate(database: DatabaseSync) {
+  const columns = (table: string) =>
+    new Set((database.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]).map((row) => row.name));
+  const ledger = columns("ledger");
+  // Which network a credit came from, and the on-chain receipt that carried it.
+  if (!ledger.has("network")) database.exec("ALTER TABLE ledger ADD COLUMN network TEXT");
+  if (!ledger.has("tx_hash")) database.exec("ALTER TABLE ledger ADD COLUMN tx_hash TEXT");
+}
+
 export function transaction<T>(work: () => T): T {
   const database = db();
   database.exec("BEGIN IMMEDIATE");

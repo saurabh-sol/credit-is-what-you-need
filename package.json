@@ -16,6 +16,8 @@
     "backup": "node scripts/backup.mjs",
     "test:gateway": "node scripts/gateway-test.mjs",
     "test:referrals": "node scripts/referrals-test.mjs",
+    "test:receipts": "node scripts/receipts-test.mjs",
+    "test:contracts": "cd contracts && forge test",
     "test:platform": "node scripts/platform-test.mjs",
     "test:guard": "node scripts/guard-test.mjs",
     "demo": "node scripts/gateway-demo.mjs"
@@ -24,6 +26,7 @@
     "@ai-sdk/gateway": "^4.0.88",
     "@base-org/account": "^2.5.10",
     "@coinbase/wallet-sdk": "^4.3.7",
+    "@neondatabase/serverless": "^1.1.0",
     "@rainbow-me/rainbowkit": "^2.2.11",
     "@tanstack/react-query": "^5.103.1",
     "ai": "^7.0.109",
