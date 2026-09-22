@@ -117,7 +117,7 @@ export function ApiKeys() {
         <code>{snippet}</code>
       </pre>
       <p className="mt-2 text-xs leading-relaxed text-mist">
-        In Postman: POST to <span className="font-mono text-fog">{origin}/v1/chat/completions</span>, Auth type
+        In Postman: POST to <span className="font-mono text-fog">{SITE_URL}/v1/chat/completions</span>, Auth type
         &quot;Bearer Token&quot;. <span className="font-mono text-fog">kredit/echo</span> is a test model that repeats your
         message and is billed by length, like a real model.
       </p>
