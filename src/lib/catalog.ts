@@ -1,43 +1,98 @@
-import type { ModelLimits } from "./budget.ts";
 import { ECHO_MODEL, upstream } from "./gateway.ts";
+import { CREDITS_PER_USD, ECHO_PRICE, MARGIN, type ModelPrice, type PriceTier } from "./pricing.ts";
 
 // The models this deployment can reach, read from the provider once and kept
-// for ten minutes. It feeds the docs, the playground, /v1/models, and the
-// spend guard (which needs each model's price and longest answer).
+// for ten minutes. It feeds the docs, the playground, /v1/models, and billing
+// (which needs each model's price and longest answer).
+//
+// Vercel AI Gateway publishes its list, with prices, at /v1/models without a
+// key. OpenRouter's shape is read too, so either can sit behind UPSTREAM_BASE_URL.
 
-export type CatalogModel = { id: string; name: string; provider: string };
+export type ModelType = "language" | "embedding" | "image" | "other";
+
+export type CatalogModel = {
+  id: string;
+  name: string;
+  provider: string;
+  type: ModelType;
+  // In credits per million tokens, margin included: what a caller pays.
+  credits: { input: number; output: number } | null;
+  contextWindow?: number;
+};
 export type Catalog = { live: boolean; models: CatalogModel[] };
 
 type Loaded = {
   catalog: Catalog;
-  raw: unknown[]; // the provider's own entries, passed through by /v1/models
-  limits: Map<string, ModelLimits>;
+  raw: Record<string, unknown>[]; // the provider's own entries, passed through by /v1/models
+  prices: Map<string, ModelPrice>;
+  types: Map<string, ModelType>;
 };
 
-const ECHO: CatalogModel = { id: ECHO_MODEL, name: "Echo (test model)", provider: "kredit" };
+const ECHO: CatalogModel = {
+  id: ECHO_MODEL,
+  name: "Echo (test model)",
+  provider: "kredit",
+  type: "language",
+  credits: perMillion(ECHO_PRICE),
+};
 const CACHE_MS = 10 * 60_000;
 const holder = globalThis as { kreditCatalog?: { at: number; value: Loaded } };
 
 const providerOf = (id: string) => (id.includes("/") ? id.split("/")[0] : "other");
 
-type ProviderModel = {
-  id?: unknown;
-  name?: unknown;
-  pricing?: { prompt?: unknown; completion?: unknown }; // USD per token, as strings (OpenRouter)
-  top_provider?: { max_completion_tokens?: unknown };
+export function perMillion(price: ModelPrice) {
+  const credits = (usdPerToken: number) => Math.round(usdPerToken * 1_000_000 * (1 + MARGIN) * CREDITS_PER_USD * 100) / 100;
+  return { input: credits(price.input), output: credits(price.output) };
+}
+
+// A number the provider wrote as a string ("0.000003"), or undefined.
+const num = (value: unknown) => {
+  const parsed = typeof value === "string" || typeof value === "number" ? Number(value) : NaN;
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
 };
 
-// Null when the provider doesn't publish a usable price for the model.
-function limitsOf(model: ProviderModel): ModelLimits | null {
-  const input = Number(model.pricing?.prompt);
-  const output = Number(model.pricing?.completion);
-  if (!model.pricing || !Number.isFinite(input) || !Number.isFinite(output) || input < 0 || output < 0) return null;
-  const max = Number(model.top_provider?.max_completion_tokens);
+function tiers(value: unknown): PriceTier[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const parsed: PriceTier[] = [];
+  for (const step of value as { min?: unknown; max?: unknown; cost?: unknown }[]) {
+    const usd = num(step?.cost);
+    const min = num(step?.min);
+    if (usd === undefined || min === undefined) return undefined;
+    const max = num(step?.max);
+    parsed.push({ min, usd, ...(max !== undefined && { max }) });
+  }
+  return parsed.length > 0 ? parsed : undefined;
+}
+
+// The provider's entry -> our price list. Null when there is no usable price.
+function priceOf(model: Record<string, unknown>): ModelPrice | null {
+  const pricing = model.pricing as Record<string, unknown> | undefined;
+  if (!pricing) return null;
+  // Vercel: input/output; OpenRouter: prompt/completion. Embedding models
+  // write nothing back, so they list no output price.
+  const input = num(pricing.input) ?? num(pricing.prompt);
+  const output = num(pricing.output) ?? num(pricing.completion) ?? (typeOf(model) === "embedding" ? 0 : undefined);
+  if (input === undefined || output === undefined) return null;
+  const top = model.top_provider as Record<string, unknown> | undefined;
+  const maxOutputTokens = num(model.max_tokens) ?? num(top?.max_completion_tokens);
+  const contextWindow = num(model.context_window) ?? num(model.context_length);
   return {
-    inputUsdPerToken: input,
-    outputUsdPerToken: output,
-    ...(Number.isInteger(max) && max > 0 && { maxOutputTokens: max }),
+    input,
+    output,
+    ...(num(pricing.input_cache_read) !== undefined && { cacheRead: num(pricing.input_cache_read) }),
+    ...(num(pricing.input_cache_write) !== undefined && { cacheWrite: num(pricing.input_cache_write) }),
+    ...(tiers(pricing.input_tiers) && { inputTiers: tiers(pricing.input_tiers) }),
+    ...(tiers(pricing.output_tiers) && { outputTiers: tiers(pricing.output_tiers) }),
+    ...(maxOutputTokens && { maxOutputTokens }),
+    ...(contextWindow && { contextWindow }),
   };
+}
+
+function typeOf(model: Record<string, unknown>): ModelType {
+  const type = model.type;
+  if (type === "language" || type === "embedding" || type === "image") return type;
+  if (type === undefined) return "language"; // OpenRouter lists language models only
+  return "other";
 }
 
 async function load(): Promise<Loaded> {
@@ -45,7 +100,12 @@ async function load(): Promise<Loaded> {
   if (cached && cached.at > Date.now() - CACHE_MS) return cached.value;
 
   const { baseUrl, apiKey } = upstream();
-  let value: Loaded = { catalog: { live: false, models: [ECHO] }, raw: [], limits: new Map() };
+  let value: Loaded = {
+    catalog: { live: false, models: [ECHO] },
+    raw: [],
+    prices: new Map([[ECHO_MODEL, ECHO_PRICE]]),
+    types: new Map([[ECHO_MODEL, "language"]]),
+  };
   if (apiKey) {
     try {
       const response = await fetch(`${baseUrl}/models`, {
@@ -53,19 +113,27 @@ async function load(): Promise<Loaded> {
         signal: AbortSignal.timeout(10_000),
       });
       if (response.ok) {
-        const data = ((await response.json()).data ?? []) as ProviderModel[];
-        const known = data.filter((model): model is ProviderModel & { id: string } => typeof model.id === "string");
-        const models = known.map((model) => ({
-          id: model.id,
-          name: typeof model.name === "string" ? model.name : model.id,
-          provider: providerOf(model.id),
-        }));
-        const limits = new Map<string, ModelLimits>();
+        const data = ((await response.json()).data ?? []) as Record<string, unknown>[];
+        const known = data.filter((model) => typeof model.id === "string");
+        const prices = new Map(value.prices);
+        const types = new Map(value.types);
+        const models: CatalogModel[] = [ECHO];
         for (const model of known) {
-          const found = limitsOf(model);
-          if (found) limits.set(model.id, found);
+          const id = model.id as string;
+          const price = priceOf(model);
+          const type = typeOf(model);
+          if (price) prices.set(id, price);
+          types.set(id, type);
+          models.push({
+            id,
+            name: typeof model.name === "string" ? model.name : id,
+            provider: providerOf(id),
+            type,
+            credits: price ? perMillion(price) : null,
+            ...(price?.contextWindow && { contextWindow: price.contextWindow }),
+          });
         }
-        value = { catalog: { live: true, models: [ECHO, ...models] }, raw: known, limits };
+        value = { catalog: { live: true, models }, raw: known, prices, types };
       }
     } catch {
       // The provider's list is a nicety; the echo model is always available.
@@ -81,8 +149,14 @@ export const catalog = async () => (await load()).catalog;
 // The provider's own model entries, for /v1/models.
 export const providerModels = async () => (await load()).raw;
 
-// A variant such as "openai/gpt-4o:online" is priced like the model it is built on.
-export async function limitsFor(modelId: string) {
-  const { limits } = await load();
-  return limits.get(modelId) ?? limits.get(modelId.split(":")[0]) ?? null;
+// What a model costs, or null when the provider doesn't list it. A variant
+// such as "openai/gpt-4o:online" is priced like the model it is built on.
+export async function priceFor(modelId: string) {
+  const { prices } = await load();
+  return prices.get(modelId) ?? prices.get(modelId.split(":")[0]) ?? null;
+}
+
+export async function typeFor(modelId: string) {
+  const { types } = await load();
+  return types.get(modelId) ?? types.get(modelId.split(":")[0]) ?? null;
 }

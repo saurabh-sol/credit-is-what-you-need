@@ -1,49 +1,49 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { estimateInputTokens, FALLBACK_LIMITS, heldFor, hold, planSpend, type ModelLimits } from "./budget.ts";
-import { creditsFor } from "./pricing.ts";
+import { estimateInputTokens, heldFor, hold, planSpend } from "./budget.ts";
+import { creditsFor, ECHO_PRICE, type ModelPrice } from "./pricing.ts";
 
 // $3 in, $15 out per million tokens; answers of up to 8,000 tokens.
-const MODEL: ModelLimits = { inputUsdPerToken: 3e-6, outputUsdPerToken: 15e-6, maxOutputTokens: 8000 };
+const MODEL: ModelPrice = { input: 3e-6, output: 15e-6, maxOutputTokens: 8000 };
 
 test("a healthy balance leaves the request alone and holds its worst case", () => {
-  const plan = planSpend({ available: 10_000, inputTokens: 1000, limits: MODEL });
+  const plan = planSpend({ available: 10_000, inputTokens: 1000, price: MODEL });
   assert.deepEqual(plan, { ok: true, maxTokens: null, hold: 148 }); // (1000 x $3 + 8000 x $15) / 1M x 1.2 x 1000, rounded up
 });
 
 test("a requested limit lowers the hold", () => {
-  const plan = planSpend({ available: 10_000, inputTokens: 1000, requestedMaxTokens: 500, limits: MODEL });
+  const plan = planSpend({ available: 10_000, inputTokens: 1000, requestedMaxTokens: 500, price: MODEL });
   assert.deepEqual(plan, { ok: true, maxTokens: null, hold: 13 });
 });
 
 test("a thin balance shortens the answer to what it can pay for", () => {
-  const plan = planSpend({ available: 20, inputTokens: 1000, limits: MODEL });
+  const plan = planSpend({ available: 20, inputTokens: 1000, price: MODEL });
   assert.ok(plan.ok && plan.maxTokens !== null);
   assert.ok(plan.maxTokens < 8000);
   // The longest answer allowed never costs more than the balance.
-  const worst = creditsFor({ inputTokens: 1000, outputTokens: plan.maxTokens, costUsd: 1000 * 3e-6 + plan.maxTokens * 15e-6 });
+  const worst = creditsFor(MODEL, { inputTokens: 1000, outputTokens: plan.maxTokens });
   assert.ok(worst <= 20, `worst case ${worst} credits`);
   assert.equal(plan.hold, worst);
 });
 
 test("a request asking for more than the balance covers is cut down too", () => {
-  const plan = planSpend({ available: 20, inputTokens: 1000, requestedMaxTokens: 4000, limits: MODEL });
+  const plan = planSpend({ available: 20, inputTokens: 1000, requestedMaxTokens: 4000, price: MODEL });
   assert.ok(plan.ok && plan.maxTokens !== null && plan.maxTokens < 4000);
 });
 
 test("a prompt the balance cannot cover is refused with what it needs", () => {
-  const plan = planSpend({ available: 3, inputTokens: 100_000, limits: MODEL });
+  const plan = planSpend({ available: 3, inputTokens: 100_000, price: MODEL });
   assert.deepEqual(plan, { ok: false, needed: 361 });
-  assert.equal(planSpend({ available: 0, inputTokens: 1, limits: MODEL }).ok, false);
+  assert.equal(planSpend({ available: 0, inputTokens: 1, price: MODEL }).ok, false);
 });
 
 test("free models are never shortened", () => {
-  const free: ModelLimits = { inputUsdPerToken: 0, outputUsdPerToken: 0, maxOutputTokens: 4000 };
-  assert.deepEqual(planSpend({ available: 1, inputTokens: 50_000, limits: free }), { ok: true, maxTokens: null, hold: 1 });
+  const free: ModelPrice = { input: 0, output: 0, maxOutputTokens: 4000 };
+  assert.deepEqual(planSpend({ available: 1, inputTokens: 50_000, price: free }), { ok: true, maxTokens: null, hold: 1 });
 });
 
-test("an unknown model is planned with the fallback price and an assumed length", () => {
-  const plan = planSpend({ available: 100_000, inputTokens: 0, limits: FALLBACK_LIMITS });
+test("a model with no known answer limit is planned with an assumed length", () => {
+  const plan = planSpend({ available: 100_000, inputTokens: 0, price: { ...ECHO_PRICE, maxOutputTokens: undefined } });
   assert.deepEqual(plan, { ok: true, maxTokens: null, hold: 295 }); // 16,384 x $15 / 1M x 1.2 x 1000, rounded up
 });
 

@@ -247,8 +247,8 @@ x-kredit-balance: ${5_000 - typicalCharge}`;
               </table>
             </div>
             <p className="text-xs">
-              Worked out with the same pricing function that bills you, at Kredit&apos;s fallback token price. When the
-              provider reports its own price for a call, you are billed at that instead.
+              Worked out with the same pricing function that bills you, for a mid-priced model ($3 in, $15 out per
+              million tokens). Every model&apos;s own price is on <code>GET /v1/models</code>, in credits per million tokens.
             </p>
 
             <Label>Headers on every response</Label>
