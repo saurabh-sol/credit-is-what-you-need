@@ -15,6 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Kredit — your on-chain activity has purchasing power",
+  openGraph: { images: ["/kredit-mark.png"] },
   description:
     "Kredit turns your on-chain reputation and activity into AI credits you can spend across models, agents and APIs.",
 };
