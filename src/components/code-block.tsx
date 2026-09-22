@@ -64,8 +64,9 @@ export function CodeTabs({ tabs }: { tabs: { name: string; code: string }[] }) {
   const { code } = tabs[active];
   return (
     <div className="code-block">
-      <div className="flex items-center justify-between border-b border-line bg-raised/50 py-1.5 pr-2 pl-2">
-        <div role="tablist" className="flex gap-1 font-mono text-xs">
+      <div className="flex items-center justify-between gap-2 border-b border-line bg-raised/50 py-1.5 pr-2 pl-2">
+        {/* Many tabs on a narrow screen slide sideways rather than wrapping into a second row. */}
+        <div role="tablist" className="flex min-w-0 gap-1 overflow-x-auto font-mono text-xs [scrollbar-width:none]">
           {tabs.map((tab, index) => (
             <button
               key={tab.name}
@@ -73,7 +74,7 @@ export function CodeTabs({ tabs }: { tabs: { name: string; code: string }[] }) {
               type="button"
               aria-selected={index === active}
               onClick={() => setActive(index)}
-              className={`rounded-md px-2.5 py-1 transition ${
+              className={`shrink-0 rounded-md px-2.5 py-1 whitespace-nowrap transition ${
                 index === active ? "bg-accent/15 text-accent" : "text-mist hover:text-fog"
               }`}
             >

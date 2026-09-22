@@ -117,31 +117,31 @@ const earnings = [
 // Live vignettes. The grid is six columns wide; spans keep the rows uneven on purpose.
 const bento = [
   {
-    span: "md:col-span-4",
+    span: "lg:col-span-4",
     live: <PromptBar />,
     title: "One key, whichever model fits",
     text: "Ask from Cursor, Postman or your own code. Kredit routes the call and takes the cost from your credits.",
   },
   {
-    span: "md:col-span-2",
+    span: "lg:col-span-2",
     live: <KeyStatus />,
     title: "Keys you can see and revoke",
     text: "One key per tool. Revoke any of them and it stops working on the next request.",
   },
   {
-    span: "md:col-span-2",
+    span: "lg:col-span-2",
     live: <TaskFeed />,
     title: "Every task counted",
     text: "Deployments, swaps, interactions and milestones, scored by public rules.",
   },
   {
-    span: "md:col-span-4",
+    span: "lg:col-span-4",
     live: <HeaderFocus />,
     title: "The bill arrives with the answer",
     text: "Two response headers tell your code what the call cost and what is left. No dashboard needed.",
   },
   {
-    span: "md:col-span-6",
+    span: "lg:col-span-6",
     live: <ModelStream />,
     title: "The makers you already use",
     text: "Reached through one OpenAI-compatible endpoint. Which models are on depends on the provider this server is connected to.",
@@ -239,7 +239,7 @@ export default function Home() {
                   <span style={beat(index + 1)} className="inline-block animate-rise">
                     {word}&nbsp;
                   </span>
-                  {word === "activity" && <br className="hidden lg:block" />}
+                  {word === "activity" && <br className="hidden xl:block" />}
                 </Fragment>
               ))}
               <span style={beat(headline.length + 1)} className="inline-block animate-rise">
@@ -304,9 +304,9 @@ export default function Home() {
       </section>
 
       <section id="earn" className="border-y border-line bg-surface">
-        <div className="mx-auto grid max-w-6xl items-center gap-x-16 gap-y-14 px-4 py-24 md:grid-cols-[0.85fr_1.15fr] md:py-32">
+        <div className="mx-auto grid max-w-6xl items-center gap-x-16 gap-y-14 px-4 py-24 md:py-32 lg:grid-cols-[0.85fr_1.15fr]">
           {/* Reads second on a phone, where the explanation should come first. */}
-          <Reveal variant="mark" className="meter order-last flex justify-center md:order-first md:justify-start">
+          <Reveal variant="mark" className="meter order-last flex justify-center lg:order-first lg:justify-start">
             <Tilt className="w-full max-w-sm">
               <CreditMeter />
             </Tilt>
@@ -348,10 +348,10 @@ export default function Home() {
           tells you what is left. The numbers below are examples.
         </SectionHeading>
         {/* minmax(0, 1fr): without it the one phone column grows as wide as the logo marquee inside it. */}
-        <div className="mt-14 grid grid-cols-[minmax(0,1fr)] gap-x-4 gap-y-10 md:grid-cols-6">
+        <div className="mt-14 grid grid-cols-[minmax(0,1fr)] gap-x-4 gap-y-10 lg:grid-cols-6">
           {bento.map((tile, index) => (
             <Reveal key={tile.title} delay={index * 90} className={tile.span}>
-              <div className={`card flex flex-col justify-center overflow-hidden p-7 ${tile.span === "md:col-span-6" ? "py-9" : "min-h-64"}`}>
+              <div className={`card flex flex-col justify-center overflow-hidden p-7 ${tile.span === "lg:col-span-6" ? "py-9" : "min-h-64"}`}>
                 {tile.live}
               </div>
               <h3 className="mt-5 font-semibold">{tile.title}</h3>

@@ -62,14 +62,14 @@ export function ApiDemo() {
           <span className="size-3 rounded-full bg-[#f4c132]/70" />
           <span className="size-3 rounded-full bg-accent/70" />
         </div>
-        <div role="tablist" aria-label="Language" className="ml-2 flex gap-1 font-mono text-xs">
+        <div role="tablist" aria-label="Language" className="ml-2 flex min-w-0 gap-1 overflow-x-auto font-mono text-xs [scrollbar-width:none]">
           {tabs.map((name) => (
             <button
               key={name}
               role="tab"
               aria-selected={tab === name}
               onClick={() => restart(name)}
-              className={`rounded-md px-2.5 py-1 transition ${
+              className={`shrink-0 rounded-md px-2.5 py-1 whitespace-nowrap transition ${
                 tab === name ? "bg-accent/15 text-accent" : "text-mist hover:text-fog"
               }`}
             >
@@ -77,8 +77,9 @@ export function ApiDemo() {
             </button>
           ))}
         </div>
-        <div className="ml-auto flex gap-1 font-mono text-xs">
-          <button onClick={() => restart(tab)} className="rounded-md px-2.5 py-1 text-mist transition hover:text-fog">
+        <div className="ml-auto flex shrink-0 gap-1 font-mono text-xs">
+          {/* Phones keep the room for the language tabs; tapping a tab replays anyway. */}
+          <button onClick={() => restart(tab)} className="hidden rounded-md px-2.5 py-1 text-mist transition hover:text-fog sm:inline-flex">
             Replay
           </button>
           <CopyButton text={code} />

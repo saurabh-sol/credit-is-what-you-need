@@ -31,18 +31,19 @@ export default function Credits() {
 
       <section className="mt-10 animate-rise">
         <h2 className="section-label">
-          What requests cost
-          <span className="text-xs font-normal text-mist">Longer questions and longer answers cost more</span>
+          <span className="shrink-0">What requests cost</span>
+          <span className="text-right text-xs font-normal text-mist">Longer questions and longer answers cost more</span>
         </h2>
         <div className="overflow-x-auto">
-          <table className="grid-table min-w-[34rem]">
+          {/* A phone shows the request and its price; the token counts and dollars need a wider screen. */}
+          <table className="grid-table sm:min-w-[34rem]">
             <thead>
               <tr>
                 <th>Request</th>
                 <th>Size</th>
-                <th className="num">Tokens in / out</th>
+                <th className="num max-sm:hidden">Tokens in / out</th>
                 <th className="num">Credits</th>
-                <th className="num">≈ USD</th>
+                <th className="num max-sm:hidden">≈ USD</th>
               </tr>
             </thead>
             <tbody>
@@ -50,11 +51,11 @@ export default function Credits() {
                 <tr key={example.name}>
                   <td className="font-medium">{example.name}</td>
                   <td className="text-mist">{example.detail}</td>
-                  <td className="num text-mist">
+                  <td className="num text-mist max-sm:hidden">
                     {formatCredits(example.inputTokens)} / {formatCredits(example.outputTokens)}
                   </td>
                   <td className="num">{formatCredits(example.credits)}</td>
-                  <td className="num text-mist">${example.usd.toFixed(3)}</td>
+                  <td className="num text-mist max-sm:hidden">${example.usd.toFixed(3)}</td>
                 </tr>
               ))}
             </tbody>

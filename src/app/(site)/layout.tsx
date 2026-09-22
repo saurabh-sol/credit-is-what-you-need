@@ -37,7 +37,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       <main className="flex-1">{children}</main>
       {/* The one inverted block on the page: black with cream text, so fog and ink swap roles here. */}
       <footer className="overflow-hidden rounded-t-[2rem] bg-fog text-ink">
-        <div className="mx-auto flex max-w-6xl flex-col gap-12 px-4 pt-16 pb-12 md:flex-row md:items-start md:justify-between md:pt-20">
+        <div className="mx-auto flex max-w-6xl flex-col gap-12 px-4 pt-16 pb-12 md:pt-20 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <Logo />
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-ink/60">

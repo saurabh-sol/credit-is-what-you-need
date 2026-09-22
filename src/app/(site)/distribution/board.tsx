@@ -10,7 +10,7 @@ import { formatCredits, shortAddress } from "@/lib/format";
 import { CREDITS_PER_USD } from "@/lib/pricing";
 import { api } from "@/lib/use-kredit-account";
 import { useSession } from "@/lib/use-session";
-import { ago, ModelStack, SkeletonRow, sources, tokens, usd, WalletRow } from "./wallet-row";
+import { ago, ModelStack, SkeletonRow, sources, tokens, usd, WalletRow, wide } from "./wallet-row";
 
 // The server sends at most this many rows, so a wallet missing from a full list may simply sit below it.
 const BOARD_LIMIT = 100;
@@ -175,7 +175,7 @@ export function Board({ initial }: { initial: Distribution }) {
           )}
         </label>
 
-        <ul className="hidden items-center gap-x-4 text-xs text-mist lg:flex">
+        <ul className="hidden items-center gap-x-4 text-xs text-mist xl:flex">
           {sources.map((source) => (
             <li key={source.kind} className="flex items-center gap-1.5">
               <span className={`size-2 rounded-xs ${source.shade}`} /> {source.label}
@@ -183,7 +183,7 @@ export function Board({ initial }: { initial: Distribution }) {
           ))}
         </ul>
 
-        <p className="text-xs text-mist tabular-nums sm:ml-auto lg:ml-0" aria-live="polite">
+        <p className="text-xs text-mist tabular-nums sm:ml-auto xl:ml-0" aria-live="polite">
           {query && rows
             ? `${formatCredits(rows.length)} of ${count(totals.wallets)}`
             : totals.wallets > board.data.wallets.length
@@ -225,20 +225,25 @@ export function Board({ initial }: { initial: Distribution }) {
             </div>
           </div>
         ) : (
-          // Below lg the table scrolls sideways; from lg up its header sticks under the site header instead.
-          <div className={`transition-opacity max-lg:overflow-x-auto ${stale ? "opacity-60" : ""}`} aria-busy={!rows || stale}>
-            <table className="grid-table min-w-[68rem] lg:[&_th]:top-16">
+          // Below xl the table keeps its main columns (the rest hide, see `wide` in wallet-row.tsx) and can
+          // still scroll sideways if it must; from xl up every column shows and the header sticks under the site header.
+          <div className={`transition-opacity max-xl:overflow-x-auto ${stale ? "opacity-60" : ""}`} aria-busy={!rows || stale}>
+            {/* On a phone the cells tighten and the date goes too, so rank, wallet, credits and usage fit the screen. */}
+            <table className="grid-table max-sm:[&_td]:px-2 max-sm:[&_th]:px-2 xl:min-w-[68rem] xl:[&_th]:top-16">
               <thead>
                 <tr>
                   <th className="num">#</th>
                   <th>Wallet</th>
-                  <th className="num">Credits earned</th>
-                  <th className="num">Worth</th>
-                  <th className="num">Share</th>
-                  <th>Sources</th>
+                  <th className="num">
+                    <span className="sm:hidden">Credits</span>
+                    <span className="max-sm:hidden">Credits earned</span>
+                  </th>
+                  <th className={`num ${wide}`}>Worth</th>
+                  <th className={`num ${wide}`}>Share</th>
+                  <th className={wide}>Sources</th>
                   <th className="text-right">Used on</th>
-                  <th>Paid in</th>
-                  <th className="text-right">Last earned</th>
+                  <th className={wide}>Paid in</th>
+                  <th className="text-right max-sm:hidden">Last earned</th>
                 </tr>
               </thead>
               <tbody>

@@ -44,20 +44,21 @@ export function WalletButton({ label = "Connect wallet", signedIn = "action" }: 
 
   if (session.address) {
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex min-w-0 items-center gap-1 sm:gap-2">
         <Link
           href="/dashboard"
-          className="rounded-full border border-line bg-surface px-4 py-2 font-mono text-sm text-fog transition hover:border-accent"
+          className="flex items-center rounded-full border border-line bg-surface px-3 py-2 font-mono text-[0.8125rem] whitespace-nowrap text-fog transition hover:border-accent sm:px-4 sm:text-sm"
         >
           <span className="live-dot mr-2" />
           {shortAddress(session.address)}
         </Link>
+        {/* On a phone the dashboard's sidebar has sign-out; the header keeps only what fits. */}
         <button
           onClick={() => {
             disconnect();
             session.signOut.mutate();
           }}
-          className="rounded-full px-3 py-2 text-sm text-mist transition hover:text-fog"
+          className="hidden rounded-full px-3 py-2 text-sm whitespace-nowrap text-mist transition hover:text-fog md:inline-flex"
         >
           Sign out
         </button>

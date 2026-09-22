@@ -19,6 +19,9 @@ export const sources: { kind: EarningKind; label: string; shade: string }[] = [
   { kind: "topup", label: "Bought", shade: "bg-fog/35" },
 ];
 
+// Columns that only a wide laptop table has room for (from xl, 80rem). Smaller screens keep rank, wallet, credits, usage and date.
+export const wide = "max-xl:hidden";
+
 export const usd = (credits: number) =>
   `$${(credits / CREDITS_PER_USD).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -133,9 +136,9 @@ export function WalletRow({ wallet, rank, share, you }: WalletRowProps) {
         </div>
       </td>
       <td className="num font-medium text-fog">{formatCredits(wallet.earned)}</td>
-      <td className="num text-mist">{usd(wallet.earned)}</td>
-      <td className="num text-mist">{share.toFixed(1)}%</td>
-      <td>
+      <td className={`num text-mist ${wide}`}>{usd(wallet.earned)}</td>
+      <td className={`num text-mist ${wide}`}>{share.toFixed(1)}%</td>
+      <td className={wide}>
         <div className="flex items-center gap-3">
           <div role="img" aria-label={breakdown} title={breakdown} className="flex h-1 w-24 shrink-0 overflow-hidden rounded-full bg-raised">
             {sources.map((source) => (
@@ -159,10 +162,10 @@ export function WalletRow({ wallet, rank, share, you }: WalletRowProps) {
           <span className="block text-right text-mist">—</span>
         )}
       </td>
-      <td className="font-mono text-xs whitespace-nowrap text-mist">
+      <td className={`font-mono text-xs whitespace-nowrap text-mist ${wide}`}>
         {wallet.tokensPaid.length ? tokens(wallet.tokensPaid).join(", ") : "—"}
       </td>
-      <td className="text-right text-xs whitespace-nowrap text-mist" suppressHydrationWarning>
+      <td className="text-right text-xs whitespace-nowrap text-mist max-sm:hidden" suppressHydrationWarning>
         {ago(wallet.lastEarnedAt)}
       </td>
     </tr>
@@ -182,12 +185,15 @@ export function SkeletonRow() {
           <span className="skeleton h-3 w-32" />
         </div>
       </td>
-      {["w-16", "w-12", "w-10"].map((width) => (
-        <td key={width} className="num">
+      <td className="num">
+        <span className="skeleton h-3 w-16" />
+      </td>
+      {["w-12", "w-10"].map((width) => (
+        <td key={width} className={`num ${wide}`}>
           <span className={`skeleton h-3 ${width}`} />
         </td>
       ))}
-      <td>
+      <td className={wide}>
         <span className="skeleton h-1.5 w-40" />
       </td>
       <td>
@@ -196,10 +202,10 @@ export function SkeletonRow() {
           <span className="skeleton size-6 rounded-full" />
         </div>
       </td>
-      <td>
+      <td className={wide}>
         <span className="skeleton h-3 w-14" />
       </td>
-      <td className="num">
+      <td className="num max-sm:hidden">
         <span className="skeleton h-3 w-16" />
       </td>
     </tr>

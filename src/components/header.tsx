@@ -56,15 +56,16 @@ export function Header() {
       style={{ "--progress": 0 } as React.CSSProperties}
       className="sticky top-0 z-40 border-b border-transparent transition-[background-color,border-color,backdrop-filter] duration-500 data-open:border-line data-open:bg-ink/95 data-open:backdrop-blur-xl data-scrolled:border-line data-scrolled:bg-ink/75 data-scrolled:backdrop-blur-xl"
     >
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:gap-4">
         <Logo />
-        <nav aria-label="Main" className="hidden gap-1 text-sm text-mist md:flex">
+        {/* The full nav needs a laptop's width; tablets and phones get the menu button. */}
+        <nav aria-label="Main" className="hidden gap-1 text-sm text-mist lg:flex">
           {links.map(([name, href]) => (
             <Link
               key={href}
               href={href}
               aria-current={pathname === href ? "page" : undefined}
-              className="rounded-full px-3.5 py-2 transition hover:bg-fog/5 hover:text-fog aria-[current=page]:bg-fog/5 aria-[current=page]:text-fog"
+              className="rounded-full px-3.5 py-2 whitespace-nowrap transition hover:bg-fog/5 hover:text-fog aria-[current=page]:bg-fog/5 aria-[current=page]:text-fog"
             >
               {name}
             </Link>
@@ -74,7 +75,7 @@ export function Header() {
           <Link
             href="/playground"
             aria-current={pathname === "/playground" ? "page" : undefined}
-            className="btn-ghost hidden px-3.5 py-2 text-sm aria-[current=page]:border-accent/55 sm:inline-flex"
+            className="btn-ghost hidden px-3.5 py-2 text-sm whitespace-nowrap aria-[current=page]:border-accent/55 sm:inline-flex"
           >
             <PlayIcon className="size-3.5 text-accent" />
             Playground
@@ -85,7 +86,7 @@ export function Header() {
             aria-label={menuOpen ? "Close menu" : "Open menu"}
             aria-expanded={menuOpen}
             onClick={() => setMenuAt(menuOpen ? null : pathname)}
-            className="btn-ghost grid size-10 place-items-center md:hidden"
+            className="btn-ghost grid size-10 shrink-0 place-items-center lg:hidden"
           >
             {menuOpen ? <CloseIcon className="size-5" /> : <MenuIcon className="size-5" />}
           </button>
@@ -93,7 +94,7 @@ export function Header() {
       </div>
 
       {menuOpen && (
-        <nav aria-label="Mobile" className="border-t border-line px-4 pt-2 pb-5 md:hidden">
+        <nav aria-label="Mobile" className="border-t border-line px-4 pt-2 pb-5 lg:hidden">
           {[...links, ["Playground", "/playground"], ["Dashboard", "/dashboard"]].map(([name, href], index) => (
             <Link
               key={href}
