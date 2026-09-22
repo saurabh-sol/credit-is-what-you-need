@@ -263,6 +263,25 @@ async function load(): Promise<Loaded> {
 
 export const catalog = async () => (await load()).catalog;
 
+// Prices in the unit the model is sold by: tokens, images or seconds of video.
+const pricingOf = (price: CatalogPrice | null) => {
+  if (!price) return null;
+  if (price.per === "image") return { credits_per_image: price.credits };
+  if (price.per === "second") return { credits_per_second_from: price.from, at_resolution: price.resolution };
+  return { credits_per_million_input: price.input, credits_per_million_output: price.output };
+};
+
+// A model as /v1/models shows it: OpenAI's shape plus what it costs here.
+export const publicModel = (model: CatalogModel) => ({
+  id: model.id,
+  object: "model",
+  owned_by: model.provider,
+  name: model.name,
+  type: model.type,
+  ...(model.contextWindow && { context_window: model.contextWindow }),
+  pricing: pricingOf(model.price),
+});
+
 // The provider's own model entries, for /v1/models.
 export const providerModels = async () => (await load()).raw;
 

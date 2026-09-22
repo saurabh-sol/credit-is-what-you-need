@@ -3,9 +3,11 @@ import { apiError, chargeHeaders, ECHO_MODEL, settle, type Caller } from "./gate
 import { getBalance } from "./ledger.ts";
 import { ECHO_PRICE } from "./pricing.ts";
 import { proxyCall } from "./proxy.ts";
+import { chatBodyFromResponses, isResponsesShaped } from "./responses-to-chat.ts";
 
 // One chat completion for a caller who has already been identified: by API key
-// on /v1, or by their signed-in session in the playground.
+// on /v1, or by their signed-in session in the playground. `parsed` is the body
+// when the route has already read it (the text-completion route builds one).
 
 type ChatBody = {
   model: string;
@@ -16,12 +18,14 @@ type ChatBody = {
 const textOf = (content: unknown) => (typeof content === "string" ? content : JSON.stringify(content ?? ""));
 const promptText = (body: ChatBody) => body.messages.map((message) => textOf(message.content)).join("\n");
 
-export async function complete(caller: Caller, request: Request) {
+export async function complete(caller: Caller, request: Request, parsed?: Record<string, unknown>) {
   if ((await getBalance(caller.address)) <= 0) {
     return apiError(402, "You are out of credits. Earn more on your Kredit dashboard.", "insufficient_credits");
   }
-  const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
-  if (!body) return apiError(400, "Send a JSON body with `model` and a non-empty `messages` array.", "invalid_body");
+  const raw = parsed ?? ((await request.json().catch(() => null)) as Record<string, unknown> | null);
+  if (!raw) return apiError(400, "Send a JSON body with `model` and a non-empty `messages` array.", "invalid_body");
+  // Cursor's agent mode sends a Responses-shaped body here and reads chat chunks back.
+  const body = isResponsesShaped(raw) ? chatBodyFromResponses(raw) : raw;
 
   if (body.model === ECHO_MODEL && Array.isArray(body.messages) && body.messages.length > 0) {
     return echo(caller, body as unknown as ChatBody);

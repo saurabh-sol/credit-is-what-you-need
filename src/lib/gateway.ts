@@ -15,16 +15,26 @@ let lastSweep = 0;
 export const CORS_HEADERS = {
   "access-control-allow-origin": "*",
   "access-control-allow-methods": "GET, POST, OPTIONS",
-  "access-control-allow-headers": "authorization, x-api-key, anthropic-version, content-type, x-kredit-user",
+  "access-control-allow-headers": "authorization, x-api-key, anthropic-version, anthropic-dangerous-direct-browser-access, content-type, x-kredit-user",
   "access-control-expose-headers": "x-kredit-credits-charged, x-kredit-balance, x-request-id, x-ratelimit-limit, x-ratelimit-remaining",
   "access-control-max-age": "86400",
 };
 
+// The OpenAI and Anthropic SDKs add their own headers (x-stainless-*), so a
+// preflight is answered with whatever headers the browser asked to send.
+export const corsHeaders = (request?: Request) => ({
+  ...CORS_HEADERS,
+  "access-control-allow-headers": request?.headers.get("access-control-request-headers") || CORS_HEADERS["access-control-allow-headers"],
+  vary: "access-control-request-headers",
+});
+
+type RouteContext = { params: Promise<Record<string, string | string[]>> };
+
 // Wraps a /v1 handler: adds the CORS and tracing headers to whatever it returns.
-export function v1(handler: (request: Request, context: { params: Promise<Record<string, string>> }) => Promise<Response> | Response) {
-  return async (request: Request, context: { params: Promise<Record<string, string>> }) => {
+export function v1(handler: (request: Request, context: RouteContext) => Promise<Response> | Response) {
+  return async (request: Request, context: RouteContext) => {
     const response = await handler(request, context);
-    for (const [name, value] of Object.entries(CORS_HEADERS)) response.headers.set(name, value);
+    for (const [name, value] of Object.entries(corsHeaders(request))) response.headers.set(name, value);
     response.headers.set("x-request-id", crypto.randomUUID());
     const remaining = rateRemaining.get(request); // set by authenticate()
     if (remaining !== undefined) {
@@ -37,7 +47,7 @@ export function v1(handler: (request: Request, context: { params: Promise<Record
 
 const rateRemaining = new WeakMap<Request, number>();
 
-export const preflight = () => new Response(null, { status: 204, headers: CORS_HEADERS });
+export const preflight = (request: Request) => new Response(null, { status: 204, headers: corsHeaders(request) });
 
 // Errors use the OpenAI shape so existing clients display them properly.
 export function apiError(status: number, message: string, code: string) {

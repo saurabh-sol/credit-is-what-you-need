@@ -20,6 +20,7 @@
     "test:contracts": "cd contracts && forge test",
     "test:platform": "node scripts/platform-test.mjs",
     "test:guard": "node scripts/guard-test.mjs",
+    "test:compat": "node scripts/compat-test.mjs",
     "demo": "node scripts/gateway-demo.mjs"
   },
   "dependencies": {
@@ -39,6 +40,7 @@
     "wagmi": "^2.19.5"
   },
   "devDependencies": {
+    "@anthropic-ai/sdk": "^0.127.0",
     "@electric-sql/pglite": "^0.5.8",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^26.6.2",
@@ -47,6 +49,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.5",
+    "openai": "^7.21.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

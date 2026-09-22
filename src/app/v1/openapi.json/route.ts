@@ -57,6 +57,18 @@ export const GET = v1((request) => {
           },
         },
       },
+      "/completions": {
+        post: {
+          summary: "OpenAI legacy text completions",
+          operationId: "createCompletion",
+          requestBody: passthrough("An OpenAI text completion request: `model`, `prompt` and the usual options. The prompt is answered as one chat turn."),
+          responses: {
+            200: { description: "A `text_completion`, or a stream of them.", headers: charged, content: { "application/json": { schema: { type: "object", additionalProperties: true } }, "text/event-stream": { schema: { type: "string" } } } },
+            400: errorBody("The body is missing `model` or `prompt`, or the model is not a chat model."),
+            ...common,
+          },
+        },
+      },
       "/responses": {
         post: {
           summary: "OpenAI Responses",
@@ -206,6 +218,19 @@ export const GET = v1((request) => {
           responses: {
             200: { description: "Every model this key can call, with prices.", content: { "application/json": { schema: { $ref: "#/components/schemas/ModelList" } } } },
             401: common[401],
+            429: common[429],
+          },
+        },
+      },
+      "/models/{id}": {
+        get: {
+          summary: "One model",
+          operationId: "retrieveModel",
+          parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" }, description: "The model id, such as openai/gpt-4o (the slash may be sent as %2F)." }],
+          responses: {
+            200: { description: "The model, with its price.", content: { "application/json": { schema: { type: "object", additionalProperties: true } } } },
+            401: common[401],
+            404: errorBody("No model has that id."),
             429: common[429],
           },
         },
