@@ -58,7 +58,7 @@ export function ActivityTable({ limit }: { limit?: number }) {
 
   return (
     <div className="overflow-x-auto">
-      <table className="grid-table min-w-[32rem]">
+      <table className="grid-table sm:min-w-[32rem]">
         <thead>
           <tr>
             <th>Type</th>
@@ -74,7 +74,7 @@ export function ActivityTable({ limit }: { limit?: number }) {
                   <td>
                     <span className="chip">{kindLabel[entry.kind] ?? entry.kind}</span>
                   </td>
-                  <td className="max-w-64 truncate text-mist">
+                  <td className="max-w-36 truncate text-mist sm:max-w-64">
                     {entry.memo}
                     {entry.txHash && entry.network && networks[entry.network] && (
                       <>

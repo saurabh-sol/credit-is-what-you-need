@@ -63,7 +63,8 @@
     position: relative;
   }
 
-  /* Runs through the middle of the icon tiles: down the side on phones, across on desktop.
+  /* Runs through the middle of the icon tiles: down the side on phones and tablets, across
+     on desktop (the same 64rem switch as the grid in loop-beam.tsx).
      Wider than the hairline it draws, so the beam's head is not clipped. */
   .loop-track {
     position: absolute;
@@ -99,7 +100,7 @@
     animation: loop-beam-y var(--loop-turn) linear infinite;
   }
 
-  @media (min-width: 48rem) {
+  @media (min-width: 64rem) {
     .loop-track {
       top: calc(1.375rem - 4px);
       right: 0;

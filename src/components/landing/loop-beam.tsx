@@ -114,10 +114,11 @@ export function LoopBeam() {
       <div className="loop-track" aria-hidden>
         <span className="loop-beam" />
       </div>
-      <ol className="relative grid gap-8 md:grid-cols-3 md:gap-6">
+      {/* Three across only from lg: at tablet width the proof lines inside each card run out of room. */}
+      <ol className="relative grid gap-8 lg:grid-cols-3 lg:gap-6">
         {stages.map((stage, index) => (
           <Reveal as="li" key={stage.title} delay={index * 160} className="h-full">
-            <div className="flex h-full gap-5 md:flex-col md:gap-6" style={{ "--stage": index } as React.CSSProperties}>
+            <div className="flex h-full gap-5 lg:flex-col lg:gap-6" style={{ "--stage": index } as React.CSSProperties}>
               <span className="loop-tile">
                 <stage.icon className="size-5" />
                 <span className="loop-lit">

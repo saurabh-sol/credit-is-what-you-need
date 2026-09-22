@@ -56,19 +56,20 @@ export default async function Overview() {
           </div>
         </section>
 
-        <section className="lg:col-span-5">
+        <section className="min-w-0 lg:col-span-5">
           <h2 className="section-label">Next steps</h2>
           <ul>
             {nextSteps.map(({ icon: Icon, title, text, href, action }) => (
-              <li key={href} className="entity">
+              // On a phone the button drops under the words instead of squeezing them.
+              <li key={href} className="entity flex-wrap">
                 <span className="entity-icon">
                   <Icon />
                 </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium">{title}</p>
-                  <p className="truncate text-xs text-mist">{text}</p>
+                <div className="min-w-0 flex-1 basis-56">
+                  <p className="font-medium">{title}</p>
+                  <p className="text-xs text-mist">{text}</p>
                 </div>
-                <Link href={href} className="btn-sm">
+                <Link href={href} className="btn-sm ml-auto">
                   {action}
                 </Link>
               </li>
