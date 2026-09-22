@@ -16,8 +16,9 @@ export function Record() {
       <H2>What is read</H2>
       <ul>
         <li>
-          Transactions your wallet <strong>sent</strong>, from the network&apos;s Blockscout explorer. Incoming
-          transfers and calls other people made do not count.
+          Transactions your wallet <strong>sent</strong>, read from Robinhood Chain itself through the RPC&apos;s
+          transaction index (zero-value calls and deployments included). Incoming transfers and calls other
+          people made do not count.
         </li>
         <li>
           Up to the latest <strong>1,000 transactions</strong> (20 pages of 50). Beyond that the receipt says{" "}

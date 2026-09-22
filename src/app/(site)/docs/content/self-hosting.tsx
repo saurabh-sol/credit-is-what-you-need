@@ -38,16 +38,19 @@ export function Configuration() {
           Read when the site is built, so rebuild after changing it.
         </Param>
         <Param name="NEXT_PUBLIC_RPC_MAINNET" type="url · build time">
-          Optional private RPC (for example Alchemy) for Robinhood Chain. Used in the browser, so restrict the key to
-          your domain.
+          Alchemy RPC for Robinhood Chain. With it the scanner reads wallet history straight from the chain
+          (Alchemy&apos;s transaction index), which is how mainnet scanning works. Used in the browser too, so
+          restrict the key to your domain.
+        </Param>
+        <Param name="RPC_MAINNET" type="url">
+          Server-only alternative to the variable above, if you would rather not ship the key to browsers.
         </Param>
         <Param name="EXPLORER_API_MAINNET" type="url">
-          Where the scanner reads wallet history (Blockscout API v2). Defaults to the public Robinhood Chain
-          explorer.
+          Fallback when no Alchemy RPC is set: a Blockscout API v2 endpoint the scanner reads wallet history from.
+          Defaults to the public Robinhood Chain explorer, which blocks anonymous server requests.
         </Param>
         <Param name="BLOCKSCOUT_API_KEY" type="string">
-          Sent as <code>apikey</code> on explorer requests. The public mainnet explorer blocks anonymous server
-          requests, so set this or point the explorer variable at your own indexer.
+          Sent as <code>apikey</code> on explorer requests when the fallback is in use.
         </Param>
       </Params>
 
