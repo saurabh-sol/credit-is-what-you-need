@@ -1,4 +1,4 @@
-import { isNetworkId, type NetworkId } from "./networks.ts";
+import type { NetworkId } from "./networks.ts";
 
 // Buying credits with the project's own token. The user sends tokens straight
 // to the treasury; the server then reads the transaction's receipt and credits
@@ -21,8 +21,8 @@ export function topUpConfig(env: Record<string, string | undefined> = process.en
   const treasury = env.TOPUP_TREASURY_ADDRESS;
   const creditsPerToken = Number(env.TOPUP_CREDITS_PER_TOKEN);
   const decimals = Number(env.TOPUP_TOKEN_DECIMALS ?? 18);
-  const network = env.TOPUP_NETWORK ?? "mainnet";
-  if (!isAddress(token) || !isAddress(treasury) || !isNetworkId(network)) return null;
+  const network: NetworkId = "mainnet";
+  if (!isAddress(token) || !isAddress(treasury)) return null;
   if (!(creditsPerToken > 0) || !Number.isInteger(decimals) || decimals < 0 || decimals > 36) return null;
   return {
     network,

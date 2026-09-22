@@ -1,13 +1,13 @@
 import { ExplorerError } from "@/lib/explorer";
 import { previewClaim } from "@/lib/ledger";
-import { isNetworkId, networks } from "@/lib/networks";
+import { isNetworkId, networks, type NetworkId } from "@/lib/networks";
 import { receiptsConfig } from "@/lib/receipts";
 import { scanRecord } from "@/lib/record";
 import { getSession } from "@/lib/session";
 
 const RECENT_TASKS = 25;
 
-function onchainInfo(networkId: "testnet" | "mainnet") {
+function onchainInfo(networkId: NetworkId) {
   const config = receiptsConfig(networkId);
   return config && { contract: config.contract, chainId: config.chainId };
 }
@@ -16,9 +16,9 @@ export async function GET(request: Request) {
   const session = await getSession();
   if (!session) return Response.json({ error: "Sign in first" }, { status: 401 });
 
-  const networkId = new URL(request.url).searchParams.get("network") ?? "testnet";
+  const networkId = new URL(request.url).searchParams.get("network") ?? "mainnet";
   if (!isNetworkId(networkId)) {
-    return Response.json({ error: "network must be testnet or mainnet" }, { status: 400 });
+    return Response.json({ error: "network must be mainnet" }, { status: 400 });
   }
   const network = networks[networkId];
 

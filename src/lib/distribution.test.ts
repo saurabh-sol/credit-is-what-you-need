@@ -15,7 +15,7 @@ const grant = (address: string, amount: number, kind: string) =>
   db().prepare("INSERT INTO ledger (address, amount, kind, memo) VALUES (?, ?, ?, 'test')").run(address.toLowerCase(), amount, kind);
 
 const payment = (hash: string, amount: bigint, credits: number) => ({
-  network: "testnet" as const,
+  network: "mainnet" as const,
   hash,
   address: ALICE,
   token: TOKEN,

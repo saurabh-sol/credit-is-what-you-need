@@ -33,7 +33,7 @@ export function TopUp() {
     staleTime: 600_000,
   });
   const config = data?.config;
-  const chain = config?.network === "testnet" ? rewardChains[0] : rewardChains[1];
+  const chain = rewardChains[0];
 
   const { address, chainId } = useAccount();
   const { switchChainAsync: switchChain } = useSwitchChain();

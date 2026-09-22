@@ -23,12 +23,12 @@ const isAddress = (value: string | undefined): value is Address => /^0x[0-9a-fA-
 const isKey = (value: string | undefined): value is Hex => /^0x[0-9a-fA-F]{64}$/.test(value ?? "");
 const lower = (address: string) => address.toLowerCase();
 
-// Off (null) for a network until its contract address and the signer key are set.
+// Off (null) until the contract address and the signer key are set.
 export function receiptsConfig(
   network: NetworkId,
   env: Record<string, string | undefined> = process.env,
 ): ReceiptsConfig | null {
-  const contract = env[network === "testnet" ? "RECEIPTS_ADDRESS_TESTNET" : "RECEIPTS_ADDRESS_MAINNET"];
+  const contract = env.RECEIPTS_ADDRESS_MAINNET;
   if (!isAddress(contract) || !isKey(env.RECEIPT_SIGNER_KEY)) return null;
   return { network, contract: lower(contract) as Address, chainId: chains[network].chain.id };
 }

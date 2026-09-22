@@ -50,7 +50,7 @@ Solidity hash and the server's hash are proven equal on every run.
 
 ## Deploy
 
-Robinhood Chain Testnet is chain 46630, mainnet is 4663 (both in `foundry.toml`).
+Robinhood Chain mainnet is chain 4663 (`foundry.toml`). Kredit runs on mainnet only.
 
 ```sh
 cd contracts
@@ -60,12 +60,12 @@ OWNER=<a Safe, or your deployer while there is none>
 TREASURY=<where token payments go>
 
 SIGNER=$SIGNER OWNER=$OWNER TREASURY=$TREASURY \
-  forge script script/Deploy.s.sol --rpc-url testnet --private-key $DEPLOYER_KEY --broadcast
+  forge script script/Deploy.s.sol --rpc-url mainnet --private-key $DEPLOYER_KEY --broadcast
 ```
 
-Then put the printed address into `RECEIPTS_ADDRESS_TESTNET` (or `_MAINNET`)
-next to `RECEIPT_SIGNER_KEY` in the server's environment. A network with no
-address keeps its claims off-chain, exactly as before.
+Then put the printed address into `RECEIPTS_ADDRESS_MAINNET`
+next to `RECEIPT_SIGNER_KEY` in the server's environment. With no address set,
+claims stay off-chain, exactly as before.
 
 ## Verify on Blockscout
 
@@ -73,12 +73,10 @@ Verified source is what makes `Claimed` readable on the explorer.
 
 ```sh
 forge verify-contract <address> src/KreditReceipts.sol:KreditReceipts \
-  --chain 46630 --verifier blockscout \
-  --verifier-url https://explorer.testnet.chain.robinhood.com/api/ \
+  --chain 4663 --verifier blockscout \
+  --verifier-url https://robinhoodchain.blockscout.com/api/ \
   --constructor-args $(cast abi-encode "constructor(address,address,address)" $OWNER $SIGNER $TREASURY)
 ```
-
-For mainnet use `--chain 4663 --verifier-url https://robinhoodchain.blockscout.com/api/`.
 
 ## Switching on buying
 
@@ -94,7 +92,7 @@ signed receipt, on-chain claim, confirmation, replay, and recovery of a claim
 the browser never confirmed. It needs four things running:
 
 ```sh
-anvil --port 8547 --chain-id 46630
+anvil --port 8547 --chain-id 4663
 node scripts/lib/mock-explorer.mjs 8548              # a fake Blockscout with a fake record
 cd contracts && SIGNER=0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC TREASURY=0x90F79bf6EB2c4f870365E785982E1f101E93b906 \
   forge script script/Deploy.s.sol --rpc-url http://127.0.0.1:8547 \
@@ -102,8 +100,8 @@ cd contracts && SIGNER=0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC TREASURY=0x90F
 # prints 0x5FbDB2315678afecb367f032d93F642f64180aa3 on a fresh anvil
 
 SESSION_SECRET=<32+ chars> DATABASE_PATH=/tmp/receipts.db \
-NEXT_PUBLIC_RPC_TESTNET=http://127.0.0.1:8547 EXPLORER_API_TESTNET=http://127.0.0.1:8548 \
-RECEIPTS_ADDRESS_TESTNET=0x5FbDB2315678afecb367f032d93F642f64180aa3 \
+NEXT_PUBLIC_RPC_MAINNET=http://127.0.0.1:8547 EXPLORER_API_MAINNET=http://127.0.0.1:8548 \
+RECEIPTS_ADDRESS_MAINNET=0x5FbDB2315678afecb367f032d93F642f64180aa3 \
 RECEIPT_SIGNER_KEY=0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a \
   npx next dev -p 3471
 

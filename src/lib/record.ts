@@ -1,7 +1,8 @@
 import { scanAddress } from "./explorer.ts";
 import type { Network } from "./networks.ts";
 import { hasAlchemyIndex, scanAddressRpc } from "./rpc-scan.ts";
-import { buildReceipt } from "./scoring.ts";
+import { receiptsConfig } from "./receipts.ts";
+import { buildReceipt, type ScannedTx } from "./scoring.ts";
 
 const CACHE_MS = 60_000;
 const cache = new Map<string, { expires: number; value: Awaited<ReturnType<typeof load>> }>();
@@ -15,9 +16,16 @@ export async function scanWallet(network: Network, address: string) {
   return { txs, truncated, unindexed: 0 };
 }
 
+// Calls to the KreditReceipts contract are how credits get claimed; they are
+// not work Kredit pays for, or every claim would fund the next one.
+export const isOwnContractCall = (tx: ScannedTx, contract: string | undefined) =>
+  Boolean(contract) && tx.to?.toLowerCase() === contract;
+
 async function load(network: Network, address: string) {
   const { txs, truncated, unindexed } = await scanWallet(network, address);
-  return { receipt: buildReceipt(txs, network.partners), truncated, unindexed };
+  const own = receiptsConfig(network.id)?.contract;
+  const scored = txs.filter((tx) => !isOwnContractCall(tx, own));
+  return { receipt: buildReceipt(scored, network.partners), truncated, unindexed };
 }
 
 // A scan costs several requests, so reuse it for a minute. Claiming right
