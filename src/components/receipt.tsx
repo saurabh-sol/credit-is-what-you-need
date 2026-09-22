@@ -60,25 +60,3 @@ export function Receipt({ badge, subtitle, lines, total, emptyText, animated }: 
     </div>
   );
 }
-
-const exampleLines = [
-  { label: "Deployed a contract", credits: 500 },
-  { label: "Swapped on a partner protocol", credits: 250 },
-  { label: "12 contract interactions", credits: 600 },
-  { label: "Reached 50 transactions", credits: 300 },
-  { label: "Gas-Back (40% of gas spent)", credits: 84 },
-  { label: "Builder Royalties (others used your contract)", credits: 1130 },
-];
-
-// An illustration for the landing page. Not real data.
-export function ExampleReceipt() {
-  return (
-    <Receipt
-      animated="print"
-      badge="EXAMPLE"
-      subtitle="0x71C7…976F · Robinhood Chain"
-      lines={exampleLines}
-      total={exampleLines.reduce((sum, line) => sum + line.credits, 0)}
-    />
-  );
-}
