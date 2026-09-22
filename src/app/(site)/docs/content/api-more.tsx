@@ -6,6 +6,7 @@ import { ECHO_MODEL } from "@/lib/gateway";
 import { MAX_ACTIVE_KEYS } from "@/lib/limits";
 import { CREDITS_PER_USD, MARGIN, MIN_CREDITS_PER_REQUEST } from "@/lib/pricing";
 import { featuredProviders, makerInfo, makerOf } from "@/lib/providers";
+import { ModelCatalog } from "../model-catalog";
 import { BaseUrl, OriginCode } from "../quickstart";
 import { Callout, Doc, Endpoint, H2, H3, number, Param, Params, Table } from "../ui";
 
@@ -242,6 +243,7 @@ export async function Models() {
   const makers = live
     ? [...counts.keys()].map(makerInfo).sort((a, b) => rank(a.id) - rank(b.id) || counts.get(b.id)! - counts.get(a.id)! || a.name.localeCompare(b.name))
     : featuredProviders;
+  const grid = [{ id: "kredit", name: "Kredit", count: 1 }, ...makers.map((maker) => ({ ...maker, count: counts.get(maker.id) ?? 0 }))];
 
   return (
     <Doc slug="api/models" lede="Every model your key can call, with its type and its price in credits. The list is read from the provider, so it is never out of date by more than ten minutes.">
@@ -284,14 +286,14 @@ export async function Models() {
       <H2>Makers on this server</H2>
       <p>
         {live
-          ? `This server is connected to its provider and lists ${number(models.length - 1)} models plus ${ECHO_MODEL}.`
+          ? `This server is connected to its providers and lists ${number(models.length - 1)} models plus ${ECHO_MODEL}.`
           : `This server has no provider connected, so only ${ECHO_MODEL} answers today. Once one is connected, models from these makers appear under ids like openai/… or anthropic/….`}
       </p>
-      <Table
-        head={["Maker", "Id prefix", live ? "#Models" : "Status"]}
-        rows={makers.map((maker) => [maker.name, <code key={maker.id}>{maker.id}/…</code>, live ? number(counts.get(maker.id) ?? 0) : "waiting for a provider"])}
-        min="24rem"
-      />
+      {live ? (
+        <ModelCatalog makers={grid} models={models} echo={ECHO_MODEL} />
+      ) : (
+        <Table head={["Maker", "Id prefix", "Status"]} rows={makers.map((maker) => [maker.name, <code key={maker.id}>{maker.id}/…</code>, "waiting for a provider"])} min="24rem" />
+      )}
       <Callout>
         <p>
           The catalog is cached for ten minutes and refreshed from the provider with a ten-second timeout. If the
