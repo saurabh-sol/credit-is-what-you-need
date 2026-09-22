@@ -60,7 +60,9 @@ function WalletKit({ children }: { children: React.ReactNode }) {
 
   return (
     <RainbowKitAuthenticationProvider adapter={adapter} status={status}>
-      <RainbowKitProvider theme={theme} modalSize="compact" appInfo={{ appName: "Kredit" }}>
+      {/* "wide": the wallet list beside RainbowKit's "What is a Wallet?" panel, with
+          a Get a Wallet link for visitors who have none. */}
+      <RainbowKitProvider theme={theme} modalSize="wide" appInfo={{ appName: "Kredit" }}>
         {children}
       </RainbowKitProvider>
     </RainbowKitAuthenticationProvider>
