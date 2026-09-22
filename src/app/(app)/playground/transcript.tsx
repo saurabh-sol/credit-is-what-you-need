@@ -85,20 +85,43 @@ function ReadAloud({ text }: { text: string }) {
   );
 }
 
+// What you send sits on the right as a bubble; what the model says comes back on the left.
 function Row({ turn, streaming, compact }: { turn: Turn; streaming: boolean; compact?: boolean }) {
   const mine = turn.role === "user";
+  if (mine) {
+    return (
+      <article aria-label="Your message" className="flex flex-row-reverse gap-3.5 py-4">
+        <span className="grid size-7 shrink-0 place-items-center rounded-md border border-line bg-raised text-mist">
+          <PersonIcon className="size-3.5" />
+        </span>
+        <div className="flex min-w-0 max-w-[85%] flex-col items-end">
+          {turn.attachments && turn.attachments.length > 0 && (
+            <ul className="mb-1.5 flex flex-wrap justify-end gap-1.5">
+              {turn.attachments.map((name, index) => (
+                <li key={`${name}-${index}`} className="flex items-center gap-1 rounded-md border border-line bg-raised px-2 py-0.5 font-mono text-[0.6875rem] text-mist">
+                  <PaperclipIcon className="size-3" />
+                  {name}
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="rounded-2xl rounded-tr-md border border-line bg-raised px-4 py-2.5 text-[0.9375rem] leading-7 wrap-anywhere whitespace-pre-wrap text-fog">
+            {turn.content}
+          </p>
+        </div>
+      </article>
+    );
+  }
   return (
     <article
-      aria-label={mine ? "Your message" : `Reply from ${turn.model}`}
+      aria-label={`Reply from ${turn.model}`}
       className={`flex gap-3.5 py-5 ${compact ? "" : "border-b border-line/60 last:border-b-0"}`}
     >
-      <span className={`grid size-7 shrink-0 place-items-center rounded-md border border-line bg-raised ${mine ? "text-mist" : "text-fog"}`}>
-        {mine ? <PersonIcon className="size-3.5" /> : <ModelLogo model={turn.model ?? ""} className="size-4" />}
+      <span className="grid size-7 shrink-0 place-items-center rounded-md border border-line bg-raised text-fog">
+        <ModelLogo model={turn.model ?? ""} className="size-4" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className={`pt-1.5 text-xs leading-4 ${mine ? "font-medium text-fog" : "font-mono text-mist"}`}>
-          {mine ? "You" : turn.model}
-        </p>
+        <p className="pt-1.5 font-mono text-xs leading-4 text-mist">{turn.model}</p>
         {turn.attachments && turn.attachments.length > 0 && (
           <ul className="mt-1.5 flex flex-wrap gap-1.5">
             {turn.attachments.map((name, index) => (
@@ -114,7 +137,7 @@ function Row({ turn, streaming, compact }: { turn: Turn; streaming: boolean; com
           {streaming && <span className="caret" />}
         </p>
 
-        {!mine && turn.ms !== undefined && (
+        {turn.ms !== undefined && (
           <footer className="mt-2.5 flex flex-wrap items-center gap-x-2 font-mono text-xs leading-5 text-mist">
             <span>{turn.model}</span>
             <span aria-hidden>·</span>
