@@ -9,7 +9,7 @@ import { SparkIcon } from "./icons";
 import type { Creation, Mode } from "./types";
 
 type StudioProps = {
-  mode: Exclude<Mode, "text">;
+  mode: Exclude<Mode, "text" | "evaluate">;
   state: "ready" | "loading" | "signed-out";
   creations: Creation[];
   busy: boolean;
@@ -19,7 +19,7 @@ type StudioProps = {
   onStop: () => void;
 };
 
-const starters: Record<Exclude<Mode, "text">, string[]> = {
+const starters: Record<Exclude<Mode, "text" | "evaluate">, string[]> = {
   image: [
     "A paper boat drifting across a puddle in the rain, soft morning light",
     "Isometric illustration of a tiny data center on a floating island",

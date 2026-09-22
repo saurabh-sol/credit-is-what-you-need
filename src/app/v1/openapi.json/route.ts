@@ -259,7 +259,7 @@ export const GET = v1((request) => {
             object: { const: "model" },
             owned_by: { type: "string" },
             name: { type: "string" },
-            type: { type: "string", enum: ["language", "embedding", "image", "video", "other"] },
+            type: { type: "string", enum: ["language", "embedding", "image", "video", "evaluation", "other"] },
             context_window: { type: "integer" },
             pricing: {
               type: ["object", "null"],

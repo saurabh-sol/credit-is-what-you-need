@@ -22,6 +22,7 @@ const endpoints = [
   { method: "POST", path: "/v1/responses", text: "OpenAI Responses, the default of the newer OpenAI SDKs." },
   { method: "POST", path: "/v1/messages", text: "Anthropic Messages, for Anthropic SDKs and Claude Code. The key can go in x-api-key." },
   { method: "POST", path: "/v1/embeddings", text: "OpenAI embeddings. Billed on input tokens." },
+  { method: "POST", path: "/v1/systemone", text: "TypeSafe evaluations (Jev): state and typed questions in, probabilities, choices and scores out. Also at /typesafe/v1/systemone for the TypeSafe SDK." },
   { method: "POST", path: "/v1/images/generations", text: "OpenAI images: { model, prompt, n, size } in, base64 pictures out. Priced per image or by token, as the model is sold." },
   { method: "POST", path: "/v1/videos/generations", text: "Text to video: { model, prompt, duration, resolution, aspect_ratio, generate_audio }. Priced per second, known before it starts." },
   { method: "GET", path: "/v1/models", text: "Every model you can call, with its type and price: per million tokens, per image or per second." },

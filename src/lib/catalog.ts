@@ -8,7 +8,7 @@ import { cheapestVideoRate, CREDITS_PER_USD, ECHO_PRICE, MARGIN, type ModelPrice
 // Vercel AI Gateway publishes its list, with prices, at /v1/models without a
 // key. OpenRouter's shape is read too, so either can sit behind UPSTREAM_BASE_URL.
 
-export type ModelType = "language" | "embedding" | "image" | "video" | "other";
+export type ModelType = "language" | "embedding" | "image" | "video" | "evaluation" | "other";
 
 // What a caller pays, margin included, in the unit the model is sold by.
 export type CatalogPrice =
@@ -104,7 +104,7 @@ function priceOf(model: Record<string, unknown>): ModelPrice | null {
   // Vercel: input/output; OpenRouter: prompt/completion. Embedding models
   // write nothing back, so they list no output price.
   const input = num(pricing.input) ?? num(pricing.prompt) ?? (flat ? 0 : undefined);
-  const output = num(pricing.output) ?? num(pricing.completion) ?? (type === "embedding" || flat ? 0 : undefined);
+  const output = num(pricing.output) ?? num(pricing.completion) ?? (type === "embedding" || type === "evaluation" || flat ? 0 : undefined);
   if (input === undefined || output === undefined) return null;
   const top = model.top_provider as Record<string, unknown> | undefined;
   const maxOutputTokens = num(model.max_tokens) ?? num(top?.max_completion_tokens);
@@ -125,9 +125,15 @@ function priceOf(model: Record<string, unknown>): ModelPrice | null {
 
 function typeOf(model: Record<string, unknown>): ModelType {
   const type = model.type;
-  if (type === "language" || type === "embedding" || type === "image" || type === "video") return type;
+  if (type === "language" || type === "embedding" || type === "image" || type === "video" || type === "evaluation") return type;
   if (type === undefined) return "language"; // OpenRouter lists language models only
   return "other";
+}
+
+// The provider's display name, without the maker OpenRouter puts in front ("OpenAI: GPT-4o").
+function modelName(model: Record<string, unknown>, id: string) {
+  const name = typeof model.name === "string" ? model.name : id;
+  return name.includes(": ") ? name.slice(name.indexOf(": ") + 2) : name;
 }
 
 // One provider's list, parsed; null when it could not be read.
@@ -174,7 +180,7 @@ async function load(): Promise<Loaded> {
       value.raw.push(model);
       value.catalog.models.push({
         id,
-        name: typeof model.name === "string" ? model.name : id,
+        name: modelName(model, id),
         provider: providerOf(id),
         type,
         price: price ? catalogPrice(price, type) : null,

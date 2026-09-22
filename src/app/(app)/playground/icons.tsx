@@ -40,4 +40,11 @@ export const VideoIcon = icon(
     <path d="m15.5 10.5 5-2.5v8l-5-2.5" />
   </>,
 );
+export const GaugeIcon = icon(
+  <>
+    <path d="M4 15.5a8 8 0 0 1 16 0" />
+    <path d="m12 15.5 3.5-4.5" />
+    <path d="M4 19.5h16" />
+  </>,
+);
 export const SparkIcon = icon(<path d="M12 4v4M12 16v4M4 12h4M16 12h4M7 7l2 2M15 15l2 2M7 17l2-2M15 9l2-2" />);
