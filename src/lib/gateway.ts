@@ -85,11 +85,27 @@ export function rateLimited(id: string, error: ErrorShape = apiError) {
 // Usage from the website's playground is recorded under this name instead of a key.
 export const PLAYGROUND_KEY_ID = "playground";
 
+export type Upstream = { id: "primary" | "openrouter"; baseUrl: string; apiKey: string | undefined; isOpenRouter: boolean };
+
+const OPENROUTER_URL = "https://openrouter.ai/api/v1";
+
 // The AI provider behind /v1. Vercel AI Gateway by default; any
 // OpenAI-compatible service with a priced /models list works.
-export function upstream() {
-  const baseUrl = (process.env.UPSTREAM_BASE_URL ?? "https://ai-gateway.vercel.sh/v1").replace(/\/$/, "");
-  return { baseUrl, apiKey: process.env.UPSTREAM_API_KEY, isOpenRouter: baseUrl.includes("openrouter.ai") };
+export function upstream(): Upstream {
+  const baseUrl = (process.env.UPSTREAM_BASE_URL || "https://ai-gateway.vercel.sh/v1").replace(/\/$/, "");
+  return { id: "primary", baseUrl, apiKey: process.env.UPSTREAM_API_KEY, isOpenRouter: baseUrl.includes("openrouter.ai") };
+}
+
+// Every provider with a key. OpenRouter can sit beside the main one, so its
+// models are offered too; a model listed by both is served by the main one.
+export function upstreams(): Upstream[] {
+  const primary = upstream();
+  const list = primary.apiKey ? [primary] : [];
+  const openRouterKey = process.env.OPENROUTER_API_KEY;
+  if (openRouterKey && !primary.isOpenRouter) {
+    list.push({ id: "openrouter", baseUrl: OPENROUTER_URL, apiKey: openRouterKey, isOpenRouter: true });
+  }
+  return list;
 }
 
 // The usage block of an OpenAI-style response.

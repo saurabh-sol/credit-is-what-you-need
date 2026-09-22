@@ -35,5 +35,7 @@ services:
         sync: false
       - key: UPSTREAM_API_KEY
         sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
       - key: BLOCKSCOUT_API_KEY
         sync: false

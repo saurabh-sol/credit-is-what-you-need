@@ -83,6 +83,18 @@ export const GET = v1((request) => {
           },
         },
       },
+      "/systemone": {
+        post: {
+          summary: "TypeSafe evaluation (Jev)",
+          operationId: "createEvaluation",
+          requestBody: passthrough("A TypeSafe System One request: `model`, `state` and named `questions` of type noul, choice or score. Also served at /typesafe/v1/systemone."),
+          responses: {
+            200: { description: "The answers, in TypeSafe's shape. Billed on input tokens.", headers: charged, content: { "application/json": { schema: { type: "object", additionalProperties: true } } } },
+            400: errorBody("The body is missing `model`, `state` or `questions`, or the model is not an evaluation model."),
+            ...common,
+          },
+        },
+      },
       "/embeddings": {
         post: {
           summary: "OpenAI embeddings",
@@ -259,7 +271,7 @@ export const GET = v1((request) => {
             object: { const: "model" },
             owned_by: { type: "string" },
             name: { type: "string" },
-            type: { type: "string", enum: ["language", "embedding", "image", "video", "other"] },
+            type: { type: "string", enum: ["language", "embedding", "image", "video", "evaluation", "other"] },
             context_window: { type: "integer" },
             pricing: {
               type: ["object", "null"],

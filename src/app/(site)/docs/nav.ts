@@ -33,6 +33,7 @@ export const docGroups: DocGroup[] = [
       { slug: "api/responses", title: "Responses", description: "POST /v1/responses, for the newer OpenAI SDKs." },
       { slug: "api/messages", title: "Messages", description: "POST /v1/messages, the Anthropic shape." },
       { slug: "api/embeddings", title: "Embeddings", description: "POST /v1/embeddings." },
+      { slug: "api/evaluations", title: "Evaluations", description: "POST /v1/systemone: typed answers from TypeSafe AI's Jev." },
       { slug: "api/images", title: "Images", description: "POST /v1/images/generations." },
       { slug: "api/videos", title: "Videos", description: "POST /v1/videos/generations." },
       { slug: "api/models", title: "Models", description: "GET /v1/models: ids, types and prices." },

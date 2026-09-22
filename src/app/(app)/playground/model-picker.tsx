@@ -4,12 +4,28 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { CheckIcon, SearchIcon } from "@/components/icons";
 import { ModelLogo } from "@/components/model-logo";
-import type { Catalog, CatalogPrice, ModelType } from "@/lib/catalog";
+import type { Catalog, CatalogModel, CatalogPrice, ModelType } from "@/lib/catalog";
 import { formatCredits } from "@/lib/format";
+import { makerInfo, makerOf } from "@/lib/providers";
 import { api } from "@/lib/use-kredit-account";
 import { ChevronDownIcon } from "./icons";
 
-const SHOWN = 60;
+// The makers people look for first; the rest follow by how many models they have.
+const FIRST = ["kredit", "openai", "anthropic", "google", "x-ai", "meta-llama", "mistralai", "deepseek", "qwen", "moonshotai", "z-ai", "minimax"];
+
+// The list, grouped by maker: the big names first, then the rest by size, each
+// maker's models in alphabetical order.
+function grouped(models: CatalogModel[]) {
+  const byMaker = new Map<string, CatalogModel[]>();
+  for (const model of models) {
+    const maker = makerOf(model.id);
+    byMaker.set(maker, [...(byMaker.get(maker) ?? []), model]);
+  }
+  const rank = (maker: string) => (FIRST.includes(maker) ? FIRST.indexOf(maker) - FIRST.length : 0);
+  return [...byMaker.entries()]
+    .sort(([a, as], [b, bs]) => rank(a) - rank(b) || bs.length - as.length || a.localeCompare(b))
+    .map(([maker, list]) => ({ maker: makerInfo(maker), models: list.sort((a, b) => a.name.localeCompare(b.name)) }));
+}
 
 // A model's price in a few words, in the unit it is sold by.
 function priceLine(price: CatalogPrice | null) {
@@ -45,14 +61,15 @@ export function ModelPicker({ value, onChange, type = "language" }: ModelPickerP
 
   // Keep the keyboard's row in view as it moves through a long list.
   useEffect(() => {
-    if (open) list.current?.children[active]?.scrollIntoView({ block: "nearest" });
+    if (open) list.current?.querySelector(`[data-row="${active}"]`)?.scrollIntoView({ block: "nearest" });
   }, [open, active]);
 
   // Only models of the kind the page is making, and only ones with a known price.
   const models = (data?.models ?? []).filter((model) => model.type === type && model.price !== null);
   const needle = query.trim().toLowerCase();
-  const matches = models.filter((model) => `${model.id} ${model.name}`.toLowerCase().includes(needle)).slice(0, SHOWN + 1);
-  const shown = matches.slice(0, SHOWN);
+  const matches = models.filter((model) => `${model.id} ${model.name}`.toLowerCase().includes(needle));
+  const groups = grouped(matches);
+  const shown = groups.flatMap((group) => group.models); // in the order they are drawn, for the arrow keys
   const current = models.find((model) => model.id === value);
 
   function pick(id: string) {
@@ -103,31 +120,45 @@ export function ModelPicker({ value, onChange, type = "language" }: ModelPickerP
                   pick(shown[active].id);
                 }
               }}
-              placeholder="Search models"
+              placeholder={models.length > 1 ? `Search ${models.length} models` : "Search models"}
               aria-label="Search models"
               className="w-full bg-transparent text-[0.8125rem] text-fog placeholder:text-mist focus:outline-none"
             />
           </label>
-          <ul ref={list} role="listbox" aria-label="Models" className="max-h-72 overflow-y-auto p-1">
-            {shown.map((model, row) => (
-              <li key={model.id}>
-                <button
-                  type="button"
-                  role="option"
-                  aria-selected={model.id === value}
-                  onClick={() => pick(model.id)}
-                  onPointerMove={() => setActive(row)}
-                  className={`flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left ${row === active ? "bg-fog/6" : ""}`}
-                >
-                  <ModelLogo model={model.id} className="size-4" />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[0.8125rem] leading-5">{model.name}</span>
-                    <span className="block truncate font-mono text-[0.6875rem] leading-4 text-mist">
-                      {model.id} · {priceLine(model.price)}
-                    </span>
-                  </span>
-                  {model.id === value && <CheckIcon className="size-3.5 text-accent" />}
-                </button>
+          <ul ref={list} role="listbox" aria-label="Models" className="max-h-96 overflow-y-auto p-1">
+            {groups.map((group) => (
+              <li key={group.maker.id}>
+                <div className="sticky top-0 z-10 flex items-center justify-between bg-raised px-2 pt-2 pb-1 text-[0.6875rem] font-medium tracking-wide text-mist uppercase">
+                  <span>{group.maker.name}</span>
+                  <span className="font-mono tabular-nums normal-case">{group.models.length}</span>
+                </div>
+                <ul>
+                  {group.models.map((model) => {
+                    const row = shown.indexOf(model);
+                    return (
+                      <li key={model.id}>
+                        <button
+                          type="button"
+                          role="option"
+                          aria-selected={model.id === value}
+                          data-row={row}
+                          onClick={() => pick(model.id)}
+                          onPointerMove={() => setActive(row)}
+                          className={`flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left ${row === active ? "bg-fog/6" : ""}`}
+                        >
+                          <ModelLogo model={model.id} className="size-4" />
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-[0.8125rem] leading-5">{model.name}</span>
+                            <span className="block truncate font-mono text-[0.6875rem] leading-4 text-mist">
+                              {model.id} · {priceLine(model.price)}
+                            </span>
+                          </span>
+                          {model.id === value && <CheckIcon className="size-3.5 text-accent" />}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
               </li>
             ))}
             {!data && <li className="px-3 py-6 text-center text-xs text-mist">Loading models</li>}
@@ -135,9 +166,6 @@ export function ModelPicker({ value, onChange, type = "language" }: ModelPickerP
               <li className="px-3 py-6 text-center text-xs text-mist">
                 {models.length === 0 ? `No ${type} models on this server.` : "No model matches that."}
               </li>
-            )}
-            {matches.length > SHOWN && (
-              <li className="px-3 py-2 text-center text-xs text-mist">Showing the first {SHOWN}. Keep typing to narrow it down.</li>
             )}
           </ul>
         </div>

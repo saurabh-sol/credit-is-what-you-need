@@ -20,7 +20,7 @@ export const networks: Record<NetworkId, Network> = {
     id: "mainnet",
     name: "Robinhood Chain",
     explorerUrl: "https://robinhoodchain.blockscout.com",
-    explorerApi: process.env.EXPLORER_API_MAINNET ?? "https://robinhoodchain.blockscout.com/api/v2",
+    explorerApi: process.env.EXPLORER_API_MAINNET || "https://robinhoodchain.blockscout.com/api/v2",
     partners: {},
   },
 };

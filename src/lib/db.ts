@@ -141,7 +141,7 @@ const holder = globalThis as { kreditDb?: DatabaseSync };
 
 export function db() {
   if (!holder.kreditDb) {
-    const path = process.env.DATABASE_PATH ?? "data/kredit.db";
+    const path = process.env.DATABASE_PATH || "data/kredit.db"; // an empty setting means the default too
     if (path !== ":memory:") {
       mkdirSync(dirname(path), { recursive: true });
       // Data written under the product's old name moves over on first open.
