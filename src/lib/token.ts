@@ -3,7 +3,7 @@
 // token's page on the mainnet explorer.
 export const TOKEN = {
   symbol: "KREDIT",
-  address: "",
+  address: "0x1b69ba93b8da9cf4cbc8f9c40e7ed25347f86dd1",
   url: "",
 };
 
