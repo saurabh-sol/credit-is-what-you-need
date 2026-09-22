@@ -5,10 +5,11 @@ import { CountUp } from "@/components/motion/count-up";
 import { prefersReducedMotion, useInView } from "@/components/motion/use-in-view";
 import { costExamples } from "@/lib/cost-examples";
 import { formatCredits } from "@/lib/format";
-import { GAS_BACK_PERCENT } from "@/lib/gasback";
 import { MAX_ACTIVE_KEYS } from "@/lib/limits";
 import { CREDITS_PER_USD } from "@/lib/pricing";
+import { REFERRAL_PERCENT } from "@/lib/referral-rules";
 import { MILESTONES, TASK_CREDITS } from "@/lib/scoring";
+import { streakBonus } from "@/lib/streaks";
 
 type Entry = { kind: string; detail: string; amount: number };
 
@@ -22,9 +23,9 @@ const spend = (example: (typeof costExamples)[number]): Entry => ({
 // An invented ledger, replayed in order. Rates and prices still come from the real rules.
 const entries: Entry[] = [
   { kind: "Tasks", detail: "37 tasks on testnet", amount: 37 * TASK_CREDITS.contract_call },
-  { kind: "Gas-Back", detail: `${GAS_BACK_PERCENT}% of gas spent`, amount: 84 },
+  { kind: "Streak", detail: "day 7 in a row", amount: streakBonus(7) },
   spend(costExamples[2]),
-  { kind: "Royalties", detail: "2 contracts, 61 calls", amount: 1130 },
+  { kind: "Referral", detail: `${REFERRAL_PERCENT}% of a claim by 0x3f9a…c21e`, amount: 113 },
   spend(costExamples[1]),
   { kind: "Milestone", detail: `Reached ${MILESTONES[1].txs} transactions`, amount: MILESTONES[1].credits },
   spend(costExamples[3]),

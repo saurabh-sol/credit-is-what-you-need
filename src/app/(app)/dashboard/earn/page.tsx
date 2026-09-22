@@ -1,6 +1,6 @@
-import { BuilderRoyalties } from "../builder-royalties";
 import { PageHeader, Stack } from "../page-header";
 import { RecordScanner } from "../record-scanner";
+import { Referrals } from "../referrals";
 
 export const metadata = { title: "Earn credits — Kredit" };
 
@@ -13,8 +13,8 @@ export default function Earn() {
       />
       <Stack>
         <RecordScanner />
-        <div id="royalties" className="scroll-mt-20 [&>section]:mt-0">
-          <BuilderRoyalties />
+        <div id="referrals" className="scroll-mt-20 [&>section]:mt-0">
+          <Referrals />
         </div>
       </Stack>
     </>

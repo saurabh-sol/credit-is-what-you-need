@@ -3,8 +3,9 @@ import { createHash } from "node:crypto";
 import { test } from "node:test";
 
 process.env.DATABASE_PATH = ":memory:";
-const { claim, claimRoyalties, listContracts, rememberContracts, createKey, findKey, getBalance, KeyLimitError, listKeys, listLedger, MAX_ACTIVE_KEYS, recordUsage, revokeKey } =
+const { claim, createKey, findKey, getBalance, KeyLimitError, listKeys, listLedger, MAX_ACTIVE_KEYS, recordUsage, revokeKey } =
   await import("./ledger.ts");
+const { listInvited, ReferralError, referralTotals, setReferrer } = await import("./referrals.ts");
 import type { ScoredTask } from "./scoring.ts";
 
 const ALICE = "0xAAAAaaaaAAAAaaaaAAAAaaaaAAAAaaaaAAAAaaaa";
@@ -57,10 +58,12 @@ test("milestones pay once", () => {
   const carol = "0xCCCCccccCCCCccccCCCCccccCCCCccccCCCCcccc";
   const tasks = Array.from({ length: 10 }, (_, i) => task(10, `2026-08-${String(i + 1).padStart(2, "0")}`));
   const first = claim(carol, "testnet", tasks);
-  assert.equal(first.granted, 10 * 10 + 100);
+  const streak = 20 + 30 + 40 + 50 + 60 + 70 + 80 + 90 + 100; // ten days in a row
+  assert.equal(first.granted, 10 * 10 + 100 + streak);
   assert.equal(first.milestones, 1);
+  assert.equal(first.streak, streak);
   assert.equal(claim(carol, "testnet", tasks).granted, 0);
-  assert.deepEqual(listLedger(carol).map((entry) => entry.kind).sort(), ["claim", "milestone"]);
+  assert.deepEqual(listLedger(carol).map((entry) => entry.kind).sort(), ["claim", "milestone", "streak"]);
 });
 
 test("addresses are case-insensitive", () => {
@@ -116,78 +119,62 @@ test("spending lowers the balance and is written to the ledger", () => {
   assert.ok(listKeys(ALICE).find((k) => k.id === key.id)?.lastUsedAt);
 });
 
-// --- Gas-Back. At $2,500 per ETH, 0.001 ETH of gas = $2.50, and 40% of that = 1,000 credits.
-const PRICE = BigInt(250_000); // cents
-const ETH_0_001 = "1000000000000000";
-
-test("gas-back pays 40% of the gas spent, once", () => {
+// --- Streaks. Each consecutive active day after the first pays a bonus, once.
+test("a streak day is paid once, even when its transactions were claimed earlier", () => {
   const erin = "0xEEEEeeeeEEEEeeeeEEEEeeeeEEEEeeeeEEEEeeee";
-  const tasks = [task(50, "2026-07-01", ETH_0_001)];
-  const first = claim(erin, "testnet", tasks, PRICE);
-  assert.equal(first.gasBack, 1000);
-  assert.equal(first.granted, 50 + 1000);
-  assert.equal(claim(erin, "testnet", tasks, PRICE).granted, 0);
-  assert.ok(listLedger(erin).some((entry) => entry.kind === "gasback" && entry.amount === 1000));
+  const monday = task(10, "2026-07-06");
+  assert.equal(claim(erin, "testnet", [monday]).streak, 0); // one day is not a streak
+
+  const tuesday = task(10, "2026-07-07");
+  const later = claim(erin, "testnet", [monday, tuesday]); // the scan always shows the whole record
+  assert.equal(later.tasks, 1);
+  assert.equal(later.streak, 20); // day 2 of the streak
+  assert.equal(later.granted, 10 + 20);
+
+  assert.equal(claim(erin, "testnet", [monday, tuesday]).granted, 0);
+  const wednesday = task(10, "2026-07-08");
+  assert.equal(claim(erin, "testnet", [monday, tuesday, wednesday]).streak, 30); // only the new day
 });
 
-test("transactions claimed before gas-back existed still get it later", () => {
-  const frank = "0xFfFfFfFfFfFfFfFfFfFfFfFfFfFfFfFfFfFfFfFf";
-  const tasks = [task(50, "2026-07-02", ETH_0_001)];
-  assert.equal(claim(frank, "testnet", tasks).granted, 50); // no price: task reward only
-  const later = claim(frank, "testnet", tasks, PRICE);
-  assert.equal(later.tasks, 0);
-  assert.equal(later.gasBack, 1000);
-  assert.equal(claim(frank, "testnet", tasks, PRICE).granted, 0);
-});
-
-test("fractions of a credit carry over instead of being lost", () => {
-  const gina = "0x9999999999999999999999999999999999999999";
-  // 0.0000006 ETH of gas at $2,500 = 0.6 credits of gas-back per transaction.
-  const tiny = "600000000000";
-  assert.equal(claim(gina, "testnet", [task(10, "2026-07-03", tiny)], PRICE).gasBack, 0);
-  assert.equal(claim(gina, "testnet", [task(10, "2026-07-04", tiny)], PRICE).gasBack, 1); // 0.6 + 0.6 = 1.2
-  assert.equal(claim(gina, "testnet", [task(10, "2026-07-05", tiny)], PRICE).gasBack, 0); // 0.2 + 0.6 = 0.8
-  assert.equal(claim(gina, "testnet", [task(10, "2026-07-06", tiny)], PRICE).gasBack, 1); // 0.8 + 0.6 = 1.4
-});
-
-test("gas-back is not limited by the daily task cap", () => {
+test("the streak bonus is not limited by the daily task cap", () => {
   const hank = "0x8888888888888888888888888888888888888888";
-  const tasks = Array.from({ length: 30 }, () => task(50, "2026-07-07", ETH_0_001));
-  const result = claim(hank, "testnet", tasks, PRICE);
-  assert.equal(result.granted, 1000 + 100 + 30 * 1000); // capped tasks + 10-tx milestone + full gas-back
+  const days = ["2026-07-20", "2026-07-21", "2026-07-22"];
+  const tasks = days.flatMap((day) => Array.from({ length: 30 }, () => task(50, day)));
+  const result = claim(hank, "testnet", tasks);
+  // 3 capped days + the 10-tx and 50-tx milestones (20 count per day) + days 2 and 3 of the streak
+  assert.equal(result.granted, 3 * 1000 + 100 + 300 + 20 + 30);
 });
 
-// --- Builder Royalties. 0.001 ETH of gas at $2,500 = $2.50; 20% = 500 credits.
-test("royalties: contracts are remembered, usage pays once, own calls never pay", () => {
-  const builder = "0x7777777777777777777777777777777777777777";
-  const deployed = { ...task(500, "2026-06-01"), kind: "deploy" as const, contract: "0xC0FFEE0000000000000000000000000000000001" };
-  rememberContracts(builder, "testnet", [deployed, task(50, "2026-06-02")]);
-  rememberContracts(builder, "testnet", [deployed]); // scanning again must not duplicate
-  assert.deepEqual(listContracts(builder, "testnet").map((c) => c.address), [deployed.contract.toLowerCase()]);
+// --- Referrals. The inviter gets 10% of every claim, on top; the invitee keeps it all.
+test("an inviter earns a share of each claim their invitee makes", () => {
+  const inviter = "0x7777777777777777777777777777777777777777";
+  const friend = "0x6666666666666666666666666666666666666666";
+  setReferrer(friend, inviter);
 
-  const usage = [{
-    contract: deployed.contract.toLowerCase(),
-    calls: [
-      { hash: "0xr1", from: "0xaaa", ok: true, feeWei: ETH_0_001 },
-      { hash: "0xr2", from: "0xbbb", ok: true, feeWei: ETH_0_001 },
-      { hash: "0xr3", from: builder, ok: true, feeWei: ETH_0_001 }, // the builder's own call
-    ],
-  }];
-  const first = claimRoyalties(builder, "testnet", usage, PRICE);
-  assert.deepEqual([first.granted, first.calls], [1000, 2]);
-  assert.equal(getBalance(builder), 1000);
-  assert.equal(claimRoyalties(builder, "testnet", usage, PRICE).granted, 0);
-  assert.equal(listContracts(builder, "testnet")[0].paidCalls, 2);
-  assert.ok(listLedger(builder).some((entry) => entry.kind === "royalty" && entry.amount === 1000));
+  const tasks = [task(500, "2026-06-01"), task(50, "2026-06-01")];
+  const first = claim(friend, "testnet", tasks);
+  assert.equal(first.granted, 550);
+  assert.equal(first.referral, 55);
+  assert.equal(getBalance(friend), 550); // nothing taken from the friend
+  assert.equal(getBalance(inviter), 55);
+  assert.ok(listLedger(inviter).some((entry) => entry.kind === "referral" && entry.amount === 55));
+
+  assert.equal(claim(friend, "testnet", tasks).referral, 0); // nothing new, nothing shared
+  assert.equal(claim(friend, "testnet", [task(9, "2026-06-10")]).referral, 0); // 10% of 9 rounds down to nothing
+  assert.deepEqual(referralTotals(inviter), { count: 1, earned: 55 });
+  assert.deepEqual(listInvited(inviter).map((row) => [row.address, row.claimed, row.paid]), [[friend, 559, 55]]);
 });
 
-test("royalties and the caller's own rewards are independent", () => {
-  // The same transaction can pay the caller (task + gas-back) and the builder (royalty).
-  const caller = "0x6666666666666666666666666666666666666666";
-  const builder = "0x5555555555555555555555555555555555555555";
-  const shared = task(50, "2026-06-03", ETH_0_001);
-  assert.equal(claim(caller, "testnet", [shared], PRICE).granted, 50 + 1000);
-  const usage = [{ contract: "0xc2", calls: [{ hash: shared.hash, from: caller, ok: true, feeWei: ETH_0_001 }] }];
-  assert.equal(claimRoyalties(builder, "testnet", usage, PRICE).granted, 500);
-  // Together the two wallets got back 60% of the gas value (1,500 of 2,500 credits): never a profit.
+test("an inviter is named once, before the first claim, and never in a loop", () => {
+  const a = "0x1111111111111111111111111111111111111111";
+  const b = "0x2222222222222222222222222222222222222222";
+  const c = "0x3333333333333333333333333333333333333333";
+  assert.throws(() => setReferrer(a, a), ReferralError); // yourself
+  setReferrer(b, a);
+  assert.throws(() => setReferrer(b, c), ReferralError); // already has one
+  setReferrer(c, b);
+  assert.throws(() => setReferrer(a, c), ReferralError); // a -> b -> c -> a would be a loop
+  assert.throws(() => setReferrer(ALICE, a), ReferralError); // Alice has claimed already
+  assert.equal(referralTotals(a).count, 1);
 });
+

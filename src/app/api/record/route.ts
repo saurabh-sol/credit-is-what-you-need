@@ -18,16 +18,14 @@ export async function GET(request: Request) {
 
   try {
     // You can only scan the wallet you proved you own.
-    const { receipt, truncated, ethUsdCents } = await scanRecord(network, session.address);
+    const { receipt, truncated } = await scanRecord(network, session.address);
     return Response.json({
       address: session.address,
       network: { id: network.id, name: network.name, explorerUrl: network.explorerUrl },
       truncated,
       ...receipt,
       tasks: receipt.tasks.slice(0, RECENT_TASKS),
-      claimable: previewClaim(session.address, networkId, receipt.tasks, ethUsdCents).total,
-      gasBackOffered: network.gasRewards,
-      gasBackAvailable: ethUsdCents !== null,
+      claimable: previewClaim(session.address, networkId, receipt.tasks).total,
     });
   } catch (error) {
     if (error instanceof ExplorerError) {

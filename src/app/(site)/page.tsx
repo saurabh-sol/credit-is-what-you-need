@@ -4,9 +4,9 @@ import { ApiDemo } from "@/components/api-demo";
 import { Estimator } from "@/components/estimator";
 import { ActivityIcon, ArrowRightIcon, ArrowUpRightIcon, CheckIcon, PlusIcon, SparkIcon, UsersIcon } from "@/components/icons";
 import { DashboardPreview } from "@/components/landing/dashboard-preview";
+import { CreditMeter } from "@/components/landing/credit-meter";
 import { LoopBeam } from "@/components/landing/loop-beam";
 import { ModelOrbit } from "@/components/landing/model-orbit";
-import { RoyaltyStream } from "@/components/landing/royalty-stream";
 import { SectionHeading } from "@/components/landing/section-heading";
 import { HeaderFocus, KeyStatus, ModelStream, PromptBar, TaskFeed } from "@/components/live-bento";
 import { CountUp } from "@/components/motion/count-up";
@@ -16,11 +16,11 @@ import { TopUpTeaser } from "@/components/top-up-teaser";
 import { WalletButton } from "@/components/wallet-button";
 import { costExamples } from "@/lib/cost-examples";
 import { formatCredits } from "@/lib/format";
-import { GAS_BACK_PERCENT } from "@/lib/gasback";
 import { MAX_ACTIVE_KEYS } from "@/lib/limits";
 import { CREDITS_PER_USD, MARGIN, MIN_CREDITS_PER_REQUEST } from "@/lib/pricing";
-import { ROYALTY_PERCENT } from "@/lib/royalties";
+import { REFERRAL_PERCENT } from "@/lib/referral-rules";
 import { DAILY_TASK_CAP, MILESTONES, TASK_CREDITS } from "@/lib/scoring";
+import { STREAK_MAX_BONUS, STREAK_MAX_DAY, streakBonus } from "@/lib/streaks";
 
 // Every number on this page is read from the rules that do the real scoring and
 // billing, so the page can't drift from them.
@@ -48,9 +48,9 @@ const compatibility = [
   "Cursor",
   "Balance in every response header",
   "Postman",
-  `Gas-Back · ${GAS_BACK_PERCENT}% of gas`,
+  `Streaks · up to ${STREAK_MAX_BONUS} a day`,
   "OpenAI Python SDK",
-  "Builder Royalties",
+  `Referrals · ${REFERRAL_PERCENT}% of their claims`,
   "OpenAI Node SDK",
   "curl",
 ];
@@ -89,17 +89,17 @@ const earnings = [
         <path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-1.8.8-3 1.8-4 .3 1.6 1.2 2.4 2.2 2.6C10.5 9 11 6 12 3Z" />
       </Glyph>
     ),
-    name: "Gas-Back",
-    text: "A share of the gas you spend comes back as AI credits.",
-    value: `${GAS_BACK_PERCENT}%`,
-    unit: "of your gas",
+    name: "Streaks",
+    text: `Come back day after day. Each day of a streak pays a growing bonus, from ${streakBonus(2)} on day two to ${STREAK_MAX_BONUS} from day ${STREAK_MAX_DAY} on.`,
+    value: formatCredits(STREAK_MAX_BONUS),
+    unit: "credits a day at most",
   },
   {
     icon: <UsersIcon />,
-    name: "Builder Royalties",
-    text: "When other people use a contract you deployed, you earn from their activity.",
-    value: `${ROYALTY_PERCENT}%`,
-    unit: "of their gas",
+    name: "Referrals",
+    text: "Invite a wallet. Every time it claims credits, you get a share on top. It loses nothing.",
+    value: `${REFERRAL_PERCENT}%`,
+    unit: "of what they claim",
   },
   {
     icon: (
@@ -169,8 +169,8 @@ const dashboardPoints = [
 ];
 
 const stats = [
-  { value: GAS_BACK_PERCENT, suffix: "%", label: "of your gas, back as credits" },
-  { value: ROYALTY_PERCENT, suffix: "%", label: "of their gas, when others use your contract" },
+  { value: STREAK_MAX_BONUS, suffix: "", label: "credits a day for keeping a streak alive" },
+  { value: REFERRAL_PERCENT, suffix: "%", label: "of every claim by a wallet you invited" },
   { value: TASK_CREDITS.deploy, suffix: "", label: "credits for every contract you deploy" },
   { value: CREDITS_PER_USD, suffix: "", label: "credits buy $1 of AI usage" },
 ];
@@ -192,7 +192,7 @@ const faqs = [
   },
   {
     question: "How are my credits calculated?",
-    answer: `A deployed contract earns ${TASK_CREDITS.deploy} credits, a contract interaction ${TASK_CREDITS.contract_call} and a transfer ${TASK_CREDITS.transfer}. One-time bonuses land at ${MILESTONES.map((milestone) => milestone.txs).join(", ")} transactions. Failed transactions earn nothing, every transaction pays once, and task rewards are capped at ${formatCredits(DAILY_TASK_CAP)} credits per wallet per day.`,
+    answer: `A deployed contract earns ${TASK_CREDITS.deploy} credits, a contract interaction ${TASK_CREDITS.contract_call} and a transfer ${TASK_CREDITS.transfer}. One-time bonuses land at ${MILESTONES.map((milestone) => milestone.txs).join(", ")} transactions. Failed transactions earn nothing, every transaction pays once, and task rewards are capped at ${formatCredits(DAILY_TASK_CAP)} credits per wallet per day. Consecutive active days add a streak bonus on top, and wallets you invite send you ${REFERRAL_PERCENT}% of whatever they claim.`,
   },
   {
     question: "Where can I spend them?",
@@ -306,9 +306,9 @@ export default function Home() {
       <section id="earn" className="border-y border-line bg-surface">
         <div className="mx-auto grid max-w-6xl items-center gap-x-16 gap-y-14 px-4 py-24 md:grid-cols-[0.85fr_1.15fr] md:py-32">
           {/* Reads second on a phone, where the explanation should come first. */}
-          <Reveal className="order-last flex justify-center md:order-first md:justify-start">
+          <Reveal variant="mark" className="meter order-last flex justify-center md:order-first md:justify-start">
             <Tilt className="w-full max-w-sm">
-              <RoyaltyStream />
+              <CreditMeter />
             </Tilt>
           </Reveal>
 

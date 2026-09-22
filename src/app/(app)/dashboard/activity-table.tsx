@@ -7,7 +7,9 @@ import { useFuelAccount } from "@/lib/use-fuel-account";
 const kindLabel: Record<string, string> = {
   claim: "Tasks",
   milestone: "Milestone",
-  gasback: "Gas-Back",
+  streak: "Streak",
+  referral: "Referral",
+  gasback: "Gas-Back", // earlier programs; old rows keep their label
   royalty: "Royalties",
   topup: "Bought",
   spend: "Spent",
