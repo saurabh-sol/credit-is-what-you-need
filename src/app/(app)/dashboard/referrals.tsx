@@ -1,8 +1,10 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import { useState } from "react";
 import { CopyButton } from "@/components/code-block";
+import { REFERRAL_DAILY_CAP, REFERRAL_MIN_ACTIVE_DAYS, REFERRAL_MIN_CLAIM } from "@/lib/fairness";
 import { formatCredits, shortAddress } from "@/lib/format";
 import { SITE_URL } from "@/lib/site";
 import { api } from "@/lib/use-kredit-account";
@@ -39,6 +41,7 @@ export function Referrals() {
   const data = referrals.data;
   const link = data ? `${origin}/r/${data.code}` : "";
   const invited = data?.invited ?? [];
+  const percent = data?.percent ?? 10;
 
   return (
     <section className="mt-4 card p-6">
@@ -88,6 +91,48 @@ export function Referrals() {
             <p className="mt-2 text-xs leading-relaxed text-mist">
               Whoever opens it and signs in for the first time is counted as yours. A wallet can be invited once, and
               only before its first claim.
+            </p>
+          </div>
+
+          <div className="mt-6 rounded-xl border border-line bg-raised/60 px-5 py-4">
+            <p className="font-mono text-xs uppercase tracking-widest text-mist">When your share is paid</p>
+            <ul className="mt-3 grid gap-2 text-sm leading-relaxed text-mist sm:grid-cols-2">
+              <li className="flex gap-2">
+                <span className="text-accent">•</span>
+                <span>
+                  <span className="text-fog">{percent}% of every claim</span> they make, rounded down, the moment they
+                  claim it. Nothing is taken from them.
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-accent">•</span>
+                <span>
+                  Starts once they have transacted on{" "}
+                  <span className="text-fog">{REFERRAL_MIN_ACTIVE_DAYS} different days</span>. Claims before that pay
+                  you nothing, and are not paid back later.
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-accent">•</span>
+                <span>
+                  Only claims of <span className="text-fog">{formatCredits(REFERRAL_MIN_CLAIM)} credits or more</span>{" "}
+                  count. Smaller claims share nothing.
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-accent">•</span>
+                <span>
+                  At most <span className="text-fog">{formatCredits(REFERRAL_DAILY_CAP)} credits a day</span> from all
+                  your invitees together, counted in UTC.
+                </span>
+              </li>
+            </ul>
+            <p className="mt-3 text-xs text-mist">
+              Only claims made after the invite count. Full rules in the{" "}
+              <Link href="/docs/earn/referrals" className="text-fog underline decoration-line underline-offset-4 hover:decoration-accent">
+                referrals guide
+              </Link>
+              .
             </p>
           </div>
 
