@@ -1,6 +1,8 @@
-import { createPublicClient, http, verifyMessage, type Hex } from "viem";
+import { cookies } from "next/headers";
+import { createPublicClient, http, isAddress, verifyMessage, type Hex } from "viem";
 import { base, robinhood, robinhoodTestnet } from "viem/chains";
 import { parseSiweMessage, validateSiweMessage } from "viem/siwe";
+import { REFERRAL_COOKIE, setReferrer } from "@/lib/referrals";
 import { consumeNonce, createSession } from "@/lib/session";
 
 const fail = (error: string, status = 400) =>
@@ -42,5 +44,22 @@ export async function POST(request: Request) {
   if (!valid) return fail("Signature does not match this wallet", 401);
 
   await createSession(parsed.address);
+  await bindInviter(parsed.address);
   return Response.json({ address: parsed.address });
+}
+
+// A visitor who arrived through an invite link names their inviter on their
+// first sign-in. Quietly skipped when it cannot apply (own link, already
+// invited, or a wallet that has claimed before).
+async function bindInviter(address: string) {
+  const jar = await cookies();
+  const inviter = jar.get(REFERRAL_COOKIE)?.value;
+  if (!inviter) return;
+  jar.delete(REFERRAL_COOKIE);
+  if (!isAddress(inviter)) return;
+  try {
+    setReferrer(address, inviter);
+  } catch {
+    // Not the signer's problem; the dashboard explains the rules.
+  }
 }

@@ -13,8 +13,6 @@ type RecordResponse = ReceiptData & {
   network: { id: NetworkId; name: string; explorerUrl: string };
   truncated: boolean;
   claimable: number;
-  gasBackOffered: boolean;
-  gasBackAvailable: boolean;
 };
 
 const networkTabs: { id: NetworkId; label: string }[] = [
@@ -126,11 +124,8 @@ function ScanResult({ data, onClaimed }: { data: RecordResponse; onClaimed: () =
         <p className="mt-4 max-w-sm text-xs leading-relaxed text-mist">
           {data.successfulTxs} successful and {data.failedTxs} failed transactions scanned.
           {data.truncated && " Only your latest 1,000 transactions were read."} Each transaction
-          pays out once; new activity can be claimed any time.
-          {!data.gasBackOffered && " Gas-Back is paid on mainnet only, because testnet gas is free."}
-          {data.gasBackOffered &&
-            !data.gasBackAvailable &&
-            " The ETH price feed is unreachable right now, so Gas-Back is not included. It stays claimable for later."}
+          pays out once; new activity can be claimed any time. Days in a row with activity
+          add a streak bonus, paid once per day.
         </p>
       </div>
 

@@ -37,7 +37,7 @@ export function setName(address: string, name: string | null) {
 
 // --- Distribution ----------------------------------------------------------------
 
-export const EARNING_KINDS = ["claim", "milestone", "gasback", "royalty", "topup"] as const;
+export const EARNING_KINDS = ["claim", "milestone", "streak", "referral", "topup"] as const;
 export type EarningKind = (typeof EARNING_KINDS)[number];
 
 export type TokenPaid = { symbol: string; decimals: number; amount: string }; // amount in base units
