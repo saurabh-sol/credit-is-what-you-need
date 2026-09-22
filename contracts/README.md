@@ -27,7 +27,12 @@ the credits into its ledger (`POST /api/claim/confirm`).
 
 | KreditSwapBuy, Robinhood Chain mainnet (4663) | [`0x5965ab9b7FE7119d909f1e63B6Ad0e72a62715FA`](https://robinhoodchain.blockscout.com/address/0x5965ab9b7FE7119d909f1e63B6Ad0e72a62715FA) | block 69564721, tx `0xbc2139480f5fc01239f89704ba25687a4f2cf33185c3311c405977462b68bf9f` | [Sourcify](https://sourcify.dev/server/v2/contract/4663/0x5965ab9b7FE7119d909f1e63B6Ad0e72a62715FA) |
 
+| KreditCheckout, Robinhood Chain mainnet (4663) | [`0xA466c6719945087d34EB5d89E61e252605c49Fa9`](https://robinhoodchain.blockscout.com/address/0xA466c6719945087d34EB5d89E61e252605c49Fa9) | block 69789614, tx `0xa84902cb88a46ca00dfdf0226b98b8964c47395778990bdba56eca4810813a66` | exact match on [Sourcify](https://sourcify.dev/server/v2/contract/4663/0xA466c6719945087d34EB5d89E61e252605c49Fa9) and Blockscout |
+
 Owner and treasury are the deployer wallet `0xBeed…3323`; the signer is `0x59B5…7764`.
+KreditCheckout was deployed with USDG `0x5fc5…d168`, pool fee 100 and 800 USDG units per credit
+($0.80 per 1,000). Set `TOPUP_CHECKOUT_ADDRESS=0xA466c6719945087d34EB5d89E61e252605c49Fa9`,
+`TOPUP_TREASURY_ADDRESS=0xBeeda2b3Ca61F39bc597Ea056D68268b81cc3323` and `TOPUP_POOL_FEE=100`.
 KreditSwapBuy is superseded by KreditCheckout (below) and has no token set.
 Set `RECEIPTS_ADDRESS_MAINNET=0x46C668199e07eDD479A9309B0866cD6900E88bdD` and
 `RECEIPTS_FROM_BLOCK_MAINNET=69528429` next to the signer key.
