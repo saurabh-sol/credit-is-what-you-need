@@ -116,7 +116,7 @@ export function Playground() {
       <ul>
         <li>
           <strong>Every model, one balance.</strong> Pick from the same catalog the API offers; text, image, video and
-          evaluation models each get their own mode. The <Link href="/models">model board</Link> opens the workspace
+          evaluation models each get their own mode. The <Link href="/catalog">catalog</Link> opens the workspace
           on any model with one click.
         </li>
         <li>

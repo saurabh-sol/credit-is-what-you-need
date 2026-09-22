@@ -165,6 +165,21 @@ const SCHEMA = `
   );
   CREATE INDEX IF NOT EXISTS creations_address ON creations (address, created_at);
 
+  -- A CLI login in progress: the terminal shows a code, the browser approves
+  -- it with the wallet, and the terminal collects the key once. The key sits
+  -- here only between approval and pickup, and rows die after ten minutes.
+  CREATE TABLE IF NOT EXISTS cli_logins (
+    code TEXT PRIMARY KEY,
+    host TEXT,
+    address TEXT,
+    key_id TEXT,
+    key_value TEXT,
+    created_at TEXT NOT NULL DEFAULT ${NOW},
+    expires_at INTEGER NOT NULL,   -- unix seconds
+    approved_at TEXT,
+    claimed_at TEXT
+  );
+
   -- A large claim from a risky record waits here before it can be paid.
   CREATE TABLE IF NOT EXISTS claim_holds (
     id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,

@@ -360,7 +360,7 @@ export default function Home() {
           ))}
         </div>
         <Reveal className="mt-10">
-          <Link href="/models" className={quietLink}>
+          <Link href="/catalog" className={quietLink}>
             See every model, with the price of a turn
             <ArrowRightIcon className={quietArrow} />
           </Link>
