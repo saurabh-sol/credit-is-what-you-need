@@ -73,7 +73,7 @@ export function Estimator() {
       <div className="flex justify-center lg:justify-end">
         <Receipt
           animated="live"
-          badge="ESTIMATE"
+          badge="Estimate"
           subtitle="Your wallet · Robinhood Chain"
           lines={receipt.lines}
           total={receipt.total}

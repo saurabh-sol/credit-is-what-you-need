@@ -130,6 +130,12 @@ body {
   }
 }
 
+@keyframes receipt-bar {
+  from {
+    transform: scaleX(0);
+  }
+}
+
 @layer components {
   /* ---------- Backgrounds ---------- */
 
@@ -457,6 +463,26 @@ body {
     animation-delay: calc(0.9s + var(--i, 0) * 0.11s);
   }
 
+  /* One bar per receipt line, sized to the largest line; it fills in as its row inks in. */
+  .receipt-bar {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--color-accent-dim), var(--color-accent));
+    transform-origin: left;
+    transition: width 0.5s var(--ease-out-expo);
+  }
+
+  /* Deductions (repeat calls, daily cap) get a quiet grey bar. */
+  .receipt-bar-dim {
+    background: color-mix(in srgb, var(--color-mist) 40%, transparent);
+  }
+
+  .receipt-print .print-bar {
+    animation: receipt-bar 1.1s var(--ease-out-expo) backwards;
+    animation-delay: calc(1.05s + var(--i, 0) * 0.11s);
+  }
+
   /* Pointer-driven 3D tilt; --rx / --ry are set by <Tilt>. */
   .tilt {
     perspective: 1100px;
@@ -483,18 +509,6 @@ body {
   .stagger > :nth-child(5) { animation-delay: 280ms; }
   .stagger > :nth-child(6) { animation-delay: 360ms; }
   .stagger > :nth-child(n + 7) { animation-delay: 440ms; }
-}
-
-/* Torn-paper edge for the receipt card. */
-.receipt-edge {
-  --tooth: 10px;
-  mask: conic-gradient(
-      from -45deg at bottom,
-      #0000,
-      #000 1deg 89deg,
-      #0000 90deg
-    )
-    50% / var(--tooth) 100%;
 }
 
 /* Smooth anchor jumps only for people who are fine with motion. */

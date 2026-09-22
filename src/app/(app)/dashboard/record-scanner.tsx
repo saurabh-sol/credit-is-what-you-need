@@ -165,7 +165,7 @@ function ScanResult({ data, onClaimed }: { data: RecordResponse; onClaimed: () =
       <div>
         <Receipt
           animated="print"
-          badge={data.network.id.toUpperCase()}
+          badge={data.network.id === "mainnet" ? "Mainnet" : data.network.id}
           subtitle={`${shortAddress(data.address)} · ${data.network.name}`}
           lines={data.lines}
           total={data.total}
