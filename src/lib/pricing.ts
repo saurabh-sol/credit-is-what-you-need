@@ -18,7 +18,34 @@ export type ModelPrice = {
   outputTiers?: PriceTier[];
   maxOutputTokens?: number; // the longest answer the model can write
   contextWindow?: number;
+  // Image models charge per image; token-priced ones (GPT Image) use input/output instead.
+  perImage?: number;
+  // Video models charge per second, by resolution and whether audio is generated.
+  perSecond?: VideoRate[];
 };
+
+export type VideoRate = { resolution: string; audio?: boolean; usd: number };
+
+// "1280x720" or "720p" -> "720p", as the price list names resolutions.
+export function resolutionLabel(resolution: string) {
+  const match = /^(\d+)x(\d+)$/.exec(resolution);
+  if (!match) return resolution.toLowerCase();
+  const short = Math.min(Number(match[1]), Number(match[2]));
+  return short >= 2000 ? "4k" : `${short}p`;
+}
+
+// The per-second rate for a video, or null when the model doesn't offer that shape.
+export function videoRate(price: ModelPrice, options: { resolution: string; audio: boolean }) {
+  const label = resolutionLabel(options.resolution);
+  const rates = price.perSecond ?? [];
+  const exact = rates.find((rate) => rate.resolution === label && (rate.audio ?? false) === options.audio);
+  const anyAudio = rates.find((rate) => rate.resolution === label && rate.audio === undefined);
+  return exact ?? anyAudio ?? null;
+}
+
+// The cheapest way to make a second of video with this model, for price lists.
+export const cheapestVideoRate = (price: ModelPrice) =>
+  (price.perSecond ?? []).reduce<VideoRate | null>((best, rate) => (best === null || rate.usd < best.usd ? rate : best), null);
 
 // How much of what was used, as the provider reports it after the call.
 export type TokenUsage = {

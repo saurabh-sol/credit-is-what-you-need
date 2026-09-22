@@ -95,6 +95,98 @@ export const GET = v1((request) => {
           },
         },
       },
+      "/images/generations": {
+        post: {
+          summary: "Generate images",
+          operationId: "createImage",
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: ["model", "prompt"],
+                  properties: {
+                    model: { type: "string", examples: ["openai/gpt-image-2"] },
+                    prompt: { type: "string" },
+                    n: { type: "integer", minimum: 1, maximum: 4, default: 1 },
+                    size: { type: "string", examples: ["1024x1024", "1536x1024"] },
+                    aspect_ratio: { type: "string", examples: ["16:9"] },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            200: {
+              description: "The pictures, base64 encoded, and the tokens used where the model bills by token.",
+              headers: charged,
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      created: { type: "integer" },
+                      data: { type: "array", items: { type: "object", properties: { b64_json: { type: "string" }, media_type: { type: "string" } } } },
+                      usage: { type: "object", properties: { input_tokens: { type: "integer" }, output_tokens: { type: "integer" } } },
+                    },
+                  },
+                },
+              },
+            },
+            400: errorBody("The body is missing `model` or `prompt`, or the model is not an image model."),
+            ...common,
+          },
+        },
+      },
+      "/videos/generations": {
+        post: {
+          summary: "Generate a video",
+          operationId: "createVideo",
+          description: "The request stays open until the clip is ready, usually under two minutes. The price is fixed before it starts: seconds times the model's per-second rate for the resolution and sound chosen.",
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: ["model", "prompt"],
+                  properties: {
+                    model: { type: "string", examples: ["google/veo-3.1-fast-generate-001"] },
+                    prompt: { type: "string" },
+                    duration: { type: "integer", default: 4, description: "Seconds. What each model allows varies." },
+                    resolution: { type: "string", default: "720p", examples: ["720p", "1080p", "1280x720"] },
+                    aspect_ratio: { type: "string", default: "16:9" },
+                    generate_audio: { type: "boolean", default: false },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            200: {
+              description: "The clip, base64 encoded.",
+              headers: charged,
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      created: { type: "integer" },
+                      data: { type: "array", items: { type: "object", properties: { b64_json: { type: "string" }, media_type: { type: "string" } } } },
+                      duration: { type: "integer" },
+                      resolution: { type: "string" },
+                      generate_audio: { type: "boolean" },
+                    },
+                  },
+                },
+              },
+            },
+            400: errorBody("The body is missing `model` or `prompt`, the model is not a video model, or it does not offer that resolution."),
+            ...common,
+          },
+        },
+      },
       "/models": {
         get: {
           summary: "List models",
@@ -167,12 +259,18 @@ export const GET = v1((request) => {
             object: { const: "model" },
             owned_by: { type: "string" },
             name: { type: "string" },
-            type: { type: "string", enum: ["language", "embedding", "image", "other"] },
+            type: { type: "string", enum: ["language", "embedding", "image", "video", "other"] },
             context_window: { type: "integer" },
             pricing: {
               type: ["object", "null"],
-              description: `Credits per million tokens, margin included. ${CREDITS_PER_USD} credits = $1.`,
-              properties: { credits_per_million_input: { type: "number" }, credits_per_million_output: { type: "number" } },
+              description: `Margin included, ${CREDITS_PER_USD} credits = $1. Language and embedding models list credits per million tokens; image models credits per image (or per million tokens, for the ones sold that way); video models credits per second at their cheapest resolution.`,
+              properties: {
+                credits_per_million_input: { type: "number" },
+                credits_per_million_output: { type: "number" },
+                credits_per_image: { type: "number" },
+                credits_per_second_from: { type: "number" },
+                at_resolution: { type: "string" },
+              },
             },
           },
           required: ["id", "object", "owned_by", "type"],

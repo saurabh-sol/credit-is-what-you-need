@@ -6,10 +6,13 @@ import { useEffect, useRef, useState } from "react";
 import { formatCredits } from "@/lib/format";
 import { ACCOUNT_KEY, api, type AccountResponse } from "@/lib/use-fuel-account";
 import { useSession } from "@/lib/use-session";
+import type { Catalog } from "@/lib/catalog";
 import { Composer } from "./composer";
+import { ModeSwitch } from "./mode-switch";
 import { Settings } from "./settings";
+import { Studio } from "./studio";
 import { Transcript } from "./transcript";
-import type { Failure, Turn } from "./types";
+import { DEFAULT_MODELS, type Creation, type Failure, type ImageOptions, type Mode, type Turn, type VideoOptions } from "./types";
 
 const fetchAccount = () => api<AccountResponse>("/api/account");
 
@@ -43,7 +46,16 @@ export function Playground() {
   const signedIn = Boolean(session.address);
   const account = useQuery({ queryKey: ACCOUNT_KEY, queryFn: fetchAccount, enabled: signedIn });
 
-  const [model, setModel] = useState("kredit/echo");
+  // Text, Image or Video, each remembering its own model.
+  const [mode, setMode] = useState<Mode>("text");
+  const [models, setModels] = useState(DEFAULT_MODELS);
+  const model = models[mode];
+  const setModel = (id: string) => setModels((current) => ({ ...current, [mode]: id }));
+  const [image, setImage] = useState<ImageOptions>({ size: "1024x1024", n: 1 });
+  const [video, setVideo] = useState<VideoOptions>({ duration: 4, resolution: "720p", aspectRatio: "16:9", generateAudio: false });
+  const [creations, setCreations] = useState<Creation[]>([]);
+  const catalogQuery = useQuery({ queryKey: ["models"], queryFn: () => api<Catalog>("/api/models"), staleTime: 600_000 });
+
   const [turns, setTurns] = useState<Turn[]>([]);
   const [error, setError] = useState<Failure | null>(null);
   const [busy, setBusy] = useState(false);
@@ -140,6 +152,63 @@ export function Playground() {
     }
   }
 
+  // What the next picture or clip will cost, from the model's listed price.
+  const price = catalogQuery.data?.models.find((entry) => entry.id === model)?.price ?? null;
+  let estimate = "";
+  if (mode === "image") {
+    if (price?.per === "image") estimate = `About ${formatCredits(price.credits * image.n)} credits for ${image.n === 1 ? "one picture" : `${image.n} pictures`}.`;
+    else if (price?.per === "million_tokens") {
+      // GPT Image bills by token; its largest picture is about 4,160 output tokens.
+      const worst = Math.ceil(((price.output * 4160 + price.input * 100) / 1_000_000) * image.n);
+      estimate = `Up to about ${formatCredits(worst)} credits for ${image.n === 1 ? "one picture" : `${image.n} pictures`}; simpler pictures cost less.`;
+    }
+  } else if (mode === "video" && price?.per === "second") {
+    const rate =
+      price.rates.find((entry) => entry.resolution === video.resolution && (entry.audio ?? false) === video.generateAudio) ??
+      price.rates.find((entry) => entry.resolution === video.resolution && entry.audio === undefined);
+    estimate = rate
+      ? `${formatCredits(Math.ceil(rate.credits * video.duration))} credits for ${video.duration} seconds at ${video.resolution}${video.generateAudio ? " with sound" : ""}.`
+      : `This model does not offer ${video.resolution}${video.generateAudio ? " with sound" : ""}.`;
+  }
+
+  async function make(prompt: string) {
+    const text = prompt.trim();
+    if (!text || busy || blocked || mode === "text") return;
+    const id = (lastId.current += 1);
+    const kind = mode;
+    setCreations((current) => [{ id, kind, prompt: text, model, files: [] }, ...current]);
+    setError(null);
+    setBusy(true);
+    const controller = new AbortController();
+    abort.current = controller;
+    const started = performance.now();
+    const patchCreation = (change: (creation: Creation) => Creation) =>
+      setCreations((current) => current.map((creation) => (creation.id === id ? change(creation) : creation)));
+    try {
+      const body = kind === "image" ? { kind, model, prompt: text, ...image } : { kind, model, prompt: text, ...video };
+      const response = await fetch("/api/playground/media", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw Object.assign(new Error(data?.error?.message ?? "The request failed."), { code: data?.error?.code });
+      }
+      const files = (kind === "image" ? data.images : data.videos) as Creation["files"];
+      patchCreation((creation) => ({ ...creation, files, cost: data.credits, ms: performance.now() - started }));
+      queryClient.setQueryData<AccountResponse>(ACCOUNT_KEY, (account) => (account ? { ...account, balance: data.balance } : account));
+    } catch (caught) {
+      const failure = caught as Error & { code?: string };
+      if (failure.name === "AbortError") setCreations((current) => current.filter((creation) => creation.id !== id));
+      else patchCreation((creation) => ({ ...creation, error: { message: failure.message, code: failure.code } }));
+    } finally {
+      abort.current = null;
+      setBusy(false);
+    }
+  }
+
   const last = turns[turns.length - 1];
   const status = busy
     ? "Waiting for the reply."
@@ -150,32 +219,62 @@ export function Playground() {
   return (
     // Below lg the settings follow the chat in one scrolling column; from lg up they sit beside it.
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
-      <section aria-label="Conversation" className="flex h-[82dvh] min-w-0 shrink-0 flex-col lg:h-auto lg:min-h-0 lg:flex-1 lg:shrink">
-        <Transcript
-          state={signedIn ? "ready" : session.isLoading ? "loading" : "signed-out"}
-          turns={turns}
-          busy={busy}
-          blocked={Boolean(blocked)}
-          error={error}
-          onPick={send}
-        />
-        <p role="status" className="sr-only">
-          {status}
-        </p>
-        <Composer
-          busy={busy}
-          blocked={blocked}
-          canReset={turns.length > 0 || error !== null}
-          onSend={send}
-          onStop={() => abort.current?.abort()}
-          onReset={() => {
-            setTurns([]);
-            setError(null);
-          }}
-        />
+      <section aria-label={mode === "text" ? "Conversation" : "Studio"} className="flex h-[82dvh] min-w-0 shrink-0 flex-col lg:h-auto lg:min-h-0 lg:flex-1 lg:shrink">
+        <div className="flex shrink-0 items-center gap-3 border-b border-line px-4 py-2.5 sm:px-6">
+          <ModeSwitch value={mode} onChange={setMode} disabled={busy} />
+        </div>
+        {mode === "text" ? (
+          <>
+            <Transcript
+              state={signedIn ? "ready" : session.isLoading ? "loading" : "signed-out"}
+              turns={turns}
+              busy={busy}
+              blocked={Boolean(blocked)}
+              error={error}
+              onPick={send}
+            />
+            <p role="status" className="sr-only">
+              {status}
+            </p>
+            <Composer
+              busy={busy}
+              blocked={blocked}
+              canReset={turns.length > 0 || error !== null}
+              onSend={send}
+              onStop={() => abort.current?.abort()}
+              onReset={() => {
+                setTurns([]);
+                setError(null);
+              }}
+            />
+          </>
+        ) : (
+          <Studio
+            mode={mode}
+            state={signedIn ? "ready" : session.isLoading ? "loading" : "signed-out"}
+            creations={creations.filter((creation) => creation.kind === mode)}
+            busy={busy}
+            blocked={blocked}
+            estimate={estimate}
+            onMake={make}
+            onStop={() => abort.current?.abort()}
+          />
+        )}
       </section>
 
-      <Settings model={model} onModel={setModel} signedIn={signedIn} balance={balance} systemPrompt={systemPrompt} />
+      <Settings
+        mode={mode}
+        model={model}
+        onModel={setModel}
+        signedIn={signedIn}
+        balance={balance}
+        systemPrompt={systemPrompt}
+        image={image}
+        onImage={setImage}
+        video={video}
+        onVideo={setVideo}
+        estimate={estimate}
+      />
     </div>
   );
 }

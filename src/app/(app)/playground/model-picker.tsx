@@ -4,13 +4,24 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { CheckIcon, SearchIcon } from "@/components/icons";
 import { ModelLogo } from "@/components/model-logo";
-import type { Catalog } from "@/lib/catalog";
+import type { Catalog, CatalogPrice, ModelType } from "@/lib/catalog";
+import { formatCredits } from "@/lib/format";
 import { api } from "@/lib/use-fuel-account";
 import { ChevronDownIcon } from "./icons";
 
 const SHOWN = 60;
 
-export function ModelPicker({ value, onChange }: { value: string; onChange: (model: string) => void }) {
+// A model's price in a few words, in the unit it is sold by.
+function priceLine(price: CatalogPrice | null) {
+  if (!price) return "price unknown";
+  if (price.per === "image") return `${formatCredits(price.credits)} per image`;
+  if (price.per === "second") return `from ${formatCredits(price.from)} per second`;
+  return `${formatCredits(price.input)} in · ${formatCredits(price.output)} out per M tokens`;
+}
+
+type ModelPickerProps = { value: string; onChange: (model: string) => void; type?: ModelType };
+
+export function ModelPicker({ value, onChange, type = "language" }: ModelPickerProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   // The row the arrow keys are on; Enter picks it.
@@ -37,7 +48,8 @@ export function ModelPicker({ value, onChange }: { value: string; onChange: (mod
     if (open) list.current?.children[active]?.scrollIntoView({ block: "nearest" });
   }, [open, active]);
 
-  const models = data?.models ?? [];
+  // Only models of the kind the page is making, and only ones with a known price.
+  const models = (data?.models ?? []).filter((model) => model.type === type && model.price !== null);
   const needle = query.trim().toLowerCase();
   const matches = models.filter((model) => `${model.id} ${model.name}`.toLowerCase().includes(needle)).slice(0, SHOWN + 1);
   const shown = matches.slice(0, SHOWN);
@@ -110,14 +122,20 @@ export function ModelPicker({ value, onChange }: { value: string; onChange: (mod
                   <ModelLogo model={model.id} className="size-4" />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[0.8125rem] leading-5">{model.name}</span>
-                    <span className="block truncate font-mono text-[0.6875rem] leading-4 text-mist">{model.id}</span>
+                    <span className="block truncate font-mono text-[0.6875rem] leading-4 text-mist">
+                      {model.id} · {priceLine(model.price)}
+                    </span>
                   </span>
                   {model.id === value && <CheckIcon className="size-3.5 text-accent" />}
                 </button>
               </li>
             ))}
             {!data && <li className="px-3 py-6 text-center text-xs text-mist">Loading models</li>}
-            {data && matches.length === 0 && <li className="px-3 py-6 text-center text-xs text-mist">No model matches that.</li>}
+            {data && matches.length === 0 && (
+              <li className="px-3 py-6 text-center text-xs text-mist">
+                {models.length === 0 ? `No ${type} models on this server.` : "No model matches that."}
+              </li>
+            )}
             {matches.length > SHOWN && (
               <li className="px-3 py-2 text-center text-xs text-mist">Showing the first {SHOWN}. Keep typing to narrow it down.</li>
             )}
