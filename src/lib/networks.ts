@@ -1,6 +1,8 @@
 import type { PartnerRegistry } from "./scoring.ts";
 
-export type NetworkId = "testnet" | "mainnet";
+// Kredit runs on Robinhood Chain mainnet only. NetworkId stays a named type
+// because ledger rows, claims and receipts all say which network they came from.
+export type NetworkId = "mainnet";
 
 export type Network = {
   id: NetworkId;
@@ -10,20 +12,10 @@ export type Network = {
   partners: PartnerRegistry;
 };
 
-// Explorer APIs can be overridden from the environment, e.g. to point mainnet
-// at a keyed Blockscout endpoint or your own indexer.
+// The explorer API can be overridden from the environment, e.g. to point at a
+// keyed Blockscout endpoint or your own indexer. With an Alchemy RPC set, the
+// scanner reads history from the chain instead (src/lib/rpc-scan.ts).
 export const networks: Record<NetworkId, Network> = {
-  testnet: {
-    id: "testnet",
-    name: "Robinhood Chain Testnet",
-    explorerUrl: "https://explorer.testnet.chain.robinhood.com",
-    explorerApi:
-      process.env.EXPLORER_API_TESTNET ?? "https://explorer.testnet.chain.robinhood.com/api/v2",
-    partners: {
-      // Demo partner: the index basket from the Arbitrum Foundation tutorial.
-      "0xc1940d5fd58ce735a44a53f910852b12250f6a14": { name: "Index Basket (demo)", credits: 250 },
-    },
-  },
   mainnet: {
     id: "mainnet",
     name: "Robinhood Chain",
@@ -33,5 +25,6 @@ export const networks: Record<NetworkId, Network> = {
   },
 };
 
-export const isNetworkId = (value: unknown): value is NetworkId =>
-  value === "testnet" || value === "mainnet";
+export const MAINNET = networks.mainnet;
+
+export const isNetworkId = (value: unknown): value is NetworkId => value === "mainnet";

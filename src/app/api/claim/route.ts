@@ -16,7 +16,7 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const networkId: unknown = body?.network;
   if (!isNetworkId(networkId)) {
-    return Response.json({ error: "network must be testnet or mainnet" }, { status: 400 });
+    return Response.json({ error: "network must be mainnet" }, { status: 400 });
   }
 
   try {

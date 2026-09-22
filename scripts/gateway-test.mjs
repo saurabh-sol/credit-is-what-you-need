@@ -2,8 +2,10 @@
 // Needs a server started with the same SESSION_SECRET as .env.local:
 //   DATABASE_PATH=/tmp/kredit-test.db npx next start -p 3458
 //   DATABASE_PATH=/tmp/kredit-test.db BASE_URL=http://localhost:3458 node scripts/gateway-test.mjs
-// It signs a session locally for a real, active testnet wallet (local testing
-// only: real users must sign with their wallet).
+// It signs a session locally for a real, active mainnet wallet (local testing
+// only: real users must sign with their wallet). It expects off-chain claims,
+// so start the server without RECEIPTS_ADDRESS_MAINNET; the on-chain path is
+// covered by scripts/mainnet-check.mjs and scripts/receipts-test.mjs.
 import { sessionCookie } from "./lib/test-session.mjs";
 
 const base = process.env.BASE_URL ?? "http://localhost:3000";
@@ -28,16 +30,16 @@ const broke = await chat(created.key, hello);
 check("gateway refuses a wallet with no credits", broke.status === 402, `(${(await broke.json()).error.code})`);
 
 // --- claim
-const record = await (await app("/api/record?network=testnet")).json();
+const record = await (await app("/api/record?network=mainnet")).json();
 check("scan shows claimable credits", record.claimable > 0 && record.claimable === record.total, `(${record.claimable})`);
-const claimed = await (await app("/api/claim", { method: "POST", body: JSON.stringify({ network: "testnet" }) })).json();
+const claimed = await (await app("/api/claim", { method: "POST", body: JSON.stringify({ network: "mainnet" }) })).json();
 check("claim pays exactly what the receipt showed", claimed.granted === record.claimable && claimed.balance === record.claimable);
 const streakLine = record.lines.find((l) => l.label.startsWith("Streak bonus"));
 check("the streak bonus on the receipt is paid with the claim", (streakLine?.credits ?? 0) === claimed.streak, `(${claimed.streak} credits)`);
 check("a wallet nobody invited pays no referral", claimed.referral === 0);
-const again = await (await app("/api/claim", { method: "POST", body: JSON.stringify({ network: "testnet" }) })).json();
+const again = await (await app("/api/claim", { method: "POST", body: JSON.stringify({ network: "mainnet" }) })).json();
 check("claiming twice pays nothing the second time", again.granted === 0 && again.balance === claimed.balance);
-const rescanned = await (await app("/api/record?network=testnet")).json();
+const rescanned = await (await app("/api/record?network=mainnet")).json();
 check("receipt now shows nothing left to claim", rescanned.claimable === 0);
 
 // --- gateway

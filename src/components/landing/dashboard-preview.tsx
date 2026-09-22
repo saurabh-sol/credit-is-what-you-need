@@ -22,7 +22,7 @@ const spend = (example: (typeof costExamples)[number]): Entry => ({
 
 // An invented ledger, replayed in order. Rates and prices still come from the real rules.
 const entries: Entry[] = [
-  { kind: "Tasks", detail: "37 tasks on testnet", amount: 37 * TASK_CREDITS.contract_call },
+  { kind: "Tasks", detail: "37 tasks on Robinhood Chain", amount: 37 * TASK_CREDITS.contract_call },
   { kind: "Streak", detail: "day 7 in a row", amount: streakBonus(7) },
   spend(costExamples[2]),
   { kind: "Referral", detail: `${REFERRAL_PERCENT}% of a claim by 0x3f9a…c21e`, amount: 113 },

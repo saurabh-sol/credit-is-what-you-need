@@ -1,11 +1,11 @@
-// Scan any address from the terminal: node scripts/scan.ts <address> [testnet|mainnet]
+// Scan any address from the terminal: node scripts/scan.ts <address>
 import { isNetworkId, networks } from "../src/lib/networks.ts";
 import { scanWallet } from "../src/lib/record.ts";
 import { buildReceipt } from "../src/lib/scoring.ts";
 
-const [address, networkId = "testnet"] = process.argv.slice(2);
+const [address, networkId = "mainnet"] = process.argv.slice(2);
 if (!address || !isNetworkId(networkId)) {
-  console.error("usage: node scripts/scan.ts <address> [testnet|mainnet]");
+  console.error("usage: node scripts/scan.ts <address>");
   process.exit(1);
 }
 

@@ -23,45 +23,45 @@ const task = (credits: number, day = "2026-09-01", feeWei = "0"): ScoredTask => 
 
 test("a claim pays once; claiming again pays nothing", () => {
   const tasks = [task(50), task(50), task(500)];
-  const first = claim(ALICE, "testnet", tasks);
+  const first = claim(ALICE, "mainnet", tasks);
   assert.equal(first.granted, 600);
   assert.equal(getBalance(ALICE), 600);
 
-  const second = claim(ALICE, "testnet", tasks);
+  const second = claim(ALICE, "mainnet", tasks);
   assert.equal(second.granted, 0);
   assert.equal(getBalance(ALICE), 600);
 });
 
 test("only new transactions are paid on a later claim", () => {
   const before = getBalance(ALICE);
-  const result = claim(ALICE, "testnet", [task(50, "2026-09-02")]);
+  const result = claim(ALICE, "mainnet", [task(50, "2026-09-02")]);
   assert.equal(result.granted, 50);
   assert.equal(getBalance(ALICE), before + 50);
 });
 
 test("the daily cap holds across separate claims", () => {
   const day = "2026-09-03";
-  assert.equal(claim(BOB, "testnet", [task(500, day), task(400, day)]).granted, 900);
+  assert.equal(claim(BOB, "mainnet", [task(500, day), task(400, day)]).granted, 900);
   // 100 left for that day, even though this claim earned 500.
-  assert.equal(claim(BOB, "testnet", [task(500, day)]).granted, 100);
-  assert.equal(claim(BOB, "testnet", [task(500, day)]).granted, 0);
+  assert.equal(claim(BOB, "mainnet", [task(500, day)]).granted, 100);
+  assert.equal(claim(BOB, "mainnet", [task(500, day)]).granted, 0);
 });
 
 test("the same network+hash can never be claimed twice, even by another wallet", () => {
   const shared = [task(50, "2026-09-04")];
-  claim(ALICE, "testnet", shared);
-  assert.equal(claim(BOB, "testnet", shared).granted, 0);
+  claim(ALICE, "mainnet", shared);
+  assert.equal(claim(BOB, "mainnet", shared).granted, 0);
 });
 
 test("milestones pay once", () => {
   const carol = "0xCCCCccccCCCCccccCCCCccccCCCCccccCCCCcccc";
   const tasks = Array.from({ length: 10 }, (_, i) => task(10, `2026-08-${String(i + 1).padStart(2, "0")}`));
-  const first = claim(carol, "testnet", tasks);
+  const first = claim(carol, "mainnet", tasks);
   const streak = 20 + 30 + 40 + 50 + 60 + 70 + 80 + 90 + 100; // ten days in a row
   assert.equal(first.granted, 10 * 10 + 100 + streak);
   assert.equal(first.milestones, 1);
   assert.equal(first.streak, streak);
-  assert.equal(claim(carol, "testnet", tasks).granted, 0);
+  assert.equal(claim(carol, "mainnet", tasks).granted, 0);
   assert.deepEqual(listLedger(carol).map((entry) => entry.kind).sort(), ["claim", "milestone", "streak"]);
 });
 
@@ -110,24 +110,24 @@ test("spending lowers the balance and is written to the ledger", () => {
 test("a streak day is paid once, even when its transactions were claimed earlier", () => {
   const erin = "0xEEEEeeeeEEEEeeeeEEEEeeeeEEEEeeeeEEEEeeee";
   const monday = task(10, "2026-07-06");
-  assert.equal(claim(erin, "testnet", [monday]).streak, 0); // one day is not a streak
+  assert.equal(claim(erin, "mainnet", [monday]).streak, 0); // one day is not a streak
 
   const tuesday = task(10, "2026-07-07");
-  const later = claim(erin, "testnet", [monday, tuesday]); // the scan always shows the whole record
+  const later = claim(erin, "mainnet", [monday, tuesday]); // the scan always shows the whole record
   assert.equal(later.tasks, 1);
   assert.equal(later.streak, 20); // day 2 of the streak
   assert.equal(later.granted, 10 + 20);
 
-  assert.equal(claim(erin, "testnet", [monday, tuesday]).granted, 0);
+  assert.equal(claim(erin, "mainnet", [monday, tuesday]).granted, 0);
   const wednesday = task(10, "2026-07-08");
-  assert.equal(claim(erin, "testnet", [monday, tuesday, wednesday]).streak, 30); // only the new day
+  assert.equal(claim(erin, "mainnet", [monday, tuesday, wednesday]).streak, 30); // only the new day
 });
 
 test("the streak bonus is not limited by the daily task cap", () => {
   const hank = "0x8888888888888888888888888888888888888888";
   const days = ["2026-07-20", "2026-07-21", "2026-07-22"];
   const tasks = days.flatMap((day) => Array.from({ length: 30 }, () => task(50, day)));
-  const result = claim(hank, "testnet", tasks);
+  const result = claim(hank, "mainnet", tasks);
   // 3 capped days + the 10-tx and 50-tx milestones (20 count per day) + days 2 and 3 of the streak
   assert.equal(result.granted, 3 * 1000 + 100 + 300 + 20 + 30);
 });
@@ -139,15 +139,15 @@ test("an inviter earns a share of each claim their invitee makes", () => {
   setReferrer(friend, inviter);
 
   const tasks = [task(500, "2026-06-01"), task(50, "2026-06-01")];
-  const first = claim(friend, "testnet", tasks);
+  const first = claim(friend, "mainnet", tasks);
   assert.equal(first.granted, 550);
   assert.equal(first.referral, 55);
   assert.equal(getBalance(friend), 550); // nothing taken from the friend
   assert.equal(getBalance(inviter), 55);
   assert.ok(listLedger(inviter).some((entry) => entry.kind === "referral" && entry.amount === 55));
 
-  assert.equal(claim(friend, "testnet", tasks).referral, 0); // nothing new, nothing shared
-  assert.equal(claim(friend, "testnet", [task(9, "2026-06-10")]).referral, 0); // 10% of 9 rounds down to nothing
+  assert.equal(claim(friend, "mainnet", tasks).referral, 0); // nothing new, nothing shared
+  assert.equal(claim(friend, "mainnet", [task(9, "2026-06-10")]).referral, 0); // 10% of 9 rounds down to nothing
   assert.deepEqual(referralTotals(inviter), { count: 1, earned: 55 });
   assert.deepEqual(listInvited(inviter).map((row) => [row.address, row.claimed, row.paid]), [[friend, 559, 55]]);
 });
