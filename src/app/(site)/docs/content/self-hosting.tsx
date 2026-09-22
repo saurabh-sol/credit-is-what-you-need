@@ -83,8 +83,17 @@ export function Configuration() {
           address.
         </Param>
         <Param name="TOPUP_CREDITS_PER_TOKEN" type="number">
-          For example <code>100</code>: one token buys 100 credits, $0.10 of AI usage. Buying stays off until the
-          token, treasury and price are all set.
+          For example <code>0.01</code>: 100 tokens buy one credit, so 200,000 tokens buy 2,000 credits, $2 of AI
+          usage. Buying stays off until the token, treasury and price are all set.
+        </Param>
+        <Param name="TOPUP_SWAP_ADDRESS" type="address">
+          The KreditSwapBuy contract (<code>contracts/</code>). With it set, the Credits page pays in ETH by default:
+          the contract swaps the ETH for the token on Uniswap v3, straight to the treasury, and emits{" "}
+          <code>Purchased</code>, which the server credits. Empty means token transfers only.
+        </Param>
+        <Param name="TOPUP_POOL_FEE · TOPUP_MAX_CREDITS_PER_BUY" type="integer · integer">
+          The WETH/token pool&apos;s fee tier (100, 500, 3000 or 10000; default 3000) and the cap on one purchase
+          (default 100,000 credits). Both must match what the contract was set up with.
         </Param>
       </Params>
 

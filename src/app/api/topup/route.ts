@@ -2,7 +2,7 @@ import type { Hash } from "viem";
 import { chains, publicClient } from "@/lib/chain";
 import { recordTopUp, TopUpUsedError } from "@/lib/ledger";
 import { getSession } from "@/lib/session";
-import { creditsForPayment, paymentIn, topUpConfig } from "@/lib/topup";
+import { creditsForPayment, paymentIn, purchaseIn, topUpConfig } from "@/lib/topup";
 
 // What the buy-credits form needs to know. `null` means top-ups are switched off.
 export async function GET() {
@@ -10,7 +10,8 @@ export async function GET() {
   return Response.json({ config: config && { ...config, chainId: chains[config.network].chain.id } });
 }
 
-// The user has sent tokens to the treasury; turn that transaction into credits.
+// The user has paid, either by sending tokens to the treasury or by buying
+// through the swap contract; turn that transaction into credits.
 export async function POST(request: Request) {
   const session = await getSession();
   if (!session) return Response.json({ error: "Sign in first" }, { status: 401 });
@@ -36,9 +37,21 @@ export async function POST(request: Request) {
     return Response.json({ error: "That transaction failed on-chain, so nothing was paid." }, { status: 400 });
   }
 
-  // Only tokens that left the signed-in wallet for the treasury count.
-  const amount = paymentIn(receipt.logs, { token: config.token, treasury: config.treasury, payer: session.address });
-  const credits = creditsForPayment(amount, config);
+  // A purchase through the swap contract: it swapped the wallet's ETH for the
+  // token with the treasury as the recipient and wrote what it bought. The
+  // server prices the token amount itself and never credits more than the
+  // contract recorded, so the two rates cannot drift in the buyer's favour.
+  const purchase = config.swap && purchaseIn(receipt.logs, { swap: config.swap.address, token: config.token, buyer: session.address });
+  let amount: bigint;
+  let credits: number;
+  if (purchase) {
+    amount = purchase.amount;
+    credits = Math.min(creditsForPayment(amount, config), Number(purchase.credits));
+  } else {
+    // Only tokens that left the signed-in wallet for the treasury count.
+    amount = paymentIn(receipt.logs, { token: config.token, treasury: config.treasury, payer: session.address });
+    credits = creditsForPayment(amount, config);
+  }
   if (credits < 1) {
     return Response.json(
       { error: `No ${config.symbol} payment from your wallet to Kredit was found in that transaction.` },
