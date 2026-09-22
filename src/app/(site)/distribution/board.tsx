@@ -10,7 +10,7 @@ import { formatCredits, shortAddress } from "@/lib/format";
 import { CREDITS_PER_USD } from "@/lib/pricing";
 import { api } from "@/lib/use-fuel-account";
 import { useSession } from "@/lib/use-session";
-import { ago, SkeletonRow, sourceLabel, sources, tokens, usd, WalletRow } from "./wallet-row";
+import { ago, SkeletonRow, sources, tokens, usd, WalletRow } from "./wallet-row";
 
 // The server sends at most this many rows, so a wallet missing from a full list may simply sit below it.
 const BOARD_LIMIT = 100;
@@ -47,7 +47,11 @@ export function Board({ initial }: { initial: Distribution }) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const { totals, recent } = board.data;
+  const { totals, active } = board.data;
+  // A short list is repeated so the strip still fills its width and loops without a gap.
+  const ticker = Array.from({ length: Math.ceil(8 / Math.max(active.length, 1)) }, (_, repeat) =>
+    active.map((wallet) => ({ ...wallet, repeat })),
+  ).flat();
   const ranks = new Map(board.data.wallets.map((wallet, index) => [wallet.address, index + 1]));
   const share = (earned: number) => (totals.credits > 0 ? (earned / totals.credits) * 100 : 0);
 
@@ -89,22 +93,32 @@ export function Board({ initial }: { initial: Distribution }) {
         ))}
       </dl>
 
-      {recent.length > 0 && (
+      {active.length > 0 && (
         <div className="mt-4 flex items-center gap-4 border-y border-line/60 py-2 text-xs text-mist">
           <span className="flex shrink-0 items-center gap-2">
-            <span className="live-dot" /> Latest
+            <span className="live-dot" /> Most active
           </span>
-          <div className="marquee min-w-0 flex-1" aria-label="Latest earnings">
+          <div className="marquee min-w-0 flex-1" aria-label="Most active wallets">
             <div className="marquee-track">
               {[0, 1].map((copy) => (
                 <ul key={copy} aria-hidden={copy === 1} className="flex shrink-0">
-                  {recent.map((entry) => (
-                    <li key={entry.id} className="flex items-center gap-1.5 px-4 whitespace-nowrap">
-                      <span className="text-fog">{entry.name ?? shortAddress(entry.address)}</span>
-                      {sourceLabel[entry.kind] ?? entry.kind}
-                      <span className="font-mono text-fog tabular-nums">+{formatCredits(entry.amount)}</span>
+                  {ticker.map((wallet) => (
+                    <li
+                      key={`${wallet.address}-${wallet.repeat}`}
+                      aria-hidden={wallet.repeat > 0}
+                      className="flex items-center gap-1.5 px-4 whitespace-nowrap"
+                    >
+                      <span className="text-fog">{wallet.name ?? shortAddress(wallet.address)}</span>
+                      claimed
+                      <span className="font-mono text-fog tabular-nums">+{formatCredits(wallet.claimed)}</span>
+                      {wallet.used > 0 && (
+                        <>
+                          used
+                          <span className="font-mono text-fog tabular-nums">{formatCredits(wallet.used)}</span>
+                        </>
+                      )}
                       <span className="text-mist/70" suppressHydrationWarning>
-                        {ago(entry.createdAt)}
+                        {ago(wallet.lastActiveAt)}
                       </span>
                     </li>
                   ))}

@@ -15,8 +15,8 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { receipt, ethUsdCents } = await scanRecord(networks[networkId], session.address);
-    return Response.json(claim(session.address, networkId, receipt.tasks, ethUsdCents));
+    const { receipt } = await scanRecord(networks[networkId], session.address);
+    return Response.json(claim(session.address, networkId, receipt.tasks));
   } catch (error) {
     if (error instanceof ExplorerError) {
       return Response.json({ error: error.message }, { status: 502 });

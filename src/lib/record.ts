@@ -1,18 +1,13 @@
 import { scanAddress } from "./explorer.ts";
 import type { Network } from "./networks.ts";
-import { getEthUsdCentsOrNull } from "./price.ts";
 import { buildReceipt } from "./scoring.ts";
 
 const CACHE_MS = 60_000;
 const cache = new Map<string, { expires: number; value: Awaited<ReturnType<typeof load>> }>();
 
 async function load(network: Network, address: string) {
-  const [{ txs, truncated }, ethUsdCents] = await Promise.all([
-    scanAddress(network, address),
-    network.gasRewards ? getEthUsdCentsOrNull() : null, // no price, no Gas-Back
-  ]);
-  // The price is kept with the scan so the claim pays what the receipt showed.
-  return { receipt: buildReceipt(txs, network.partners, ethUsdCents), truncated, ethUsdCents };
+  const { txs, truncated } = await scanAddress(network, address);
+  return { receipt: buildReceipt(txs, network.partners), truncated };
 }
 
 // A scan costs several explorer requests, so reuse it for a minute. Claiming

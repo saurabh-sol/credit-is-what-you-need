@@ -1,4 +1,4 @@
-import { GAS_BACK_PERCENT, gasBackMicro, splitMicro } from "./gasback.ts";
+import { streakDays, streakLabel } from "./streaks.ts";
 
 // Turns a wallet's on-chain record into credits. Pure logic, no I/O, so the
 // rules are easy to test and to change. 1,000 credits = $1 of AI usage.
@@ -91,17 +91,9 @@ const GROUP_LABELS: Record<TaskKind, (count: number) => string> = {
   transfer: (n) => plural(n, "transfer", "transfers"),
 };
 
-export const GAS_BACK_LABEL = `Gas-Back (${GAS_BACK_PERCENT}% of gas spent)`;
-const sumFees = (tasks: { feeWei: string }[]) =>
-  tasks.reduce((sum, task) => sum + BigInt(task.feeWei), BigInt(0));
+const activeDays = (tasks: { timestamp: string }[]) => tasks.map((task) => task.timestamp.slice(0, 10));
 
-// Pass the ETH price (in cents) to include Gas-Back; leave it out when the
-// price feed is unavailable.
-export function buildReceipt(
-  txs: ScannedTx[],
-  partners: PartnerRegistry = {},
-  ethUsdCents?: bigint | null,
-): Receipt {
+export function buildReceipt(txs: ScannedTx[], partners: PartnerRegistry = {}): Receipt {
   const tasks = txs
     .map((tx) => scoreTx(tx, partners))
     .filter((task): task is ScoredTask => task !== null);
@@ -139,9 +131,9 @@ export function buildReceipt(
     }
   }
 
-  if (ethUsdCents) {
-    const { credits } = splitMicro(gasBackMicro(sumFees(tasks), ethUsdCents));
-    if (credits > 0) lines.push({ label: GAS_BACK_LABEL, credits });
+  const streak = streakDays(activeDays(tasks));
+  if (streak.length > 0) {
+    lines.push({ label: streakLabel(streak), credits: streak.reduce((sum, day) => sum + day.credits, 0) });
   }
 
   const gasSpent = txs.reduce((sum, tx) => sum + BigInt(tx.feeWei), BigInt(0));
@@ -162,20 +154,19 @@ export function buildReceipt(
 
 export type ClaimState = {
   claimedHashes: Set<string>;
-  gasBackPaidHashes: Set<string>; // Gas-Back is tracked per transaction, separately from the task reward
-  gasBackCarryMicro: number;
   grantedPerDay: Map<string, number>; // UTC day -> credits already granted
   claimedMilestones: Set<number>;
+  claimedStreakDays: Set<string>; // UTC days whose streak bonus was paid
 };
 
 export type ClaimPlan = {
   txGrants: { hash: string; day: string; earned: number; granted: number }[];
   milestones: { txs: number; credits: number }[];
-  gasBack: { hashes: string[]; credits: number; carryMicro: number } | null;
+  streakDays: { day: string; credits: number }[];
   total: number;
 };
 
-export function planClaim(tasks: ScoredTask[], state: ClaimState, ethUsdCents?: bigint | null): ClaimPlan {
+export function planClaim(tasks: ScoredTask[], state: ClaimState): ClaimPlan {
   const grantedPerDay = new Map(state.grantedPerDay);
   const progressPerDay = new Map<string, number>();
   const txGrants: ClaimPlan["txGrants"] = [];
@@ -199,20 +190,15 @@ export function planClaim(tasks: ScoredTask[], state: ClaimState, ethUsdCents?: 
     (milestone) => progress >= milestone.txs && !state.claimedMilestones.has(milestone.txs),
   );
 
-  // Gas-Back covers every successful transaction that hasn't had it yet,
-  // including ones whose task reward was claimed earlier.
-  let gasBack: ClaimPlan["gasBack"] = null;
-  if (ethUsdCents) {
-    const unpaid = tasks.filter((task) => !state.gasBackPaidHashes.has(task.hash));
-    if (unpaid.length > 0) {
-      const micro = gasBackMicro(sumFees(unpaid), ethUsdCents) + BigInt(state.gasBackCarryMicro);
-      gasBack = { hashes: unpaid.map((task) => task.hash), ...splitMicro(micro) };
-    }
-  }
+  // A streak is read from the whole record, so a day whose transactions were
+  // claimed earlier still counts toward it; each day's bonus is paid once.
+  const streak = streakDays(activeDays(tasks))
+    .filter((bonus) => !state.claimedStreakDays.has(bonus.day))
+    .map(({ day, credits }) => ({ day, credits }));
 
   const total =
     txGrants.reduce((sum, grant) => sum + grant.granted, 0) +
     milestones.reduce((sum, milestone) => sum + milestone.credits, 0) +
-    (gasBack?.credits ?? 0);
-  return { txGrants, milestones, gasBack, total };
+    streak.reduce((sum, bonus) => sum + bonus.credits, 0);
+  return { txGrants, milestones, streakDays: streak, total };
 }

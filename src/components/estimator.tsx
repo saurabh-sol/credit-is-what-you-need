@@ -66,7 +66,7 @@ export function Estimator() {
         </div>
         <p className="mt-7 border-t border-line pt-5 text-xs leading-relaxed text-mist">
           This runs the same scoring rules as the real scanner, on an imagined
-          history. Gas-Back, partner protocols and Builder Royalties come on top.
+          history, streak bonus included. Partner protocols and referrals come on top.
         </p>
       </div>
 
