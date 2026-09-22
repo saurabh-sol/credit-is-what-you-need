@@ -25,7 +25,7 @@ type SettingsProps = {
   estimate: string;
 };
 
-const modelType = { text: "language", image: "image", video: "video" } as const;
+const modelType = { text: "language", image: "image", video: "video", evaluate: "evaluation" } as const;
 
 // A row of choices, one of which is on.
 function Choices<T extends string | number>({ label, options, value, onChange, format = String }: { label: string; options: readonly T[]; value: T; onChange: (value: T) => void; format?: (value: T) => string }) {

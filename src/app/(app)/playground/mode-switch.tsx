@@ -1,9 +1,9 @@
 "use client";
 
-import { ImageIcon, TextIcon, VideoIcon } from "./icons";
+import { GaugeIcon, ImageIcon, TextIcon, VideoIcon } from "./icons";
 import { MODES, type Mode } from "./types";
 
-const icons = { text: TextIcon, image: ImageIcon, video: VideoIcon };
+const icons = { text: TextIcon, image: ImageIcon, video: VideoIcon, evaluate: GaugeIcon };
 
 // Text, Image or Video: the whole page follows this choice.
 export function ModeSwitch({ value, onChange, disabled }: { value: Mode; onChange: (mode: Mode) => void; disabled?: boolean }) {

@@ -4,6 +4,7 @@
 export type Provider = { name: string; logo?: string };
 
 const providers: Record<string, Provider> = {
+  kredit: { name: "Kredit" }, // the echo model; its mark is drawn by ModelLogo
   openai: { name: "OpenAI", logo: "openai" },
   anthropic: { name: "Anthropic", logo: "anthropic" },
   google: { name: "Google", logo: "google" },
