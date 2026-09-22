@@ -2,13 +2,13 @@
 
 import { CountUp } from "@/components/motion/count-up";
 import { MAX_ACTIVE_KEYS } from "@/lib/limits";
-import { useFuelAccount } from "@/lib/use-fuel-account";
+import { useKreditAccount } from "@/lib/use-kredit-account";
 
 const dollars = (credits: number) => `≈ $${(credits / 1000).toFixed(2)} of AI usage`;
 
 // The four numbers that answer "where do I stand?". Only the balance gets the accent.
 export function KpiStrip() {
-  const { data } = useFuelAccount();
+  const { data } = useKreditAccount();
   const blank = <span className="skeleton" aria-hidden>0,000</span>;
 
   return (

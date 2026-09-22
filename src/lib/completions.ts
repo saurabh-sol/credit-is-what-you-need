@@ -1,5 +1,5 @@
 import { chat } from "./dialects.ts";
-import { apiError, chargeHeaders, ECHO_MODEL, LEGACY_ECHO_MODEL, settle, type Caller } from "./gateway.ts";
+import { apiError, chargeHeaders, ECHO_MODEL, settle, type Caller } from "./gateway.ts";
 import { getBalance } from "./ledger.ts";
 import { ECHO_PRICE } from "./pricing.ts";
 import { proxyCall } from "./proxy.ts";
@@ -23,8 +23,7 @@ export async function complete(caller: Caller, request: Request) {
   const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
   if (!body) return apiError(400, "Send a JSON body with `model` and a non-empty `messages` array.", "invalid_body");
 
-  // The legacy id is answered by the same model and recorded under the new id.
-  if ((body.model === ECHO_MODEL || body.model === LEGACY_ECHO_MODEL) && Array.isArray(body.messages) && body.messages.length > 0) {
+  if (body.model === ECHO_MODEL && Array.isArray(body.messages) && body.messages.length > 0) {
     return echo(caller, body as unknown as ChatBody);
   }
   return proxyCall(caller, request, body, chat);

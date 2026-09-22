@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowRightIcon, CoinsIcon } from "@/components/icons";
 import { formatCredits } from "@/lib/format";
 import type { TopUpConfig } from "@/lib/topup";
-import { api } from "@/lib/use-fuel-account";
+import { api } from "@/lib/use-kredit-account";
 
 // The landing page's view of top-ups: the real price when buying is open, and
 // an honest "not yet" when it is not.

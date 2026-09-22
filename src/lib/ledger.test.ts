@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
 import { test } from "node:test";
 
 process.env.DATABASE_PATH = ":memory:";
@@ -76,24 +75,12 @@ test("keys: created once, found by value, gone when revoked", () => {
   assert.ok(created.prefix.startsWith(created.key.slice(0, "kredit_sk_".length + 4)));
   assert.equal(findKey(created.key)?.address, ALICE.toLowerCase());
   assert.equal(findKey("kredit_sk_wrong"), null);
-  assert.equal(findKey("fuel_sk_wrong"), null);
   assert.equal(findKey("not-a-kredit-key"), null);
 
   assert.equal(revokeKey(BOB, created.id), false); // someone else can't revoke it
   assert.equal(revokeKey(ALICE, created.id), true);
   assert.equal(findKey(created.key), null);
   assert.equal(listKeys(ALICE).length, 0);
-});
-
-test("a key made before the rename still works", async () => {
-  const legacy = "fuel_sk_made-before-the-rename";
-  const { db } = await import("./db.ts");
-  db()
-    .prepare("INSERT INTO api_keys (id, address, key_hash, prefix, name) VALUES (?, ?, ?, ?, ?)")
-    .run("legacy-key", BOB.toLowerCase(), createHash("sha256").update(legacy).digest("hex"), "fuel_sk_made…name", "legacy");
-  assert.deepEqual({ ...findKey(legacy) }, { id: "legacy-key", address: BOB.toLowerCase(), name: "legacy", prefix: "fuel_sk_made…name" });
-  assert.equal(revokeKey(BOB, "legacy-key"), true);
-  assert.equal(findKey(legacy), null);
 });
 
 test("the full key is never stored", async () => {

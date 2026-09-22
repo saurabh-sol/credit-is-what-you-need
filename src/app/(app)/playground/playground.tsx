@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { formatCredits } from "@/lib/format";
-import { ACCOUNT_KEY, api, type AccountResponse } from "@/lib/use-fuel-account";
+import { ACCOUNT_KEY, api, type AccountResponse } from "@/lib/use-kredit-account";
 import { useSession } from "@/lib/use-session";
 import type { Catalog } from "@/lib/catalog";
 import { Composer } from "./composer";
