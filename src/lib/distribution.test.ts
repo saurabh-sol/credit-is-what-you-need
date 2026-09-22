@@ -38,7 +38,7 @@ test("distribution ranks wallets by what they earned, not what they kept", () =>
   recordUsage({ keyId: "k", address: BOB, model: "kredit/echo", inputTokens: 1, outputTokens: 1, credits: 1900 });
   recordTopUp(payment("0xdef", ONE * BigInt(2) + ONE / BigInt(2), 250));
 
-  const { totals, wallets, recent } = distribution();
+  const { totals, wallets, active } = distribution();
   assert.deepEqual(wallets.map((wallet) => wallet.address), [BOB.toLowerCase(), ALICE.toLowerCase()]);
   assert.equal(wallets[0].earned, 2000); // spending does not shrink it
   assert.equal(wallets[1].earned, 500 + 600 + 84 + 250);
@@ -49,10 +49,16 @@ test("distribution ranks wallets by what they earned, not what they kept", () =>
     credits: 3434,
     tokensPaid: [{ symbol: "KRDT", decimals: 18, amount: (ONE * BigInt(7) + ONE / BigInt(2)).toString() }],
   });
-  assert.ok(recent.every((entry) => entry.amount > 0));
+  // The ticker has one line per wallet, whoever used the most credits first.
+  assert.deepEqual(
+    active.map(({ address, claimed, used }) => ({ address, claimed, used })),
+    [
+      { address: BOB.toLowerCase(), claimed: 2000, used: 1900 },
+      { address: ALICE.toLowerCase(), claimed: 684, used: 0 }, // bought credits are not claims
+    ],
+  );
   // Everything handed to the page must be a plain object, or React refuses to render it.
-  for (const item of [totals, ...wallets, ...recent]) assert.equal(Object.getPrototypeOf(item), Object.prototype);
-  assert.equal(recent[0].kind, "topup"); // newest first
+  for (const item of [totals, ...wallets, ...active]) assert.equal(Object.getPrototypeOf(item), Object.prototype);
 });
 
 test("names are optional, validated, and searchable", () => {

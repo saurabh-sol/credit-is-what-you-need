@@ -13,7 +13,8 @@ export default function DistributionPage() {
         <h1 className="page-title mt-3">Where every credit went</h1>
         <p className="page-lede">
           Credits are handed out by rules, not by us, so the full list is public: each wallet, what it earned, where
-          that came from, and any tokens it paid for more. Spending stays private.
+          that came from, and any tokens it paid for more. Spending shows only as one total per wallet, never what it
+          went on.
         </p>
       </header>
       <Board initial={distribution()} />
