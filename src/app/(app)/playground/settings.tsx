@@ -5,6 +5,7 @@ import type { RefObject } from "react";
 import { CountUp } from "@/components/motion/count-up";
 import { costExamples } from "@/lib/cost-examples";
 import { formatCredits } from "@/lib/format";
+import { HOUSE_STYLE } from "@/lib/house-style";
 import { IMAGE_SIZES, VIDEO_ASPECTS, VIDEO_DURATIONS, VIDEO_RESOLUTIONS } from "@/lib/media-options";
 import { CREDITS_PER_USD } from "@/lib/pricing";
 import { ModelPicker } from "./model-picker";
@@ -151,11 +152,13 @@ export function Settings({ mode, model, onModel, signedIn, balance, systemPrompt
               rows={4}
               spellCheck={false}
               aria-describedby="system-prompt-note"
+              defaultValue={HOUSE_STYLE}
               placeholder="You are a terse assistant. Answer in plain language."
               className="field mt-3 max-h-64 min-h-24 resize-none rounded-lg px-3 py-2.5 text-[0.8125rem] leading-relaxed [field-sizing:content]"
             />
             <p id="system-prompt-note" className="mt-2 text-xs leading-relaxed text-mist">
-              Sent ahead of the conversation on every request, and billed like any other text.
+              Sent ahead of the conversation on every request, and billed like any other text. The default asks for plain,
+              professional replies without Markdown symbols. Edit or clear it to change the style.
             </p>
           </section>
         )}
