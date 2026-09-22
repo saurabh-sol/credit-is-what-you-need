@@ -1,20 +1,15 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 import { CopyButton } from "@/components/code-block";
 import { prefersReducedMotion, useInView } from "@/components/motion/use-in-view";
+import { SITE_URL } from "@/lib/site";
 import { demoSnippetNames as tabs, snippets, type SnippetName as Tab } from "@/lib/snippets";
 
 // What the built-in test model really answers, headers included.
 const response = `{ "role": "assistant", "content": "Kredit echo: hi" }`;
 
-const subscribe = () => () => {};
-const useOrigin = () =>
-  useSyncExternalStore(
-    subscribe,
-    () => window.location.origin,
-    () => "https://your-kredit-host",
-  );
+const useOrigin = () => SITE_URL;
 
 // Colors double-quoted strings, including one that is still being typed.
 function Highlighted({ text }: { text: string }) {
