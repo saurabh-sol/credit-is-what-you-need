@@ -1,14 +1,19 @@
 import { connectorsForWallets } from "@rainbow-me/rainbowkit";
 import {
   coinbaseWallet,
+  imTokenWallet,
   injectedWallet,
   ledgerWallet,
   metaMaskWallet,
   okxWallet,
+  omniWallet,
   rabbyWallet,
   rainbowWallet,
+  safeWallet,
   trustWallet,
+  uniswapWallet,
   walletConnectWallet,
+  zerionWallet,
 } from "@rainbow-me/rainbowkit/wallets";
 import { createConfig, http } from "wagmi";
 import { base, robinhood, robinhoodTestnet } from "wagmi/chains";
@@ -24,11 +29,25 @@ coinbaseWallet.preference = "all";
 // are detected and listed on their own, above these groups.
 const groups = projectId
   ? [
-      { groupName: "Recommended", wallets: [metaMaskWallet, rainbowWallet, coinbaseWallet, walletConnectWallet] },
-      { groupName: "More wallets", wallets: [rabbyWallet, trustWallet, okxWallet, ledgerWallet, injectedWallet] },
+      { groupName: "Popular", wallets: [rainbowWallet, coinbaseWallet, metaMaskWallet, walletConnectWallet] },
+      {
+        groupName: "More",
+        wallets: [
+          trustWallet,
+          rabbyWallet,
+          okxWallet,
+          zerionWallet,
+          uniswapWallet,
+          omniWallet,
+          imTokenWallet,
+          ledgerWallet,
+          safeWallet,
+          injectedWallet,
+        ],
+      },
     ]
   : // Without a project ID, only wallets that need no pairing service. Anything else would throw on load.
-    [{ groupName: "Recommended", wallets: [injectedWallet, coinbaseWallet] }];
+    [{ groupName: "Popular", wallets: [injectedWallet, coinbaseWallet] }];
 
 const connectors = connectorsForWallets(groups, { appName: "Kredit", projectId: projectId ?? "unset" });
 
