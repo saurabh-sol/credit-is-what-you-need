@@ -1,8 +1,9 @@
-import { creditsFor, CREDITS_PER_USD } from "./pricing.ts";
+import { creditsFor, CREDITS_PER_USD, ECHO_PRICE } from "./pricing.ts";
 
 // What typical requests cost, worked out by the real pricing function so the
-// numbers shown to people can never drift from what they are charged. These use
-// the fallback token price; a provider that reports its own price is billed at that instead.
+// numbers shown to people can never drift from what they are charged. They use
+// a mid-priced model ($3 in, $15 out per million tokens); every model's own
+// price is on /v1/models and in the playground.
 
 const sizes = [
   { name: "A quick question", detail: "one line in, a short answer out", inputTokens: 20, outputTokens: 60 },
@@ -13,6 +14,6 @@ const sizes = [
 ];
 
 export const costExamples = sizes.map((size) => {
-  const credits = creditsFor(size);
+  const credits = creditsFor(ECHO_PRICE, size);
   return { ...size, credits, usd: credits / CREDITS_PER_USD };
 });

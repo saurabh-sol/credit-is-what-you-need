@@ -19,6 +19,12 @@ const providers: Record<string, Provider> = {
   moonshotai: { name: "Moonshot", logo: "moonshot" },
   "z-ai": { name: "Zhipu", logo: "zhipu" },
   minimax: { name: "MiniMax", logo: "minimax" },
+  // Image and video makers.
+  bfl: { name: "Black Forest Labs", logo: "bfl" },
+  bytedance: { name: "ByteDance", logo: "bytedance" },
+  klingai: { name: "Kling", logo: "kling" },
+  recraft: { name: "Recraft", logo: "recraft" },
+  alibaba: { name: "Alibaba", logo: "alibaba" },
 };
 
 // Gateways disagree on how to spell a maker ("meta-llama" on OpenRouter, "meta" on Vercel AI Gateway).
@@ -26,13 +32,15 @@ const aliases: Record<string, string> = {
   meta: "meta-llama",
   mistral: "mistralai",
   xai: "x-ai",
-  alibaba: "qwen",
+  spacexai: "x-ai",
   moonshot: "moonshotai",
   zai: "z-ai",
 };
 
 export const makerOf = (modelId: string) => {
-  const prefix = modelId.split("/")[0];
+  const [prefix, rest = ""] = modelId.split("/");
+  // Alibaba ships Qwen (text) under its own name and Wan (video) too; Qwen keeps its mark.
+  if (prefix === "alibaba" && rest.startsWith("qwen")) return "qwen";
   return aliases[prefix] ?? prefix;
 };
 

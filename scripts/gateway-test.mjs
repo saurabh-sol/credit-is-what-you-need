@@ -62,7 +62,9 @@ const sse = await streamed.text();
 check("streaming works", streamed.headers.get("content-type").includes("text/event-stream") && sse.includes("Kredit echo: hello kredit") && sse.trim().endsWith("data: [DONE]"));
 
 const real = await chat(created.key, { ...hello, model: "some/real-model" });
-check("real models say clearly that no provider is configured", real.status === 503, `(${(await real.json()).error.code})`);
+const realCode = (await real.json()).error.code;
+// Without a provider: 503. With one (CI runs a mock): the made-up model is unknown.
+check("an unlisted model is refused with a clear reason", (real.status === 503 && realCode === "provider_not_configured") || (real.status === 404 && realCode === "model_not_found"), `(${realCode})`);
 
 const models = await (await fetch(`${base}/v1/models`, { headers: { authorization: `Bearer ${created.key}` } })).json();
 check("/v1/models lists the echo model", models.data.some((m) => m.id === "kredit/echo"));

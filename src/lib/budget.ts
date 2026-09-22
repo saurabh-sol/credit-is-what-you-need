@@ -1,23 +1,11 @@
-import { creditsFor, CREDITS_PER_USD, estimateTokens, FALLBACK_USD_PER_MILLION, MARGIN } from "./pricing.ts";
+import { creditsFor, CREDITS_PER_USD, estimateTokens, MARGIN, type ModelPrice, usdFor } from "./pricing.ts";
 
 // Keeps a call within what the caller can pay for. Before a request goes to
 // the provider we work out its worst case, shorten the answer if the balance
 // can't cover a longer one, and hold those credits until the real charge lands.
 // Pure logic apart from the in-memory holds, so the money rules are easy to test.
 
-export type ModelLimits = {
-  inputUsdPerToken: number;
-  outputUsdPerToken: number;
-  maxOutputTokens?: number; // what the provider says the model can write at most
-};
-
-// Used when the provider's price list doesn't know the model.
-export const FALLBACK_LIMITS: ModelLimits = {
-  inputUsdPerToken: FALLBACK_USD_PER_MILLION.input / 1_000_000,
-  outputUsdPerToken: FALLBACK_USD_PER_MILLION.output / 1_000_000,
-};
-
-// When neither the request nor the provider says how long an answer can get.
+// When the provider doesn't say how long an answer can get.
 const ASSUMED_MAX_OUTPUT = 16_384;
 // Below this an answer is cut off before it says anything; better to refuse.
 const MIN_OUTPUT_TOKENS = 16;
@@ -48,21 +36,19 @@ export function planSpend(input: {
   available: number; // balance minus credits held by calls still running
   inputTokens: number;
   requestedMaxTokens?: number;
-  limits: ModelLimits;
+  price: ModelPrice;
 }): SpendPlan {
-  const { available, inputTokens, limits } = input;
-  const inputUsd = inputTokens * limits.inputUsdPerToken;
-  const cost = (outputTokens: number) =>
-    creditsFor({ inputTokens, outputTokens, costUsd: inputUsd + outputTokens * limits.outputUsdPerToken });
+  const { available, inputTokens, price } = input;
+  const cost = (outputTokens: number) => creditsFor(price, { inputTokens, outputTokens });
 
   const needed = cost(MIN_OUTPUT_TOKENS);
   if (available < needed) return { ok: false, needed };
 
-  const cap = Math.min(input.requestedMaxTokens ?? Infinity, limits.maxOutputTokens ?? ASSUMED_MAX_OUTPUT);
+  const cap = Math.min(input.requestedMaxTokens ?? Infinity, price.maxOutputTokens ?? ASSUMED_MAX_OUTPUT);
   // The longest answer the balance covers, from the same formula the charge uses.
-  const budgetUsd = available / CREDITS_PER_USD / (1 + MARGIN) - inputUsd;
-  const affordable =
-    limits.outputUsdPerToken > 0 ? Math.floor(budgetUsd / limits.outputUsdPerToken) : Infinity;
+  const perOutputToken = usdFor(price, { inputTokens, outputTokens: 1 }) - usdFor(price, { inputTokens, outputTokens: 0 });
+  const budgetUsd = available / CREDITS_PER_USD / (1 + MARGIN) - usdFor(price, { inputTokens, outputTokens: 0 });
+  const affordable = perOutputToken > 0 ? Math.floor(budgetUsd / perOutputToken) : Infinity;
 
   if (affordable >= cap) return { ok: true, hold: Math.min(available, cost(cap)), maxTokens: null };
   const maxTokens = Math.max(MIN_OUTPUT_TOKENS, affordable);
