@@ -127,8 +127,11 @@ export default async function Docs() {
     counts.set(maker, (counts.get(maker) ?? 0) + 1);
   }
   counts.delete(makerOf(ECHO_MODEL));
+  // The first row is fixed (OpenAI, then TypeSafe AI's Jev); everyone else follows by size.
+  const pinned = ["openai", "typesafe-ai"];
+  const rank = (id: string) => (pinned.includes(id) ? pinned.indexOf(id) - pinned.length : 0);
   const makers = live
-    ? [...counts.keys()].map(makerInfo).sort((a, b) => counts.get(b.id)! - counts.get(a.id)! || a.name.localeCompare(b.name))
+    ? [...counts.keys()].map(makerInfo).sort((a, b) => rank(a.id) - rank(b.id) || counts.get(b.id)! - counts.get(a.id)! || a.name.localeCompare(b.name))
     : featuredProviders;
 
   const typicalCharge = costExamples[1].credits;
