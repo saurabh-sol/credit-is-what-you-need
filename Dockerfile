@@ -1,8 +1,13 @@
 # syntax=docker/dockerfile:1
 
-# node:sqlite is built into Node, so the image needs no native modules.
+# The wallet SDKs pull in two small native modules (bufferutil, utf-8-validate)
+# with no prebuilt binary for this Node version, so this stage alone carries a
+# compiler. Nothing of it reaches the runtime image.
 FROM node:24-slim AS deps
 WORKDIR /app
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends python3 make g++ \
+  && rm -rf /var/lib/apt/lists/*
 COPY package.json package-lock.json ./
 RUN npm ci
 
