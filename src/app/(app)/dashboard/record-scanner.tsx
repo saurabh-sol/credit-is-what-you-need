@@ -16,6 +16,7 @@ type RecordResponse = ReceiptData & {
   address: string;
   network: { id: NetworkId; name: string; explorerUrl: string };
   truncated: boolean;
+  unindexed?: number; // sent transactions the RPC index hasn't caught up with yet
   claimable: number;
   onchain: { contract: Address; chainId: number } | null;
 };
@@ -220,7 +221,8 @@ function ScanResult({ data, onClaimed }: { data: RecordResponse; onClaimed: () =
         )}
         <p className="mt-4 max-w-sm text-xs leading-relaxed text-mist">
           {data.successfulTxs} successful and {data.failedTxs} failed transactions scanned.
-          {data.truncated && " Only your latest 1,000 transactions were read."} Each transaction
+          {data.truncated && " Only your latest 1,000 transactions were read."}
+          {!!data.unindexed && ` ${data.unindexed} very recent ${data.unindexed === 1 ? "transaction is" : "transactions are"} still being indexed; scan again in a moment.`} Each transaction
           pays out once; new activity can be claimed any time. Days in a row with activity
           add a streak bonus, paid once per day.
           {data.onchain && " Claims on this network are written to Robinhood Chain as a receipt you can check on Blockscout."}

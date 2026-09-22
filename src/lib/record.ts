@@ -1,17 +1,27 @@
 import { scanAddress } from "./explorer.ts";
 import type { Network } from "./networks.ts";
+import { hasAlchemyIndex, scanAddressRpc } from "./rpc-scan.ts";
 import { buildReceipt } from "./scoring.ts";
 
 const CACHE_MS = 60_000;
 const cache = new Map<string, { expires: number; value: Awaited<ReturnType<typeof load>> }>();
 
-async function load(network: Network, address: string) {
+// Where a wallet's history comes from: the RPC's own index when the network
+// runs on Alchemy (the public mainnet explorer blocks servers), otherwise the
+// Blockscout explorer.
+export async function scanWallet(network: Network, address: string) {
+  if (hasAlchemyIndex(network.id)) return scanAddressRpc(network, address);
   const { txs, truncated } = await scanAddress(network, address);
-  return { receipt: buildReceipt(txs, network.partners), truncated };
+  return { txs, truncated, unindexed: 0 };
 }
 
-// A scan costs several explorer requests, so reuse it for a minute. Claiming
-// right after scanning then pays out exactly what the receipt showed.
+async function load(network: Network, address: string) {
+  const { txs, truncated, unindexed } = await scanWallet(network, address);
+  return { receipt: buildReceipt(txs, network.partners), truncated, unindexed };
+}
+
+// A scan costs several requests, so reuse it for a minute. Claiming right
+// after scanning then pays out exactly what the receipt showed.
 export async function scanRecord(network: Network, address: string) {
   const key = `${network.id}:${address.toLowerCase()}`;
   const cached = cache.get(key);
