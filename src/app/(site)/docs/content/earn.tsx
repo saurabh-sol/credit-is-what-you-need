@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CodeBlock } from "@/components/code-block";
 import { CREDITS_PER_USD } from "@/lib/pricing";
+import { REFERRAL_DAILY_CAP, REFERRAL_MIN_ACTIVE_DAYS, REFERRAL_MIN_CLAIM } from "@/lib/fairness";
 import { REFERRAL_PERCENT } from "@/lib/referral-rules";
 import { DAILY_TASK_CAP, MILESTONE_TXS_PER_DAY, MILESTONES, RULES_VERSION, TASK_CREDITS } from "@/lib/scoring";
 import { STREAK_MAX_BONUS, STREAK_MAX_DAY, STREAK_STEP, streakBonus } from "@/lib/streaks";
@@ -239,6 +240,11 @@ export function ReferralsPage() {
         <li>You cannot invite yourself.</li>
         <li>Invites cannot form a loop. The chain is checked up to 20 hops.</li>
         <li>Claims are capped and pay once, so there is nothing to farm: the share is a bonus on real activity.</li>
+        <li>
+          The share starts once the invited wallet has been active on {REFERRAL_MIN_ACTIVE_DAYS} different days, only
+          on claims of {REFERRAL_MIN_CLAIM} credits or more, and never more than {number(REFERRAL_DAILY_CAP)} credits a
+          day from all your invitees together. See <Link href="/docs/legal/fairness">fair play</Link>.
+        </li>
       </ul>
 
       <H2>From your own code</H2>

@@ -9,6 +9,14 @@ const nextConfig: NextConfig = {
   // optional payment packages, so keep it out of the server bundle.
   // pg is a plain Node driver (it opens sockets); leave it to Node too.
   serverExternalPackages: ["@base-org/account", "pg"],
+  // The legal pages live in the docs tree; these are the short addresses.
+  async redirects() {
+    return [
+      { source: "/privacy", destination: "/docs/legal/privacy", permanent: true },
+      { source: "/terms", destination: "/docs/legal/terms", permanent: true },
+      { source: "/fairness", destination: "/docs/legal/fairness", permanent: true },
+    ];
+  },
 };
 
 export default nextConfig;

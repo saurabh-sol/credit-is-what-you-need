@@ -15,6 +15,7 @@ type BlockscoutTx = {
   method: string | null;
   created_contract: { hash: string } | null;
   fee: { value: string | null } | null;
+  value?: string; // wei the transaction sent along
 };
 
 type Page = { items: BlockscoutTx[]; next_page_params: Record<string, unknown> | null };
@@ -82,6 +83,7 @@ export async function scanAddress(network: Network, address: string) {
         method: item.method,
         createdContract: item.created_contract?.hash ?? null,
         feeWei: item.fee?.value ?? "0",
+        valueWei: typeof item.value === "string" ? item.value : undefined,
       });
     }
     cursor = result.next_page_params;

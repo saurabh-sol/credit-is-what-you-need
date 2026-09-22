@@ -19,6 +19,7 @@ const task = (credits: number, day = "2026-09-01", feeWei = "0"): ScoredTask => 
   credits,
   feeWei,
   contract: null,
+  target: `0x${counter.toString(16).padStart(40, "e")}`, // a different contract each time, so no hold rule bites
 });
 
 test("a claim pays once; claiming again pays nothing", async () => {
@@ -146,18 +147,19 @@ test("an inviter earns a share of each claim their invitee makes", async () => {
   const friend = "0x6666666666666666666666666666666666666666";
   await setReferrer(friend, inviter);
 
-  const tasks = [task(500, "2026-06-01"), task(50, "2026-06-01")];
+  // Three active days: the inviter's share only starts once the invitee has been around.
+  const tasks = [task(500, "2026-06-01"), task(40, "2026-06-02"), task(10, "2026-06-03")];
   const first = await claim(friend, "mainnet", tasks);
-  assert.equal(first.granted, 550);
-  assert.equal(first.referral, 55);
-  assert.equal(await getBalance(friend), 550); // nothing taken from the friend
-  assert.equal(await getBalance(inviter), 55);
-  assert.ok((await listLedger(inviter)).some((entry) => entry.kind === "referral" && entry.amount === 55));
+  assert.equal(first.granted, 600); // 550 in tasks, 50 in streak bonus (days 2 and 3)
+  assert.equal(first.referral, 60);
+  assert.equal(await getBalance(friend), 600); // nothing taken from the friend
+  assert.equal(await getBalance(inviter), 60);
+  assert.ok((await listLedger(inviter)).some((entry) => entry.kind === "referral" && entry.amount === 60));
 
   assert.equal((await claim(friend, "mainnet", tasks)).referral, 0); // nothing new, nothing shared
-  assert.equal((await claim(friend, "mainnet", [task(9, "2026-06-10")])).referral, 0); // 10% of 9 rounds down to nothing
-  assert.deepEqual(await referralTotals(inviter), { count: 1, earned: 55 });
-  assert.deepEqual((await listInvited(inviter)).map((row) => [row.address, row.claimed, row.paid]), [[friend, 559, 55]]);
+  assert.equal((await claim(friend, "mainnet", [task(9, "2026-06-10")])).referral, 0); // a claim under 100 credits shares nothing
+  assert.deepEqual(await referralTotals(inviter), { count: 1, earned: 60 });
+  assert.deepEqual((await listInvited(inviter)).map((row) => [row.address, row.claimed, row.paid]), [[friend, 609, 60]]);
 });
 
 test("an inviter is named once, before the first claim, and never in a loop", async () => {

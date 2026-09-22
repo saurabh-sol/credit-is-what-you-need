@@ -1,3 +1,4 @@
+import { applyDiversity, DAILY_EMISSIONS_BUDGET, MIN_TRANSFER_WEI } from "./fairness.ts";
 import { streakDays, streakLabel } from "./streaks.ts";
 
 // Turns a wallet's on-chain record into credits. Pure logic, no I/O, so the
@@ -5,7 +6,8 @@ import { streakDays, streakLabel } from "./streaks.ts";
 
 // Bumped whenever a number below changes. An on-chain receipt carries it, so
 // it is always clear which rules priced a claim.
-export const RULES_VERSION = 1;
+// 2: the fair play rules (dust filter, diversity decay, emissions budget).
+export const RULES_VERSION = 2;
 
 export type ScannedTx = {
   hash: string;
@@ -17,6 +19,7 @@ export type ScannedTx = {
   method: string | null;
   createdContract: string | null;
   feeWei: string;
+  valueWei?: string; // what the transaction sent along; unknown for old scans
 };
 
 export type Partner = { name: string; credits: number };
@@ -53,6 +56,7 @@ export type ScoredTask = {
   credits: number;
   feeWei: string;
   contract: string | null; // the contract this transaction deployed, if any
+  target?: string | null; // who the transaction was sent to, for the diversity rule
 };
 
 export type ReceiptLine = { label: string; credits: number };
@@ -69,7 +73,7 @@ export type Receipt = {
 export function scoreTx(tx: ScannedTx, partners: PartnerRegistry): ScoredTask | null {
   if (!tx.ok) return null; // a failed transaction is not a finished task
 
-  const base = { hash: tx.hash, timestamp: tx.timestamp, feeWei: tx.feeWei, contract: tx.createdContract };
+  const base = { hash: tx.hash, timestamp: tx.timestamp, feeWei: tx.feeWei, contract: tx.createdContract, target: tx.to?.toLowerCase() ?? null };
   if (tx.createdContract) {
     return { ...base, kind: "deploy", label: "Deployed a contract", credits: TASK_CREDITS.deploy };
   }
@@ -82,6 +86,9 @@ export function scoreTx(tx: ScannedTx, partners: PartnerRegistry): ScoredTask | 
     const where = tx.toName ? ` on ${tx.toName}` : "";
     return { ...base, kind: "contract_call", label: `${what}${where}`, credits: TASK_CREDITS.contract_call };
   }
+  // Dust: a transfer that moved (almost) nothing is not work. Scans that do
+  // not report the value are given the benefit of the doubt.
+  if (tx.valueWei !== undefined && BigInt(tx.valueWei) < MIN_TRANSFER_WEI) return null;
   return { ...base, kind: "transfer", label: "Sent a transfer", credits: TASK_CREDITS.transfer };
 }
 
@@ -98,19 +105,24 @@ const GROUP_LABELS: Record<TaskKind, (count: number) => string> = {
 const activeDays = (tasks: { timestamp: string }[]) => tasks.map((task) => task.timestamp.slice(0, 10));
 
 export function buildReceipt(txs: ScannedTx[], partners: PartnerRegistry = {}): Receipt {
-  const tasks = txs
+  const scored = txs
     .map((tx) => scoreTx(tx, partners))
     .filter((task): task is ScoredTask => task !== null);
+  // Repeat calls to one target on one day pay less and less. The tasks carry
+  // the reduced credits from here on, so a claim pays exactly what is shown.
+  const tasks = applyDiversity(scored);
 
   const lines: ReceiptLine[] = [];
   for (const kind of ["deploy", "partner", "contract_call", "transfer"] as const) {
-    const group = tasks.filter((task) => task.kind === kind);
+    const group = scored.filter((task) => task.kind === kind);
     if (group.length === 0) continue;
     lines.push({
       label: GROUP_LABELS[kind](group.length),
       credits: group.reduce((sum, task) => sum + task.credits, 0),
     });
   }
+  const repeated = scored.reduce((sum, task) => sum + task.credits, 0) - tasks.reduce((sum, task) => sum + task.credits, 0);
+  if (repeated > 0) lines.push({ label: "Repeat calls to the same contract", credits: -repeated });
 
   // Apply the daily cap per UTC day of activity.
   const perDay = new Map<string, { credits: number; count: number }>();
@@ -168,12 +180,21 @@ export type ClaimPlan = {
   milestones: { txs: number; credits: number }[];
   streakDays: { day: string; credits: number }[];
   total: number;
+  // Task credits earned but left unclaimed because today's emissions budget
+  // is spent. They stay claimable and are paid from a later day's budget.
+  deferred: number;
+  // UTC days on which the record has a successful transaction; the referral
+  // rule needs it.
+  activeDays: number;
 };
 
-export function planClaim(tasks: ScoredTask[], state: ClaimState): ClaimPlan {
+// `budget` is how many task credits today's emissions budget still allows.
+export function planClaim(tasks: ScoredTask[], state: ClaimState, budget = DAILY_EMISSIONS_BUDGET): ClaimPlan {
   const grantedPerDay = new Map(state.grantedPerDay);
   const progressPerDay = new Map<string, number>();
   const txGrants: ClaimPlan["txGrants"] = [];
+  let left = Math.max(0, budget);
+  let deferred = 0;
 
   // Oldest first, so the cap fills in the order the work was done.
   const ordered = [...tasks].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
@@ -184,6 +205,13 @@ export function planClaim(tasks: ScoredTask[], state: ClaimState): ClaimPlan {
 
     const used = grantedPerDay.get(day) ?? 0;
     const granted = Math.min(task.credits, Math.max(0, DAILY_TASK_CAP - used));
+    // Out of budget for today: leave the transaction unclaimed rather than
+    // marking it paid for nothing.
+    if (granted > left) {
+      deferred += granted;
+      continue;
+    }
+    left -= granted;
     grantedPerDay.set(day, used + granted);
     txGrants.push({ hash: task.hash, day, earned: task.credits, granted });
   }
@@ -204,5 +232,5 @@ export function planClaim(tasks: ScoredTask[], state: ClaimState): ClaimPlan {
     txGrants.reduce((sum, grant) => sum + grant.granted, 0) +
     milestones.reduce((sum, milestone) => sum + milestone.credits, 0) +
     streak.reduce((sum, bonus) => sum + bonus.credits, 0);
-  return { txGrants, milestones, streakDays: streak, total };
+  return { txGrants, milestones, streakDays: streak, total, deferred, activeDays: progressPerDay.size };
 }

@@ -2,7 +2,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { encodeAbiParameters, encodePacked, keccak256, parseEventLogs, toHex, type Address, type Hash, type Hex } from "viem";
 import { chains, publicClient } from "./chain.ts";
 import { all, NOW, one, run, transaction } from "./db.ts";
-import { applyPlan, previewClaim } from "./ledger.ts";
+import { applyPlan, HeldError, holdFor, previewClaim } from "./ledger.ts";
 import type { NetworkId } from "./networks.ts";
 import { RECEIPTS_ABI, RECEIPT_TYPES, receiptDomain, type SignedReceipt, ZERO_ADDRESS } from "./receipts-abi.ts";
 import { getReferrer } from "./referrals.ts";
@@ -138,7 +138,9 @@ export type IssuedReceipt = {
 };
 
 // Plans the claim and signs it. Nothing is paid until the chain confirms it.
-export async function issueReceipt(config: ReceiptsConfig, address: string, tasks: ScoredTask[]): Promise<IssuedReceipt> {
+// `ageDays` is the age of the wallet's record (fairness.walletAgeDays); the
+// hold rule reads it. Callers that do not know treat the wallet as old.
+export async function issueReceipt(config: ReceiptsConfig, address: string, tasks: ScoredTask[], ageDays = Infinity): Promise<IssuedReceipt> {
   const signer = signerAccount();
   if (!signer) throw new ReceiptError("Receipts are not set up on the server.");
   const wallet = lower(address) as Address;
@@ -146,6 +148,8 @@ export async function issueReceipt(config: ReceiptsConfig, address: string, task
   await settleLanded(config, wallet);
   const plan = await previewClaim(wallet, config.network, tasks);
   if (plan.total <= 0) throw new ReceiptError("Nothing to claim yet.");
+  const hold = await holdFor(wallet, config.network, plan, tasks, ageDays);
+  if (hold) throw new HeldError(hold);
 
   const client = publicClient(config.network);
   const nonce = await client.readContract({ abi: RECEIPTS_ABI, address: config.contract, functionName: "nonces", args: [wallet] });

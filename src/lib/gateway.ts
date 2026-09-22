@@ -64,8 +64,9 @@ export async function authenticate(request: Request, error: ErrorShape = apiErro
   return { keyId: key.id, address: key.address, keyName: key.name, keyPrefix: key.prefix };
 }
 
-// Counts a request against `id` (a key, or a playground user). Returns the 429 once over the limit.
-export function rateLimited(id: string, error: ErrorShape = apiError) {
+// Counts a request against `id` (a key, or a playground user). Returns the 429
+// once over the limit. `limit` lets the scan and claim endpoints use a tighter one.
+export function rateLimited(id: string, error: ErrorShape = apiError, limit = RATE_LIMIT) {
   const now = Date.now();
   // Once a minute, forget callers who have gone quiet so the map can't grow forever.
   if (now - lastSweep > RATE_WINDOW_MS) {
@@ -75,8 +76,8 @@ export function rateLimited(id: string, error: ErrorShape = apiError) {
     }
   }
   const recent = (recentRequests.get(id) ?? []).filter((time) => time > now - RATE_WINDOW_MS);
-  if (recent.length >= RATE_LIMIT) {
-    return error(429, `Rate limit reached: ${RATE_LIMIT} requests per minute per key.`, "rate_limit_exceeded");
+  if (recent.length >= limit) {
+    return error(429, `Rate limit reached: ${limit} requests per minute${limit === RATE_LIMIT ? " per key" : ""}.`, "rate_limit_exceeded");
   }
   recentRequests.set(id, [...recent, now]);
   return null;

@@ -60,8 +60,8 @@ test("milestones are added once the wallet has enough successful transactions", 
 });
 
 test("daily cap limits what one day of activity can earn", () => {
-  // 30 contract calls in one day = 1,500 credits, capped to 1,000.
-  const txs = Array.from({ length: 30 }, () => tx({ toIsContract: true }));
+  // 30 contract calls to 30 different contracts in one day = 1,500 credits, capped to 1,000.
+  const txs = Array.from({ length: 30 }, (_, i) => tx({ toIsContract: true, to: `0x${(i + 1).toString(16).padStart(40, "a")}` }));
   const receipt = buildReceipt(txs);
   const cap = receipt.lines.find((line) => line.label.startsWith("Daily cap"));
   assert.equal(cap?.credits, -500);
@@ -69,7 +69,7 @@ test("daily cap limits what one day of activity can earn", () => {
 });
 
 test("a one-day burst cannot buy the big milestones", () => {
-  const txs = Array.from({ length: 1000 }, () => tx({ toIsContract: true }));
+  const txs = Array.from({ length: 1000 }, (_, i) => tx({ toIsContract: true, to: `0x${(i + 1).toString(16).padStart(40, "b")}` }));
   const labels = buildReceipt(txs).lines.map((line) => line.label);
   assert.ok(labels.includes("Reached 10 transactions")); // 20 count for the day
   assert.ok(!labels.includes("Reached 50 transactions"));

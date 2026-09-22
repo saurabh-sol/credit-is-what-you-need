@@ -25,7 +25,8 @@ async function load(network: Network, address: string) {
   const { txs, truncated, unindexed } = await scanWallet(network, address);
   const own = receiptsConfig(network.id)?.contract;
   const scored = txs.filter((tx) => !isOwnContractCall(tx, own));
-  return { receipt: buildReceipt(scored, network.partners), truncated, unindexed };
+  // `txs` (every transaction, failed ones too) is what the wallet-age rule reads.
+  return { receipt: buildReceipt(scored, network.partners), truncated, unindexed, txs };
 }
 
 // A scan costs several requests, so reuse it for a minute. Claiming right

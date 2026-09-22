@@ -127,6 +127,18 @@ const SCHEMA = `
   );
   CREATE INDEX IF NOT EXISTS pending_claims_address ON pending_claims (address, network);
 
+  -- A large claim from a risky record waits here before it can be paid.
+  CREATE TABLE IF NOT EXISTS claim_holds (
+    id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    address TEXT NOT NULL,
+    network TEXT NOT NULL,
+    credits INTEGER NOT NULL,
+    reason TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT ${NOW},
+    release_at TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS claim_holds_address ON claim_holds (address, network, id);
+
   CREATE TABLE IF NOT EXISTS usage (
     id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     key_id TEXT NOT NULL,

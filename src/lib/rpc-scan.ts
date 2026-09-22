@@ -167,6 +167,7 @@ export async function scanAddressRpc(network: Network, address: string, transpor
         method: methodName(tx.input),
         createdContract: receipt.contractAddress?.toLowerCase() ?? null,
         feeWei: (receipt.gasUsed * receipt.effectiveGasPrice).toString(),
+        valueWei: tx.value.toString(),
       });
     }
 

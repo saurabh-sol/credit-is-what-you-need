@@ -28,6 +28,14 @@ const footerLinks = [
       ["FAQ", "/#faq"],
     ],
   },
+  {
+    title: "Legal",
+    links: [
+      ["Fair play", "/docs/legal/fairness"],
+      ["Privacy", "/privacy"],
+      ["Terms", "/terms"],
+    ],
+  },
 ];
 
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
@@ -50,7 +58,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
               Open the dashboard
             </Link>
           </div>
-          <nav aria-label="Footer" className="grid grid-cols-2 gap-x-16 gap-y-10 text-sm sm:grid-cols-3">
+          <nav aria-label="Footer" className="grid grid-cols-2 gap-x-12 gap-y-10 text-sm sm:grid-cols-4">
             {footerLinks.map((group) => (
               <div key={group.title}>
                 <p className="font-mono text-xs uppercase tracking-widest text-ink/40">{group.title}</p>

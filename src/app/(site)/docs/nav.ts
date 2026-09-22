@@ -61,6 +61,14 @@ export const docGroups: DocGroup[] = [
       { slug: "platform/security", title: "Privacy and security", description: "What is stored, what is public, and how keys and sessions are protected." },
     ],
   },
+  {
+    title: "Legal",
+    pages: [
+      { slug: "legal/fairness", title: "Fair play", description: "The rules that keep earned credits for real use of the chain, with every number." },
+      { slug: "legal/privacy", title: "Privacy policy", description: "What is stored, for how long, who else sees it, and what never is." },
+      { slug: "legal/terms", title: "Terms of service", description: "What a credit is, what earns one, and what forfeits one." },
+    ],
+  },
 ];
 
 export const allPages = docGroups.flatMap((group) => group.pages.map((page) => ({ ...page, group: group.title })));

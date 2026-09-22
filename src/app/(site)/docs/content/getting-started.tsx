@@ -5,6 +5,20 @@ import { CREDITS_PER_USD, MARGIN, MIN_CREDITS_PER_REQUEST } from "@/lib/pricing"
 import { REFERRAL_PERCENT } from "@/lib/referral-rules";
 import { DAILY_TASK_CAP, MILESTONE_TXS_PER_DAY, MILESTONES, RULES_VERSION, TASK_CREDITS } from "@/lib/scoring";
 import { STREAK_MAX_BONUS, STREAK_MAX_DAY, STREAK_STEP, streakBonus } from "@/lib/streaks";
+import {
+  CALLS_FULL_PER_TARGET_PER_DAY,
+  CALLS_HALF_PER_TARGET_PER_DAY,
+  CLAIMS_PER_MINUTE,
+  DAILY_EMISSIONS_BUDGET,
+  DEPLOYS_PAID_PER_DAY,
+  HOLD_HOURS,
+  HOLD_THRESHOLD,
+  REFERRAL_DAILY_CAP,
+  REFERRAL_MIN_ACTIVE_DAYS,
+  REFERRAL_MIN_CLAIM,
+  SCANS_PER_MINUTE,
+  WALLET_MIN_AGE_DAYS,
+} from "@/lib/fairness";
 import { KeyPanel } from "../key-panel";
 import { OriginCode, Quickstart } from "../quickstart";
 import { Callout, Card, Cards, Doc, H2, number, Step, Steps, Table } from "../ui";
@@ -174,6 +188,14 @@ export function Rules() {
           ["Daily cap on task credits", `${number(DAILY_TASK_CAP)} per wallet per UTC day`],
           ["Streak bonus", `${STREAK_STEP} × streak day from day 2, at most ${STREAK_MAX_BONUS} a day (day ${STREAK_MAX_DAY}+); day 2 = ${streakBonus(2)}, day 5 = ${streakBonus(5)}`],
           ["Referral share", `${REFERRAL_PERCENT}% of every claim by a wallet you invited, rounded down`],
+          ["Referral gates", `Invitee active on ${REFERRAL_MIN_ACTIVE_DAYS}+ days, claim of ${REFERRAL_MIN_CLAIM}+ credits, at most ${number(REFERRAL_DAILY_CAP)} a day per inviter`],
+          ["Wallet age before the first claim", `${WALLET_MIN_AGE_DAYS} days since its first transaction`],
+          ["Dust transfers", "A transfer must move at least 0.0001 ETH to count"],
+          ["Repeat calls to one contract, per day", `First ${CALLS_FULL_PER_TARGET_PER_DAY} full, next ${CALLS_HALF_PER_TARGET_PER_DAY} half, then nothing`],
+          ["Deploys paid per day", `${DEPLOYS_PAID_PER_DAY}`],
+          ["Daily pool for everyone", `${number(DAILY_EMISSIONS_BUDGET)} task credits per UTC day; the rest waits for the next day`],
+          ["Large claims from risky records", `Over ${number(HOLD_THRESHOLD)} credits: held ${HOLD_HOURS} hours`],
+          ["Scan and claim limits", `${SCANS_PER_MINUTE} scans and ${CLAIMS_PER_MINUTE} claims a minute per wallet`],
           ["Scan depth", "Latest 1,000 transactions your wallet sent"],
           ["Scan cache", "60 seconds"],
           ["Rules version on receipts", `${RULES_VERSION}`],

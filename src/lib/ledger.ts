@@ -1,5 +1,6 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { all, NOW, one, run, transaction } from "./db.ts";
+import { DAILY_EMISSIONS_BUDGET, HOLD_HOURS, riskOf, utcDayStart } from "./fairness.ts";
 import type { NetworkId } from "./networks.ts";
 import { payReferral } from "./referrals.ts";
 import { planClaim, type ClaimPlan, type ClaimState, type ScoredTask } from "./scoring.ts";
@@ -77,16 +78,87 @@ export async function getClaimState(address: string, network: NetworkId, hashes:
   };
 }
 
+// Task credits paid to everyone so far today, against the emissions budget.
+export async function emittedToday(network: NetworkId, now = Date.now()) {
+  const row = await one<{ paid: number }>(
+    "SELECT COALESCE(SUM(amount), 0)::int AS paid FROM ledger WHERE kind = 'claim' AND network = ? AND created_at >= ?",
+    [network, utcDayStart(now)],
+  );
+  return row?.paid ?? 0;
+}
+
+export async function budgetLeft(network: NetworkId, now = Date.now()) {
+  return Math.max(0, DAILY_EMISSIONS_BUDGET - (await emittedToday(network, now)));
+}
+
 export async function previewClaim(address: string, network: NetworkId, tasks: ScoredTask[]) {
   const state = await getClaimState(address, network, tasks.map((task) => task.hash));
-  return planClaim(tasks, state);
+  return planClaim(tasks, state, await budgetLeft(network));
+}
+
+export type Hold = { reason: string; until: string };
+
+// A large claim from a risky record waits HOLD_HOURS. The first time it is
+// asked for, the hold is written and returned; while it runs, it is returned;
+// once it has passed, null, and the claim goes ahead. `ageDays` is the age of
+// the wallet's record, from fairness.walletAgeDays.
+export async function holdFor(address: string, network: NetworkId, plan: ClaimPlan, tasks: ScoredTask[], ageDays: number, now = Date.now()): Promise<Hold | null> {
+  const risk = riskOf(plan.total, tasks, ageDays);
+  if (!risk) return null;
+  const owner = lower(address);
+  const latest = await one<{ reason: string; releaseAt: string }>(
+    `SELECT reason, release_at AS "releaseAt" FROM claim_holds WHERE address = ? AND network = ? ORDER BY id DESC LIMIT 1`,
+    [owner, network],
+  );
+  if (latest) {
+    // A hold that has run its course lets this claim through. A newer one is
+    // only written if the record turned risky again after that, which a
+    // later, larger claim would show as a fresh hold.
+    if (Date.parse(latest.releaseAt) <= now) return null;
+    return { reason: latest.reason, until: latest.releaseAt };
+  }
+  const until = new Date(now + HOLD_HOURS * 3_600_000).toISOString();
+  await run("INSERT INTO claim_holds (address, network, credits, reason, release_at) VALUES (?, ?, ?, ?, ?)", [
+    owner,
+    network,
+    plan.total,
+    risk.reason,
+    until,
+  ]);
+  return { reason: risk.reason, until };
+}
+
+// Read-only: the hold a claim would run into right now, if one is already
+// written. Scanning never writes a hold; only a claim attempt does.
+export async function riskHold(address: string, network: NetworkId, plan: ClaimPlan, tasks: ScoredTask[], ageDays: number, now = Date.now()): Promise<Hold | null> {
+  if (!riskOf(plan.total, tasks, ageDays)) return null;
+  const latest = await one<{ reason: string; releaseAt: string }>(
+    `SELECT reason, release_at AS "releaseAt" FROM claim_holds WHERE address = ? AND network = ? ORDER BY id DESC LIMIT 1`,
+    [lower(address), network],
+  );
+  return latest && Date.parse(latest.releaseAt) > now ? { reason: latest.reason, until: latest.releaseAt } : null;
+}
+
+export class HeldError extends Error {
+  hold: Hold;
+  constructor(hold: Hold) {
+    super(`This claim is held until ${hold.until}: ${hold.reason}.`);
+    this.hold = hold;
+  }
 }
 
 // Plans and writes in one transaction, serialised per wallet, so two claims
-// racing each other can't both be paid for the same work.
-export function claim(address: string, network: NetworkId, tasks: ScoredTask[]) {
+// racing each other can't both be paid for the same work. `ageDays` (from
+// fairness.walletAgeDays) lets the hold rule see how old the wallet is; tests
+// that skip it are treated as old wallets.
+export function claim(address: string, network: NetworkId, tasks: ScoredTask[], ageDays = Infinity) {
   const owner = lower(address);
-  return transaction(async () => applyPlan(owner, network, await previewClaim(owner, network, tasks), { network }), owner);
+  return transaction(async () => {
+    const plan = await previewClaim(owner, network, tasks);
+    const hold = await holdFor(owner, network, plan, tasks, ageDays);
+    if (hold) throw new HeldError(hold);
+    return applyPlan(owner, network, plan, { network });
+  }, owner);
 }
 
 export type ClaimSource = { network: NetworkId; txHash?: string };
@@ -152,7 +224,7 @@ export async function applyPlan(address: string, network: NetworkId, plan: Claim
 
   const total = taskCredits + milestoneCredits + streakCredits;
   // The wallet that invited this one gets its share of the same claim.
-  const referral = await payReferral(owner, total, network);
+  const referral = await payReferral(owner, total, network, plan.activeDays);
 
   return {
     granted: total,

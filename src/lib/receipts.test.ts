@@ -75,6 +75,8 @@ test("applying one plan twice pays once and keeps the receipt's transaction", as
     milestones: [{ txs: 10, credits: 100 }],
     streakDays: [{ day: "2026-09-02", credits: 20 }],
     total: 670,
+    deferred: 0,
+    activeDays: 2,
   };
   const tx = "0x" + "ee".repeat(32);
   const first = await applyPlan(wallet, "mainnet", plan, { network: "mainnet", txHash: tx });

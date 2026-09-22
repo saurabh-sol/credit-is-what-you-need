@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import { useState } from "react";
 import type { Address, Hex } from "viem";
 import { useAccount, useSwitchChain, useWriteContract } from "wagmi";
@@ -18,8 +19,14 @@ type RecordResponse = ReceiptData & {
   truncated: boolean;
   unindexed?: number; // sent transactions the RPC index hasn't caught up with yet
   claimable: number;
+  // Why claiming is off right now: a wallet too young to claim, or a held claim.
+  blocked: { code: "wallet_age" | "held"; message: string; until: string } | null;
+  deferred: number; // task credits waiting for a later day's emissions budget
+  budgetLeft: number;
   onchain: { contract: Address; chainId: number } | null;
 };
+
+const untilText = (iso: string) => new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 
 type ClaimResponse =
   | { onchain?: false; granted: number }
@@ -166,17 +173,35 @@ function ScanResult({ data, onClaimed }: { data: RecordResponse; onClaimed: () =
         />
         <button
           onClick={() => claim.mutate()}
-          disabled={data.claimable === 0 || claim.isPending}
+          disabled={data.claimable === 0 || claim.isPending || data.blocked !== null}
           className="mt-5 w-full max-w-sm btn-primary px-5 py-2.5 text-sm disabled:bg-raised disabled:text-mist"
         >
           {claim.isPending
             ? "Claiming…"
-            : data.claimable > 0
-              ? `Claim ${formatCredits(data.claimable)} credits`
-              : data.total > 0
-                ? "All claimed"
-                : "Nothing to claim yet"}
+            : data.blocked
+              ? data.blocked.code === "held"
+                ? "Claim on hold"
+                : "Not yet"
+              : data.claimable > 0
+                ? `Claim ${formatCredits(data.claimable)} credits`
+                : data.total > 0
+                  ? "All claimed"
+                  : "Nothing to claim yet"}
         </button>
+        {data.blocked && (
+          <p className="mt-3 max-w-sm rounded-xl border border-line bg-raised px-4 py-3 text-sm text-fog" role="status">
+            {data.blocked.message} You can claim from {untilText(data.blocked.until)}.{" "}
+            <Link href="/docs/legal/fairness" className="text-accent underline-offset-4 hover:underline">
+              Why?
+            </Link>
+          </p>
+        )}
+        {data.deferred > 0 && (
+          <p className="mt-3 max-w-sm rounded-xl border border-line bg-raised px-4 py-3 text-sm text-fog" role="status">
+            {formatCredits(data.deferred)} more credits are waiting for tomorrow&apos;s budget: today&apos;s pool for
+            everyone is spent. They stay yours; scan again tomorrow.
+          </p>
+        )}
         {claim.isPending && step !== "idle" && (
           <p className="sweep mt-3 max-w-sm rounded-xl border border-line bg-raised px-4 py-3 text-sm text-fog" role="status">
             {stepText[step]}
@@ -205,7 +230,8 @@ function ScanResult({ data, onClaimed }: { data: RecordResponse; onClaimed: () =
           {data.truncated && " Only your latest 1,000 transactions were read."}
           {!!data.unindexed && ` ${data.unindexed} very recent ${data.unindexed === 1 ? "transaction is" : "transactions are"} still being indexed; scan again in a moment.`} Each transaction
           pays out once; new activity can be claimed any time. Days in a row with activity
-          add a streak bonus, paid once per day.
+          add a streak bonus, paid once per day. Repeat calls to one contract on one day pay less, and
+          everyone&apos;s claims share a daily pool ({formatCredits(data.budgetLeft)} credits left today).
           {data.onchain && " Every claim is written to Robinhood Chain as a receipt you can check on Blockscout."}
         </p>
       </div>
