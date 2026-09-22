@@ -15,7 +15,7 @@ use it like an OpenAI key: every call takes a few credits off your balance.
 ```
 wallet activity on chain ──scan──▶ receipt ──claim──▶ credits ──API key / playground──▶ AI answers
                                                         ▲
-                       builder royalties, token top-ups ┘
+                       referral shares, token top-ups ┘
 ```
 
 ## The pages
@@ -23,7 +23,7 @@ wallet activity on chain ──scan──▶ receipt ──claim──▶ credit
 | Page | Who it is for | What it does |
 | --- | --- | --- |
 | `/` | Everyone | Explains the product. Once signed in, its button becomes "Open dashboard". |
-| `/dashboard` | Signed-in wallets | Overview and balance, with a page each for earning (`/earn`: scan, claim, builder royalties), credits (`/credits`: buy more), API keys (`/keys`), activity (`/activity`) and settings (`/settings`: display name). |
+| `/dashboard` | Signed-in wallets | Overview and balance, with a page each for earning (`/earn`: scan, claim, referrals), credits (`/credits`: buy more), API keys (`/keys`), activity (`/activity`) and settings (`/settings`: display name). |
 | `/playground` | Signed-in wallets | Chat with any model in the browser, paid from your credits. No key needed. |
 | `/docs` | Developers | How to call the API, with copy-paste code and what typical requests cost. |
 | `/distribution` | Everyone | Public board: every wallet that earned credits, where they came from, and a live ticker. |
@@ -69,33 +69,35 @@ On top of tasks:
 
 - **Milestones**, paid once each: 10 transactions → 100, 50 → 300, 100 → 750, 500 → 2,500.
   Only the first 20 transactions of each day count toward milestones.
-- **Gas-Back**: 40% of the gas you spent comes back as credits. Spend $1 on gas, get 400
-  credits ($0.40). Fractions of a credit are not lost; they carry over to your next claim.
-  If the ETH price cannot be read at that moment, Gas-Back is left out and stays claimable
-  later. (`src/lib/gasback.ts`)
+- **Streak bonus**: every UTC day with at least one successful transaction is an active
+  day, and consecutive active days form a streak. From the second day on, each day of a
+  streak pays 10 credits times the streak length, capped at 100 a day (day 2 = 20, day 3 =
+  30, day 10 and beyond = 100). Each calendar day pays its bonus once. The streak is read
+  from your whole record, so days you claimed earlier still count. (`src/lib/streaks.ts`)
 
 The rules that keep it fair:
 
 - **Daily cap**: task rewards are limited to 1,000 credits per wallet per day of activity
-  (UTC). Milestones and Gas-Back are not under this cap.
+  (UTC). Milestones and the streak bonus are not under this cap.
 - **Everything pays once**: each transaction and each milestone can be claimed one time
   only. You can scan as often as you like; a second claim only pays for new activity.
 - A scan is remembered for 60 seconds, so claiming right after scanning pays exactly what
   the receipt showed.
 
-### 4. A builder (you deployed contracts)
+### 4. Inviting others (referrals)
 
-When **other people** use a contract you deployed, **20% of the gas they spend** comes to
-you as credits. These are Builder Royalties. (`src/lib/royalties.ts`)
+Every wallet has an invite link, `/r/<your wallet>`, shown on the Earn page. When a wallet
+you invited claims credits, **10% of that claim** is added to your balance on top. The
+invited wallet keeps everything it earned. (`src/lib/referrals.ts`)
 
-- Your contracts are found automatically when your scan sees a deploy transaction. You can
-  also add one by address; the explorer must confirm your wallet deployed it. Contracts
-  created through a factory are not supported yet.
-- Your own calls do not count. Failed calls do not count. Each call pays once.
-- One scan checks up to 60 contracts and up to 500 recent calls per contract. If you have
-  more, the rest are checked on the next scan, oldest-checked first.
-- It cannot be farmed for profit: calling your own contract from a second wallet returns
-  at most 40% (Gas-Back) + 20% (royalty) = 60% of what the gas cost.
+- Whoever opens your link and signs in for the first time is counted as yours. A wallet
+  can also paste its inviter's address on the Earn page.
+- A wallet names its inviter once, and only before its first claim, so the share only ever
+  covers claims made after the invite. You cannot invite yourself, and invites cannot form
+  a loop.
+- The share is paid in the same database transaction as the claim, so it can never be
+  paid twice or for a claim that did not happen. Claims are capped and pay once, so there
+  is nothing to farm.
 
 ### 5. Buying credits with the token (optional)
 
@@ -163,7 +165,7 @@ credits = provider's price in USD × 1.20 (Fuel's 20% margin) × 1,000, rounded 
 
 `/distribution` is public on purpose: credits are handed out by rules, so anyone can check
 them. It shows, for every wallet that earned: total credits, their worth in dollars, where
-they came from (tasks, milestones, Gas-Back, royalties, bought), tokens paid in, and when
+they came from (tasks, milestones, streaks, referrals, bought), tokens paid in, and when
 it last earned. You can search by name or address. It refreshes every 20 seconds.
 
 The **ticker** under the totals shows one entry per wallet that has claimed: what it
@@ -179,7 +181,7 @@ it again.
 ## For the person running the site
 
 - All balances live in one **ledger** table in SQLite (`data/fuel.db` by default). Your
-  balance is simply the sum of your rows: claims, milestones, Gas-Back, royalties and
+  balance is simply the sum of your rows: claims, milestones, streak bonuses, referral shares and
   top-ups are positive, spending is negative. Nothing is ever edited, only added.
   (`src/lib/db.ts`, `src/lib/ledger.ts`)
 - Claims are planned and written in one database transaction, so two claims at the same
@@ -189,7 +191,6 @@ it again.
   - `UPSTREAM_BASE_URL`, `UPSTREAM_API_KEY`: the AI provider behind the API. Any
     OpenAI-compatible service works. Without a key, only `fuel/echo` works.
   - `EXPLORER_API_*`, `BLOCKSCOUT_API_KEY`: where wallet history is read from.
-  - `PRICE_FEED_*`: the ETH/USD price used for Gas-Back and royalties (Chainlink).
   - `TOPUP_*`: token, treasury and price. Top-ups stay off until all are set.
 - Checks: `npm test` (unit tests for every money rule), `npm run lint`, `npm run build`.
 
@@ -202,8 +203,8 @@ it again.
 | Milestones (10 / 50 / 100 / 500 txs) | 100 / 300 / 750 / 2,500 credits |
 | Transactions per day that count toward milestones | 20 |
 | Daily cap on task rewards | 1,000 credits per wallet |
-| Gas-Back | 40% of gas spent |
-| Builder royalty | 20% of gas others spend on your contracts |
+| Streak bonus | 10 credits × streak day, from day 2, at most 100 a day |
+| Referral share | 10% of every claim by a wallet you invited |
 | Fuel's margin on AI calls | 20% |
 | Minimum charge per call | 1 credit |
 | Rate limit | 60 requests per minute per key |
