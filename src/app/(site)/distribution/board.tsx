@@ -108,7 +108,7 @@ export function Board({ initial }: { initial: Distribution }) {
                       aria-hidden={wallet.repeat > 0}
                       className="flex items-center gap-1.5 px-4 whitespace-nowrap"
                     >
-                      <span className="text-fog">{wallet.name ?? shortAddress(wallet.address)}</span>
+                      <span className={wallet.name ? "text-fog" : "select-none text-fog"}>{wallet.name ?? shortAddress(wallet.address)}</span>
                       claimed
                       <span className="font-mono text-fog tabular-nums">+{formatCredits(wallet.claimed)}</span>
                       {wallet.used > 0 && (

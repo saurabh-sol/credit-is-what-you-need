@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import { CheckIcon, CopyIcon } from "@/components/icons";
 import { Identicon } from "@/components/identicon";
 import { ModelLogo } from "@/components/model-logo";
 import type { DistributionRow, EarningKind, ModelUsed, TokenPaid } from "@/lib/distribution";
@@ -78,25 +76,6 @@ export function ModelStack({ models, max = 4 }: { models: ModelUsed[]; max?: num
   );
 }
 
-// Icon only, so it carries its own name for screen readers.
-function CopyAddress({ address }: { address: string }) {
-  const [copied, setCopied] = useState(false);
-  return (
-    <button
-      type="button"
-      aria-label={copied ? "Address copied" : "Copy address"}
-      onClick={async () => {
-        await navigator.clipboard.writeText(address);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1600);
-      }}
-      className={`grid size-5 place-items-center rounded transition-colors ${copied ? "text-accent" : "text-mist/70 hover:text-fog"}`}
-    >
-      {copied ? <CheckIcon className="size-3" /> : <CopyIcon className="size-3" />}
-    </button>
-  );
-}
-
 type WalletRowProps = {
   wallet: DistributionRow;
   /** Place on the full board; null when the wallet sits below the rows we were sent. */
@@ -119,18 +98,15 @@ export function WalletRow({ wallet, rank, share, you }: WalletRowProps) {
           <Identicon address={wallet.address} className="size-7" />
           <div className="min-w-0 leading-4">
             <p className="flex items-center gap-2">
-              <span className={`truncate text-fog ${wallet.name ? "font-medium" : "font-mono"}`} title={wallet.address}>
+              {/* Addresses stay display-only: no copy button, no full-address tooltip, and no text selection. */}
+              <span className={`truncate text-fog ${wallet.name ? "font-medium" : "select-none font-mono"}`}>
                 {wallet.name ?? short}
               </span>
               {you && <span className="chip py-0 text-[0.625rem] leading-4 text-accent">You</span>}
-              {!wallet.name && <CopyAddress address={wallet.address} />}
             </p>
             {/* An unnamed wallet already shows its address above; saying it twice adds nothing. */}
             {wallet.name && (
-              <p className="flex items-center gap-1 font-mono text-xs text-mist">
-                <span title={wallet.address}>{short}</span>
-                <CopyAddress address={wallet.address} />
-              </p>
+              <p className="select-none font-mono text-xs text-mist">{short}</p>
             )}
           </div>
         </div>
