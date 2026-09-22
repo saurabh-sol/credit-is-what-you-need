@@ -1,7 +1,8 @@
 import { db } from "./db.ts";
 
 // The public side of the ledger: who earned what, and the name they chose to
-// go by. Spending is only ever shown as one total per wallet, never call by call.
+// go by. Spending is shown as one total per wallet and the models it went to,
+// never call by call and never what was asked.
 
 const lower = (address: string) => address.toLowerCase();
 
@@ -42,12 +43,17 @@ export type EarningKind = (typeof EARNING_KINDS)[number];
 
 export type TokenPaid = { symbol: string; decimals: number; amount: string }; // amount in base units
 
+// One model a wallet has put credits into, e.g. "openai/gpt-4o-mini".
+export type ModelUsed = { model: string; credits: number; calls: number };
+
 export type DistributionRow = {
   address: string;
   name: string | null;
   earned: number;
   bySource: Record<EarningKind, number>;
   tokensPaid: TokenPaid[];
+  used: number; // credits spent, all models together
+  models: ModelUsed[]; // where they went, biggest first
   lastEarnedAt: string;
 };
 
@@ -56,10 +62,28 @@ export type ActiveWallet = {
   name: string | null;
   claimed: number; // everything earned, bought credits aside
   used: number;
+  models: ModelUsed[];
   lastActiveAt: string;
 };
 
 type TokenTotals = Map<string, { decimals: number; amount: bigint }>;
+
+// Which models each wallet has spent on, the ones that took the most credits first.
+function modelsUsedByWallet() {
+  const rows = db()
+    .prepare(
+      `SELECT address, model, SUM(credits) AS credits, COUNT(*) AS calls
+       FROM usage GROUP BY address, model ORDER BY credits DESC, calls DESC, model`,
+    )
+    .all() as { address: string; model: string; credits: number; calls: number }[];
+  const used = new Map<string, ModelUsed[]>();
+  for (const row of rows) {
+    const models = used.get(row.address) ?? [];
+    models.push({ model: row.model, credits: row.credits, calls: row.calls });
+    used.set(row.address, models);
+  }
+  return used;
+}
 
 // Token payments per wallet, summed per token symbol.
 function tokensPaidByWallet() {
@@ -90,27 +114,35 @@ export function distribution(options: { search?: string; limit?: number } = {}) 
     (kind) => `SUM(CASE WHEN l.kind = '${kind}' THEN l.amount ELSE 0 END) AS ${kind}`,
   ).join(", ");
 
+  // Every row of a wallet is read so its spending comes along; only earners make the list.
   const rows = database
     .prepare(
-      `SELECT l.address AS address, p.name AS name, SUM(l.amount) AS earned, ${perKind}, MAX(l.created_at) AS lastEarnedAt
+      `SELECT l.address AS address, p.name AS name,
+         SUM(CASE WHEN l.amount > 0 THEN l.amount ELSE 0 END) AS earned, ${perKind},
+         -SUM(CASE WHEN l.amount < 0 THEN l.amount ELSE 0 END) AS used,
+         MAX(CASE WHEN l.amount > 0 THEN l.created_at END) AS lastEarnedAt
        FROM ledger l LEFT JOIN profiles p ON p.address = l.address
-       WHERE l.amount > 0 AND (? = '' OR l.address LIKE ? OR LOWER(p.name) LIKE ?)
-       GROUP BY l.address ORDER BY earned DESC, l.address LIMIT ?`,
+       WHERE ? = '' OR l.address LIKE ? OR LOWER(p.name) LIKE ?
+       GROUP BY l.address HAVING earned > 0 ORDER BY earned DESC, l.address LIMIT ?`,
     )
     .all(search, `%${search}%`, `%${search}%`, options.limit ?? 100) as (Record<EarningKind, number> & {
     address: string;
     name: string | null;
     earned: number;
+    used: number;
     lastEarnedAt: string;
   })[];
 
   const paid = tokensPaidByWallet();
+  const models = modelsUsedByWallet();
   const wallets: DistributionRow[] = rows.map((row) => ({
     address: row.address,
     name: row.name,
     earned: row.earned,
     bySource: Object.fromEntries(EARNING_KINDS.map((kind) => [kind, row[kind]])) as Record<EarningKind, number>,
     tokensPaid: asList(paid.get(row.address)),
+    used: row.used,
+    models: models.get(row.address) ?? [],
     lastEarnedAt: row.lastEarnedAt,
   }));
 
@@ -137,7 +169,7 @@ export function distribution(options: { search?: string; limit?: number } = {}) 
     )
     .all()
     // node:sqlite rows have no prototype, which React will not pass to a client component.
-    .map((row) => ({ ...row })) as ActiveWallet[];
+    .map((row) => ({ ...row, models: models.get(row.address as string) ?? [] })) as ActiveWallet[];
 
   return { totals: { ...totals, tokensPaid: asList(everyToken) }, wallets, active };
 }
