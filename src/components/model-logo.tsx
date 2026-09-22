@@ -1,3 +1,4 @@
+import { OrbMark } from "@/components/brand/orb-mark";
 import { providerOf } from "@/lib/providers";
 
 // Makers whose mark has colors of its own (public/logos/<name>-color.svg). The rest
@@ -39,16 +40,9 @@ export function ProviderLogo({ logo, className = "size-5", mono = false }: Provi
   );
 }
 
-// The logo for a model id. Kredit's own test model, and makers we have no mark for, get the K tile.
+// The logo for a model id. Kredit's own test model, and makers we have no mark for, get the Kredit orb.
 export function ModelLogo({ model, className = "size-5" }: { model: string; className?: string }) {
   const provider = providerOf(model);
   if (provider) return <ProviderLogo logo={provider.logo} className={className} />;
-  return (
-    <span
-      aria-hidden
-      className={`${className} inline-grid shrink-0 place-items-center rounded-[28%] bg-accent font-mono text-[10px] leading-none font-bold text-ink`}
-    >
-      K
-    </span>
-  );
+  return <OrbMark className={className} />;
 }
