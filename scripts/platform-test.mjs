@@ -1,10 +1,10 @@
 // End-to-end check of the public platform pieces: display names, the
 // playground, the distribution board and top-up gating.
-// Needs a server and this script to share SESSION_SECRET and DATABASE_PATH:
-//   SESSION_SECRET=… DATABASE_PATH=/tmp/kredit-test.db npx next start -p 3458
-//   SESSION_SECRET=… DATABASE_PATH=/tmp/kredit-test.db BASE_URL=http://localhost:3458 node scripts/platform-test.mjs
+// Needs a server and this script to share SESSION_SECRET and DATABASE_URL:
+//   SESSION_SECRET=… DATABASE_URL=postgres://… npx next start -p 3458
+//   SESSION_SECRET=… DATABASE_URL=postgres://… BASE_URL=http://localhost:3458 node scripts/platform-test.mjs
 // Credits are seeded straight into the database (local testing only).
-import { DatabaseSync } from "node:sqlite";
+import { query } from "./lib/db.mjs";
 import { sessionCookie } from "./lib/test-session.mjs";
 
 const base = process.env.BASE_URL ?? "http://localhost:3000";
@@ -43,8 +43,7 @@ check("playground needs a session", signedOut.status === 401);
 const broke = await app("/api/playground", { method: "POST", body: JSON.stringify(hello) });
 check("playground refuses an empty balance", broke.status === 402, `(${(await json(broke)).error.code})`);
 
-const database = new DatabaseSync(process.env.DATABASE_PATH ?? "data/kredit.db");
-database.prepare("INSERT INTO ledger (address, amount, kind, memo) VALUES (?, 500, 'claim', 'platform-test')").run(WALLET.toLowerCase());
+await query("INSERT INTO ledger (address, amount, kind, memo) VALUES (?, 500, 'claim', 'platform-test')", [WALLET.toLowerCase()]);
 
 const reply = await app("/api/playground", { method: "POST", body: JSON.stringify(hello) });
 const stream = await reply.text();
@@ -55,7 +54,7 @@ const essay = { ...hello, messages: [{ role: "user", content: "Explain rollups i
 await (await app("/api/playground", { method: "POST", body: JSON.stringify(essay) })).text();
 const afterEssay = (await json(await app("/api/account"))).balance;
 check("a long request costs more than a short one", 499 - afterEssay > 10, `(${499 - afterEssay} credits vs 1)`);
-const usage = database.prepare("SELECT key_id FROM usage WHERE address = ?").get(WALLET.toLowerCase());
+const usage = (await query("SELECT key_id FROM usage WHERE address = ?", [WALLET.toLowerCase()])).rows[0];
 check("usage is recorded under the playground, not a key", usage?.key_id === "playground");
 
 // --- distribution

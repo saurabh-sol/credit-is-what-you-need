@@ -1,4 +1,4 @@
-import { db } from "./db.ts";
+import { all, NOW, one, run } from "./db.ts";
 
 // The public side of the ledger: who earned what, and the name they chose to
 // go by. Spending is shown as one total per wallet and the models it went to,
@@ -16,24 +16,21 @@ export function cleanName(name: string) {
   return NAME_PATTERN.test(trimmed) ? trimmed : null;
 }
 
-export function getName(address: string) {
-  const row = db().prepare("SELECT name FROM profiles WHERE address = ?").get(lower(address)) as
-    | { name: string }
-    | undefined;
+export async function getName(address: string) {
+  const row = await one<{ name: string }>("SELECT name FROM profiles WHERE address = ?", [lower(address)]);
   return row?.name ?? null;
 }
 
 // Pass null to go back to showing only the address.
-export function setName(address: string, name: string | null) {
+export async function setName(address: string, name: string | null) {
   if (name === null) {
-    db().prepare("DELETE FROM profiles WHERE address = ?").run(lower(address));
+    await run("DELETE FROM profiles WHERE address = ?", [lower(address)]);
     return;
   }
-  db()
-    .prepare(
-      "INSERT INTO profiles (address, name) VALUES (?, ?) ON CONFLICT (address) DO UPDATE SET name = excluded.name, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')",
-    )
-    .run(lower(address), name);
+  await run(
+    `INSERT INTO profiles (address, name) VALUES (?, ?) ON CONFLICT (address) DO UPDATE SET name = excluded.name, updated_at = ${NOW}`,
+    [lower(address), name],
+  );
 }
 
 // --- Distribution ----------------------------------------------------------------
@@ -69,13 +66,11 @@ export type ActiveWallet = {
 type TokenTotals = Map<string, { decimals: number; amount: bigint }>;
 
 // Which models each wallet has spent on, the ones that took the most credits first.
-function modelsUsedByWallet() {
-  const rows = db()
-    .prepare(
-      `SELECT address, model, SUM(credits) AS credits, COUNT(*) AS calls
-       FROM usage GROUP BY address, model ORDER BY credits DESC, calls DESC, model`,
-    )
-    .all() as { address: string; model: string; credits: number; calls: number }[];
+async function modelsUsedByWallet() {
+  const rows = await all<{ address: string; model: string; credits: number; calls: number }>(
+    `SELECT address, model, SUM(credits)::int AS credits, COUNT(*)::int AS calls
+     FROM usage GROUP BY address, model ORDER BY credits DESC, calls DESC, model`,
+  );
   const used = new Map<string, ModelUsed[]>();
   for (const row of rows) {
     const models = used.get(row.address) ?? [];
@@ -86,13 +81,10 @@ function modelsUsedByWallet() {
 }
 
 // Token payments per wallet, summed per token symbol.
-function tokensPaidByWallet() {
-  const rows = db().prepare("SELECT address, symbol, decimals, amount FROM topups").all() as {
-    address: string;
-    symbol: string;
-    decimals: number;
-    amount: string;
-  }[];
+async function tokensPaidByWallet() {
+  const rows = await all<{ address: string; symbol: string; decimals: number; amount: string }>(
+    "SELECT address, symbol, decimals, amount FROM topups",
+  );
   const paid = new Map<string, TokenTotals>();
   for (const row of rows) {
     const tokens: TokenTotals = paid.get(row.address) ?? new Map();
@@ -106,35 +98,33 @@ function tokensPaidByWallet() {
 const asList = (tokens?: TokenTotals): TokenPaid[] =>
   [...(tokens ?? [])].map(([symbol, { decimals, amount }]) => ({ symbol, decimals, amount: amount.toString() }));
 
+const EARNED = "SUM(CASE WHEN l.amount > 0 THEN l.amount ELSE 0 END)";
+const CLAIMED = "SUM(CASE WHEN l.amount > 0 AND l.kind != 'topup' THEN l.amount ELSE 0 END)";
+const USED = "-SUM(CASE WHEN l.amount < 0 THEN l.amount ELSE 0 END)";
+
 // Everyone who has earned credits, biggest first.
-export function distribution(options: { search?: string; limit?: number } = {}) {
-  const database = db();
+export async function distribution(options: { search?: string; limit?: number } = {}) {
   const search = options.search?.trim().toLowerCase() ?? "";
   const perKind = EARNING_KINDS.map(
-    (kind) => `SUM(CASE WHEN l.kind = '${kind}' THEN l.amount ELSE 0 END) AS ${kind}`,
+    (kind) => `SUM(CASE WHEN l.kind = '${kind}' THEN l.amount ELSE 0 END)::int AS ${kind}`,
   ).join(", ");
 
   // Every row of a wallet is read so its spending comes along; only earners make the list.
-  const rows = database
-    .prepare(
-      `SELECT l.address AS address, p.name AS name,
-         SUM(CASE WHEN l.amount > 0 THEN l.amount ELSE 0 END) AS earned, ${perKind},
-         -SUM(CASE WHEN l.amount < 0 THEN l.amount ELSE 0 END) AS used,
-         MAX(CASE WHEN l.amount > 0 THEN l.created_at END) AS lastEarnedAt
-       FROM ledger l LEFT JOIN profiles p ON p.address = l.address
-       WHERE ? = '' OR l.address LIKE ? OR LOWER(p.name) LIKE ?
-       GROUP BY l.address HAVING earned > 0 ORDER BY earned DESC, l.address LIMIT ?`,
-    )
-    .all(search, `%${search}%`, `%${search}%`, options.limit ?? 100) as (Record<EarningKind, number> & {
-    address: string;
-    name: string | null;
-    earned: number;
-    used: number;
-    lastEarnedAt: string;
-  })[];
+  const rows = await all<
+    Record<EarningKind, number> & { address: string; name: string | null; earned: number; used: number; lastEarnedAt: string }
+  >(
+    `SELECT l.address AS address, p.name AS name,
+       ${EARNED}::int AS earned, ${perKind},
+       (${USED})::int AS used,
+       MAX(CASE WHEN l.amount > 0 THEN l.created_at END) AS "lastEarnedAt"
+     FROM ledger l LEFT JOIN profiles p ON p.address = l.address
+     WHERE ?::text = '' OR l.address LIKE ? OR LOWER(p.name) LIKE ?
+     GROUP BY l.address, p.name HAVING ${EARNED} > 0 ORDER BY earned DESC, l.address LIMIT ?`,
+    [search, `%${search}%`, `%${search}%`, options.limit ?? 100],
+  );
 
-  const paid = tokensPaidByWallet();
-  const models = modelsUsedByWallet();
+  const paid = await tokensPaidByWallet();
+  const models = await modelsUsedByWallet();
   const wallets: DistributionRow[] = rows.map((row) => ({
     address: row.address,
     name: row.name,
@@ -146,9 +136,9 @@ export function distribution(options: { search?: string; limit?: number } = {}) 
     lastEarnedAt: row.lastEarnedAt,
   }));
 
-  const totals = database
-    .prepare("SELECT COUNT(DISTINCT address) AS wallets, COALESCE(SUM(amount), 0) AS credits FROM ledger WHERE amount > 0")
-    .get() as { wallets: number; credits: number };
+  const totals = (await one<{ wallets: number; credits: number }>(
+    "SELECT COUNT(DISTINCT address)::int AS wallets, COALESCE(SUM(amount), 0)::int AS credits FROM ledger WHERE amount > 0",
+  )) ?? { wallets: 0, credits: 0 };
 
   const everyToken: TokenTotals = new Map();
   for (const tokens of paid.values()) {
@@ -158,20 +148,18 @@ export function distribution(options: { search?: string; limit?: number } = {}) 
   }
 
   // One line per wallet that has claimed, the ones putting their credits to work first.
-  const active = database
-    .prepare(
+  const active = (
+    await all<Omit<ActiveWallet, "models">>(
       `SELECT l.address AS address, p.name AS name,
-         SUM(CASE WHEN l.amount > 0 AND l.kind != 'topup' THEN l.amount ELSE 0 END) AS claimed,
-         -SUM(CASE WHEN l.amount < 0 THEN l.amount ELSE 0 END) AS used,
-         MAX(l.created_at) AS lastActiveAt
+         ${CLAIMED}::int AS claimed,
+         (${USED})::int AS used,
+         MAX(l.created_at) AS "lastActiveAt"
        FROM ledger l LEFT JOIN profiles p ON p.address = l.address
-       GROUP BY l.address HAVING claimed > 0 ORDER BY used DESC, claimed DESC, l.address LIMIT 12`,
+       GROUP BY l.address, p.name HAVING ${CLAIMED} > 0 ORDER BY used DESC, claimed DESC, l.address LIMIT 12`,
     )
-    .all()
-    // node:sqlite rows have no prototype, which React will not pass to a client component.
-    .map((row) => ({ ...row, models: models.get(row.address as string) ?? [] })) as ActiveWallet[];
+  ).map((row): ActiveWallet => ({ ...row, models: models.get(row.address) ?? [] }));
 
-  return { totals: { ...totals, tokensPaid: asList(everyToken) }, wallets, active };
+  return { totals: { wallets: totals.wallets, credits: totals.credits, tokensPaid: asList(everyToken) }, wallets, active };
 }
 
-export type Distribution = ReturnType<typeof distribution>;
+export type Distribution = Awaited<ReturnType<typeof distribution>>;

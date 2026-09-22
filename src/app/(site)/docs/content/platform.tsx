@@ -215,13 +215,13 @@ export function Security() {
       <Table
         head={["Data", "Where", "Who can see it"]}
         rows={[
-          ["Ledger rows (credits in and out)", "SQLite", "Earnings: public on the board. Spending: you, as totals."],
-          ["Claimed transaction hashes, milestones, streak days", "SQLite", "Server only; used to pay once."],
-          ["API key hashes, names, last use", "SQLite", "You, on the dashboard."],
-          ["Usage rows (model, tokens, credits per call)", "SQLite", "You, through the key that made them or the dashboard."],
-          ["Sessions and spent nonces", "SQLite", "Server only."],
-          ["Display name", "SQLite", "Public, by your choice."],
-          ["Inviter, invited wallets", "SQLite", "You and your inviter."],
+          ["Ledger rows (credits in and out)", "Postgres (Neon)", "Earnings: public on the board. Spending: you, as totals."],
+          ["Claimed transaction hashes, milestones, streak days", "Postgres (Neon)", "Server only; used to pay once."],
+          ["API key hashes, names, last use", "Postgres (Neon)", "You, on the dashboard."],
+          ["Usage rows (model, tokens, credits per call)", "Postgres (Neon)", "You, through the key that made them or the dashboard."],
+          ["Sessions and spent nonces", "Postgres (Neon)", "Server only."],
+          ["Display name", "Postgres (Neon)", "Public, by your choice."],
+          ["Inviter, invited wallets", "Postgres (Neon)", "You and your inviter."],
           ["Prompts and answers", "Not stored", "Passed to the provider, never written down."],
         ]}
         min="34rem"

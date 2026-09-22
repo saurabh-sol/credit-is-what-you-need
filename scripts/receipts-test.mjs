@@ -6,11 +6,12 @@
 //   the KreditReceipts contract deployed to anvil, its address in RECEIPTS_ADDRESS_MAINNET
 //   a server started with the same env: NEXT_PUBLIC_RPC_MAINNET=http://127.0.0.1:8547
 //     EXPLORER_API_MAINNET=http://127.0.0.1:8548 RECEIPTS_ADDRESS_MAINNET=... RECEIPT_SIGNER_KEY=...
-//     SESSION_SECRET=... DATABASE_PATH=... npx next dev -p 3461
-// Then: BASE_URL=http://localhost:3461 DATABASE_PATH=... SESSION_SECRET=... WALLET_KEY=<anvil key> node scripts/receipts-test.mjs
+//     SESSION_SECRET=... DATABASE_URL=<a scratch Postgres> npx next dev -p 3461
+// Then: BASE_URL=http://localhost:3461 DATABASE_URL=<same> SESSION_SECRET=... WALLET_KEY=<anvil key> node scripts/receipts-test.mjs
 import { createPublicClient, createWalletClient, http, parseEventLogs } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { robinhood } from "viem/chains";
+import { query } from "./lib/db.mjs";
 import { sessionCookie } from "./lib/test-session.mjs";
 
 const base = process.env.BASE_URL ?? "http://localhost:3000";
@@ -84,9 +85,7 @@ check("an unknown transaction asks the browser to retry", bogus.status === 404 &
 check("a malformed hash is refused", (await post("/api/claim/confirm", { network: "mainnet", hash: "hello" })).status === 400);
 
 // --- recovery: a receipt claimed on-chain but never confirmed is settled on the next claim
-const database = new (await import("node:sqlite")).DatabaseSync(process.env.DATABASE_PATH);
-database.exec("DELETE FROM claimed_txs; DELETE FROM claimed_milestones; DELETE FROM claimed_streak_days; DELETE FROM ledger; DELETE FROM pending_claims;");
-database.close();
+await query("DELETE FROM claimed_txs; DELETE FROM claimed_milestones; DELETE FROM claimed_streak_days; DELETE FROM ledger; DELETE FROM pending_claims;");
 const second = await post("/api/claim", { network: "mainnet" });
 check("after a reset the server signs a fresh receipt with the next nonce", second.status === 200 && second.body.receipt?.nonce === "1");
 const { hash: hash2 } = await submit(second.body);

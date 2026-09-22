@@ -17,7 +17,7 @@ const textOf = (content: unknown) => (typeof content === "string" ? content : JS
 const promptText = (body: ChatBody) => body.messages.map((message) => textOf(message.content)).join("\n");
 
 export async function complete(caller: Caller, request: Request) {
-  if (getBalance(caller.address) <= 0) {
+  if ((await getBalance(caller.address)) <= 0) {
     return apiError(402, "You are out of credits. Earn more on your Kredit dashboard.", "insufficient_credits");
   }
   const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
@@ -29,12 +29,12 @@ export async function complete(caller: Caller, request: Request) {
   return proxyCall(caller, request, body, chat);
 }
 
-function echo(caller: Caller, body: ChatBody) {
+async function echo(caller: Caller, body: ChatBody) {
   const lastUser = [...body.messages].reverse().find((message) => message.role === "user");
   const reply = `Kredit echo: ${textOf(lastUser?.content)}`;
   // Echo costs us nothing, but it is billed by length like a mid-priced model,
   // so a key can be tested against realistic charges.
-  const charge = settle(caller, ECHO_MODEL, ECHO_PRICE, undefined, { input: promptText(body), output: reply });
+  const charge = await settle(caller, ECHO_MODEL, ECHO_PRICE, undefined, { input: promptText(body), output: reply });
 
   const base = { id: `kredit-echo-${Date.now()}`, created: Math.floor(Date.now() / 1000), model: ECHO_MODEL };
   if (!body.stream) {

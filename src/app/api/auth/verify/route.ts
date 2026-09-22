@@ -57,7 +57,7 @@ async function bindInviter(address: string) {
   jar.delete(REFERRAL_COOKIE);
   if (!isAddress(inviter)) return;
   try {
-    setReferrer(address, inviter);
+    await setReferrer(address, inviter);
   } catch {
     // Not the signer's problem; the dashboard explains the rules.
   }

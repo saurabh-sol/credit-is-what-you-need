@@ -3,7 +3,7 @@ import { makeImages } from "@/lib/media";
 
 // OpenAI's image endpoint: { model, prompt, n, size } in, { data: [{ b64_json }] } out.
 export const POST = v1(async (request) => {
-  const caller = authenticate(request);
+  const caller = await authenticate(request);
   if (caller instanceof Response) return caller;
 
   const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;

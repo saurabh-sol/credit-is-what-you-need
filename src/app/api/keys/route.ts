@@ -9,7 +9,7 @@ export async function POST(request: Request) {
   const name = typeof body?.name === "string" ? body.name.trim().slice(0, 40) : "";
 
   try {
-    return Response.json(createKey(session.address, name || "My key"), { status: 201 });
+    return Response.json(await createKey(session.address, name || "My key"), { status: 201 });
   } catch (error) {
     if (error instanceof KeyLimitError) {
       return Response.json({ error: error.message }, { status: 409 });

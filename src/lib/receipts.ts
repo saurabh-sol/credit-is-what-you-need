@@ -1,7 +1,7 @@
 import { privateKeyToAccount } from "viem/accounts";
 import { encodeAbiParameters, encodePacked, keccak256, parseEventLogs, toHex, type Address, type Hash, type Hex } from "viem";
 import { chains, publicClient } from "./chain.ts";
-import { db, transaction } from "./db.ts";
+import { all, NOW, one, run, transaction } from "./db.ts";
 import { applyPlan, previewClaim } from "./ledger.ts";
 import type { NetworkId } from "./networks.ts";
 import { RECEIPTS_ABI, RECEIPT_TYPES, receiptDomain, type SignedReceipt, ZERO_ADDRESS } from "./receipts-abi.ts";
@@ -69,33 +69,28 @@ type PendingRow = {
 };
 
 const pendingFor = (address: string, network: NetworkId) =>
-  db()
-    .prepare(
-      "SELECT receipt_id AS receiptId, network, address, nonce, credits, plan, deadline, tx_hash AS txHash, settled_at AS settledAt FROM pending_claims WHERE address = ? AND network = ? AND settled_at IS NULL",
-    )
-    .all(lower(address), network) as PendingRow[];
+  all<PendingRow>(
+    `SELECT receipt_id AS "receiptId", network, address, nonce, credits, plan, deadline, tx_hash AS "txHash", settled_at AS "settledAt" FROM pending_claims WHERE address = ? AND network = ? AND settled_at IS NULL`,
+    [lower(address), network],
+  );
 
 // Writes a receipt's plan into the ledger, once. Returns what it paid.
 function settle(row: PendingRow, txHash: string) {
-  return transaction(() => {
-    const fresh = db()
-      .prepare("SELECT settled_at FROM pending_claims WHERE receipt_id = ?")
-      .get(row.receiptId) as { settled_at: string | null } | undefined;
+  return transaction(async () => {
+    const fresh = await one<{ settled_at: string | null }>("SELECT settled_at FROM pending_claims WHERE receipt_id = ?", [row.receiptId]);
     if (!fresh || fresh.settled_at) return null;
     const plan = JSON.parse(row.plan) as ClaimPlan;
-    const paid = applyPlan(row.address, row.network, plan, { txHash, network: row.network });
-    db()
-      .prepare("UPDATE pending_claims SET tx_hash = ?, settled_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE receipt_id = ?")
-      .run(lower(txHash), row.receiptId);
+    const paid = await applyPlan(row.address, row.network, plan, { txHash, network: row.network });
+    await run(`UPDATE pending_claims SET tx_hash = ?, settled_at = ${NOW} WHERE receipt_id = ?`, [lower(txHash), row.receiptId]);
     return paid;
-  });
+  }, lower(row.address));
 }
 
 // Receipts this wallet already put on-chain but the server has not written
 // yet (the browser closed before it could confirm, say). The contract keeps
 // `claimed[receiptId]`, so no log search is needed.
 async function settleLanded(config: ReceiptsConfig, address: string) {
-  const open = pendingFor(address, config.network);
+  const open = await pendingFor(address, config.network);
   if (open.length === 0) return;
   const client = publicClient(config.network);
   const onChainNonce = Number(
@@ -110,10 +105,10 @@ async function settleLanded(config: ReceiptsConfig, address: string) {
       args: [row.receiptId as Hash],
     });
     if (landed) {
-      settle(row, await txHashFor(config, address, row.receiptId));
+      await settle(row, await txHashFor(config, address, row.receiptId));
     } else {
       // Another receipt with this nonce landed instead; this one can never be claimed.
-      db().prepare("UPDATE pending_claims SET settled_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE receipt_id = ?").run(row.receiptId);
+      await run(`UPDATE pending_claims SET settled_at = ${NOW} WHERE receipt_id = ?`, [row.receiptId]);
     }
   }
 }
@@ -149,7 +144,7 @@ export async function issueReceipt(config: ReceiptsConfig, address: string, task
   const wallet = lower(address) as Address;
 
   await settleLanded(config, wallet);
-  const plan = previewClaim(wallet, config.network, tasks);
+  const plan = await previewClaim(wallet, config.network, tasks);
   if (plan.total <= 0) throw new ReceiptError("Nothing to claim yet.");
 
   const client = publicClient(config.network);
@@ -162,7 +157,7 @@ export async function issueReceipt(config: ReceiptsConfig, address: string, task
     txCount: hashes.length,
     recordRoot: recordRoot(hashes),
     rulesVersion: RULES_VERSION,
-    referrer: (getReferrer(wallet) ?? ZERO_ADDRESS) as Address,
+    referrer: ((await getReferrer(wallet)) ?? ZERO_ADDRESS) as Address,
     nonce,
     deadline: BigInt(Math.floor(Date.now() / 1000) + RECEIPT_TTL_S),
   };
@@ -170,11 +165,15 @@ export async function issueReceipt(config: ReceiptsConfig, address: string, task
   const signature = await signer.signTypedData({ domain, types: RECEIPT_TYPES, primaryType: "Receipt", message });
   const receiptId = receiptIdOf(message);
 
-  db()
-    .prepare(
-      "INSERT INTO pending_claims (receipt_id, network, address, nonce, credits, plan, deadline) VALUES (?, ?, ?, ?, ?, ?, ?)",
-    )
-    .run(receiptId, config.network, wallet, Number(nonce), plan.total, JSON.stringify(plan), Number(message.deadline));
+  await run("INSERT INTO pending_claims (receipt_id, network, address, nonce, credits, plan, deadline) VALUES (?, ?, ?, ?, ?, ?, ?)", [
+    receiptId,
+    config.network,
+    wallet,
+    Number(nonce),
+    plan.total,
+    JSON.stringify(plan),
+    Number(message.deadline),
+  ]);
 
   return {
     receipt: {
@@ -223,19 +222,19 @@ export async function confirmClaim(config: ReceiptsConfig, address: string, hash
   );
   if (events.length === 0) throw new ReceiptError("No Kredit receipt from your wallet was found in that transaction.");
 
-  const open = pendingFor(address, config.network);
+  const open = await pendingFor(address, config.network);
   let granted = 0;
   let already = 0;
   for (const event of events) {
     const row = open.find((candidate) => candidate.receiptId === event.args.receiptId);
     if (!row) {
       // Settled before (a retry), or issued by another server. Check which.
-      const known = db().prepare("SELECT settled_at FROM pending_claims WHERE receipt_id = ?").get(event.args.receiptId);
+      const known = await one("SELECT settled_at FROM pending_claims WHERE receipt_id = ?", [event.args.receiptId]);
       if (known) already += 1;
       else throw new ReceiptError("That receipt was not issued by this server.");
       continue;
     }
-    const paid = settle(row, hash);
+    const paid = await settle(row, hash);
     if (paid) granted += paid.total;
     else already += 1;
   }

@@ -32,15 +32,11 @@ ENV PORT=3000
 # Docker sets HOSTNAME to the container id; the server must listen on all
 # interfaces to be reachable through the published port.
 ENV HOSTNAME=0.0.0.0
-ENV DATABASE_PATH=/app/data/kredit.db
+# DATABASE_URL (Neon Postgres) comes from the environment at run time.
 
 COPY --from=build --chown=node:node /app/.next/standalone ./
 COPY --from=build --chown=node:node /app/.next/static ./.next/static
 COPY --from=build --chown=node:node /app/public ./public
-# Ledger backups: docker compose exec kredit node scripts/backup.mjs
-COPY --from=build --chown=node:node /app/scripts/backup.mjs ./scripts/backup.mjs
-# Created before the volume is mounted so a new volume is owned by `node`.
-RUN mkdir -p /app/data && chown node:node /app/data
 
 USER node
 EXPOSE 3000

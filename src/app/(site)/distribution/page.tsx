@@ -5,7 +5,7 @@ export const metadata = { title: "Distribution — Kredit" };
 // Read from the ledger on every visit; the board then keeps itself fresh.
 export const dynamic = "force-dynamic";
 
-export default function DistributionPage() {
+export default async function DistributionPage() {
   return (
     <div className="mx-auto max-w-6xl px-4 pt-10 pb-24">
       <header>
@@ -17,7 +17,7 @@ export default function DistributionPage() {
           asked.
         </p>
       </header>
-      <Board initial={distribution()} />
+      <Board initial={await distribution()} />
     </div>
   );
 }

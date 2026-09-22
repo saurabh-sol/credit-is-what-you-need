@@ -23,7 +23,7 @@ export function parseEvaluation(body: unknown): EvaluationBody | string {
 
 // Runs one evaluation and charges for it. Errors come back as a Response.
 export async function evaluate(caller: Caller, body: EvaluationBody, signal?: AbortSignal, error = apiError) {
-  if (getBalance(caller.address) <= 0) {
+  if ((await getBalance(caller.address)) <= 0) {
     return error(402, "You are out of credits. Earn more on your Kredit dashboard.", "insufficient_credits");
   }
   const { baseUrl, apiKey } = upstream();
@@ -45,7 +45,7 @@ export async function evaluate(caller: Caller, body: EvaluationBody, signal?: Ab
   // The answers are tiny and priced at zero, so the worst case is the input alone.
   const inputTokens = estimateTokens(JSON.stringify({ state: body.state, questions: body.questions }));
   const needed = creditsFor(price, { inputTokens, outputTokens: 0 });
-  if (getBalance(caller.address) < needed) {
+  if ((await getBalance(caller.address)) < needed) {
     return error(402, `This call needs about ${needed} credits, more than your balance covers.`, "insufficient_credits");
   }
 
@@ -70,7 +70,7 @@ export async function evaluate(caller: Caller, body: EvaluationBody, signal?: Ab
     provider_metadata?: { gateway?: { cost?: unknown } };
   } & Record<string, unknown>;
   const cost = Number(data.provider_metadata?.gateway?.cost); // the gateway reports the exact price
-  const charge = settleTokens(
+  const charge = await settleTokens(
     caller,
     body.model,
     price,

@@ -6,9 +6,9 @@ export async function GET() {
   if (!session) return Response.json({ error: "Sign in first" }, { status: 401 });
   return Response.json({
     address: session.address,
-    balance: getBalance(session.address),
-    ...getTotals(session.address),
-    keys: listKeys(session.address),
-    activity: listLedger(session.address),
+    balance: await getBalance(session.address),
+    ...(await getTotals(session.address)),
+    keys: await listKeys(session.address),
+    activity: await listLedger(session.address),
   });
 }

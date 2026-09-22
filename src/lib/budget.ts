@@ -57,7 +57,7 @@ export function planSpend(input: {
 
 // --- Holds -------------------------------------------------------------------
 // Credits promised to calls that are still running. In memory is enough: the
-// ledger is one SQLite file, so there is only ever one server process, and a
+// site runs as one server process (rate limits are kept the same way), and a
 // restart ends every running call along with its hold.
 
 const holder = globalThis as { kreditHolds?: Map<string, number> };

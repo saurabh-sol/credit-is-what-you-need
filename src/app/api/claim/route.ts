@@ -22,7 +22,7 @@ export async function POST(request: Request) {
   try {
     const { receipt } = await scanRecord(networks[networkId], session.address);
     const onchain = receiptsConfig(networkId);
-    if (!onchain) return Response.json(claim(session.address, networkId, receipt.tasks));
+    if (!onchain) return Response.json(await claim(session.address, networkId, receipt.tasks));
     return Response.json({ onchain: true, ...(await issueReceipt(onchain, session.address, receipt.tasks)) });
   } catch (error) {
     if (error instanceof ExplorerError) return Response.json({ error: error.message }, { status: 502 });

@@ -198,7 +198,7 @@ it again.
 
 ## For the person running the site
 
-- All balances live in one **ledger** table in SQLite (`data/kredit.db` by default). Your
+- All balances live in one **ledger** table in Postgres (Neon, through `DATABASE_URL`). Your
   balance is simply the sum of your rows: claims, milestones, streak bonuses, referral shares and
   top-ups are positive, spending is negative. Nothing is ever edited, only added.
   (`src/lib/db.ts`, `src/lib/ledger.ts`)

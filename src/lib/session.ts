@@ -56,13 +56,13 @@ export async function consumeNonce() {
   (await cookies()).delete(NONCE_COOKIE);
   const nonce = payload?.nonce;
   if (typeof nonce !== "string") return null;
-  return spendNonce(nonce, NONCE_TTL) ? nonce : null;
+  return (await spendNonce(nonce, NONCE_TTL)) ? nonce : null;
 }
 
 export async function createSession(address: Address) {
   (await cookies()).set(
     SESSION_COOKIE,
-    await sign({ address, sid: openSession(address, SESSION_TTL) }, SESSION_TTL),
+    await sign({ address, sid: await openSession(address, SESSION_TTL) }, SESSION_TTL),
     cookieOptions(SESSION_TTL),
   );
 }
@@ -71,14 +71,14 @@ export async function getSession() {
   const payload = await read(SESSION_COOKIE);
   if (typeof payload?.address !== "string" || typeof payload.sid !== "string") return null;
   // The cookie is only as good as its row: signing out ends it at once.
-  if (!sessionIsLive(payload.sid, payload.address)) return null;
+  if (!(await sessionIsLive(payload.sid, payload.address))) return null;
   return { address: payload.address as Address };
 }
 
 // `everywhere` also signs the wallet out of every other browser.
 export async function clearSession({ everywhere = false } = {}) {
   const payload = await read(SESSION_COOKIE);
-  if (typeof payload?.sid === "string") closeSession(payload.sid);
-  if (everywhere && typeof payload?.address === "string") closeAllSessions(payload.address);
+  if (typeof payload?.sid === "string") await closeSession(payload.sid);
+  if (everywhere && typeof payload?.address === "string") await closeAllSessions(payload.address);
   (await cookies()).delete(SESSION_COOKIE);
 }

@@ -5,11 +5,11 @@ import { CREDITS_PER_USD } from "@/lib/pricing";
 
 // The wallet behind a key, for apps that want to show a balance. Never the
 // wallet's other keys or its earnings: a key sees only what it needs to spend.
-export const GET = v1((request) => {
-  const caller = authenticate(request);
+export const GET = v1(async (request) => {
+  const caller = await authenticate(request);
   if (caller instanceof Response) return caller;
 
-  const balance = getBalance(caller.address);
+  const balance = await getBalance(caller.address);
   const held = heldFor(caller.address);
   return Response.json({
     object: "account",
@@ -19,7 +19,7 @@ export const GET = v1((request) => {
     held, // promised to calls still running
     available: Math.max(0, balance - held),
     usd_value: balance / CREDITS_PER_USD,
-    total_spent: getTotals(caller.address).spent,
+    total_spent: (await getTotals(caller.address)).spent,
     rate_limit: { requests_per_minute: RATE_LIMIT },
   });
 });

@@ -1,7 +1,7 @@
 // End-to-end check of referrals: the invite link, naming an inviter, and the rules.
-// Needs a server started with the same SESSION_SECRET and DATABASE_PATH:
-//   DATABASE_PATH=/tmp/kredit-test.db npx next dev -p 3461
-//   DATABASE_PATH=/tmp/kredit-test.db BASE_URL=http://localhost:3461 node scripts/referrals-test.mjs
+// Needs a server started with the same SESSION_SECRET and DATABASE_URL:
+//   DATABASE_URL=postgres://… npx next dev -p 3461
+//   DATABASE_URL=postgres://… BASE_URL=http://localhost:3461 node scripts/referrals-test.mjs
 // Signs sessions locally for throwaway wallets (local testing only: real users
 // sign with their wallet). Two rows land in the referrals table.
 import { sessionCookie } from "./lib/test-session.mjs";

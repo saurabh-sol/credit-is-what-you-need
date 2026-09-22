@@ -4,7 +4,7 @@ import { getSession } from "@/lib/session";
 export async function GET() {
   const session = await getSession();
   if (!session) return Response.json({ error: "Sign in first" }, { status: 401 });
-  return Response.json({ name: getName(session.address) });
+  return Response.json({ name: await getName(session.address) });
 }
 
 // Sets the name shown next to this wallet on the distribution page. An empty name removes it.
@@ -16,7 +16,7 @@ export async function PUT(request: Request) {
   if (typeof body?.name !== "string") return Response.json({ error: "Send a name" }, { status: 400 });
 
   if (body.name.trim() === "") {
-    setName(session.address, null);
+    await setName(session.address, null);
     return Response.json({ name: null });
   }
   const name = cleanName(body.name);
@@ -26,6 +26,6 @@ export async function PUT(request: Request) {
       { status: 400 },
     );
   }
-  setName(session.address, name);
+  await setName(session.address, name);
   return Response.json({ name });
 }

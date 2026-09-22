@@ -1,7 +1,7 @@
 // End-to-end check of claim -> key -> gateway -> balance.
 // Needs a server started with the same SESSION_SECRET as .env.local:
-//   DATABASE_PATH=/tmp/kredit-test.db npx next start -p 3458
-//   DATABASE_PATH=/tmp/kredit-test.db BASE_URL=http://localhost:3458 node scripts/gateway-test.mjs
+//   DATABASE_URL=postgres://… npx next start -p 3458
+//   DATABASE_URL=postgres://… BASE_URL=http://localhost:3458 node scripts/gateway-test.mjs
 // It signs a session locally for a real, active mainnet wallet (local testing
 // only: real users must sign with their wallet). It expects off-chain claims,
 // so start the server without RECEIPTS_ADDRESS_MAINNET; the on-chain path is

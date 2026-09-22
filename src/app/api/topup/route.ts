@@ -60,7 +60,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const balance = recordTopUp({ ...config, hash, address: session.address, amount, credits });
+    const balance = await recordTopUp({ ...config, hash, address: session.address, amount, credits });
     return Response.json({ credits, balance });
   } catch (error) {
     if (error instanceof TopUpUsedError) return Response.json({ error: error.message }, { status: 409 });

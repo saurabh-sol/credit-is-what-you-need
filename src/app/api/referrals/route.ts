@@ -9,9 +9,9 @@ export async function GET() {
   return Response.json({
     percent: REFERRAL_PERCENT,
     code: session.address,
-    referrer: getReferrer(session.address),
-    invited: listInvited(session.address),
-    ...referralTotals(session.address),
+    referrer: await getReferrer(session.address),
+    invited: await listInvited(session.address),
+    ...(await referralTotals(session.address)),
   });
 }
 
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     return Response.json({ error: "Paste the inviter's wallet address (0x…)" }, { status: 400 });
   }
   try {
-    setReferrer(session.address, referrer);
+    await setReferrer(session.address, referrer);
   } catch (error) {
     if (error instanceof ReferralError) return Response.json({ error: error.message }, { status: 409 });
     throw error;

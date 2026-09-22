@@ -4,7 +4,7 @@ import { makeVideo } from "@/lib/media";
 // Text to video. { model, prompt, duration, resolution, aspect_ratio, generate_audio } in,
 // { data: [{ b64_json, media_type }] } out. The call stays open until the video is ready.
 export const POST = v1(async (request) => {
-  const caller = authenticate(request);
+  const caller = await authenticate(request);
   if (caller instanceof Response) return caller;
 
   const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;

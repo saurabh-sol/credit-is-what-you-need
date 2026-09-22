@@ -19,7 +19,7 @@ type Ready = { price: ModelPrice; gateway: ReturnType<typeof createGateway> } | 
 // Everything both kinds of call check first: a provider that can do it, a
 // priced model of the right kind, and a balance above zero.
 async function prepare(caller: Caller, model: string, kind: "image" | "video", error = apiError): Promise<Ready> {
-  if (getBalance(caller.address) <= 0) {
+  if ((await getBalance(caller.address)) <= 0) {
     return error(402, "You are out of credits. Earn more on your Kredit dashboard.", "insufficient_credits");
   }
   const { baseUrl, apiKey } = upstream();
@@ -71,7 +71,7 @@ export async function makeImages(caller: Caller, request: ImageRequest, signal?:
       ? creditsForUsd(n * price.perImage)
       : creditsFor(price, { inputTokens: promptTokens, outputTokens: n * ASSUMED_IMAGE_OUTPUT_TOKENS });
   const held = heldFor(caller.address);
-  if (getBalance(caller.address) - held < worstCase) return refuse(worstCase, held, error);
+  if ((await getBalance(caller.address)) - held < worstCase) return refuse(worstCase, held, error);
   const release = hold(caller.address, worstCase);
 
   try {
@@ -92,7 +92,7 @@ export async function makeImages(caller: Caller, request: ImageRequest, signal?:
       inputTokens: result.usage.inputTokens ?? promptTokens,
       outputTokens: result.usage.outputTokens ?? images.length * ASSUMED_IMAGE_OUTPUT_TOKENS,
     };
-    const charge = settleTokens(caller, request.model, price, tokens, usd);
+    const charge = await settleTokens(caller, request.model, price, tokens, usd);
     return { images, charge, usage: tokens };
   } catch (caught) {
     if (signal?.aborted) return error(499, "The request was cancelled.", "cancelled");
@@ -138,7 +138,7 @@ export async function makeVideo(caller: Caller, request: VideoRequest, signal?: 
   }
   const credits = creditsForUsd(duration * rate.usd);
   const held = heldFor(caller.address);
-  if (getBalance(caller.address) - held < credits) return refuse(credits, held, error);
+  if ((await getBalance(caller.address)) - held < credits) return refuse(credits, held, error);
   const release = hold(caller.address, credits);
 
   try {
@@ -154,7 +154,7 @@ export async function makeVideo(caller: Caller, request: VideoRequest, signal?: 
       // flow (`poll`) is not served on every gateway yet.
     });
     const videos = result.videos.map((video) => ({ base64: video.base64, mediaType: video.mediaType }));
-    const charge = settleTokens(caller, request.model, price, { inputTokens: 0, outputTokens: 0 }, duration * rate.usd);
+    const charge = await settleTokens(caller, request.model, price, { inputTokens: 0, outputTokens: 0 }, duration * rate.usd);
     return { videos, charge, duration, resolution: rate.resolution, generateAudio };
   } catch (caught) {
     if (signal?.aborted) return error(499, "The request was cancelled.", "cancelled");

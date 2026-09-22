@@ -3,11 +3,11 @@ import { test } from "node:test";
 import { verifyTypedData } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
-process.env.DATABASE_PATH = ":memory:";
+await (await import("./test-db.ts")).useTestDatabase();
 const { receiptIdOf, receiptsConfig, recordRoot, signerAccount } = await import("./receipts.ts");
 const { RECEIPT_TYPES, receiptDomain } = await import("./receipts-abi.ts");
 const { applyPlan, getBalance, listLedger } = await import("./ledger.ts");
-const { db } = await import("./db.ts");
+const { all } = await import("./db.ts");
 const { isOwnContractCall } = await import("./record.ts");
 
 const KEY = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
@@ -65,7 +65,7 @@ test("a receipt signed by the server verifies against the contract's domain", as
   assert.equal(await verifyTypedData({ address: signer.address, domain: elsewhere, types: RECEIPT_TYPES, primaryType: "Receipt", message, signature }), false);
 });
 
-test("applying one plan twice pays once and keeps the receipt's transaction", () => {
+test("applying one plan twice pays once and keeps the receipt's transaction", async () => {
   const wallet = "0x3333333333333333333333333333333333333333";
   const plan = {
     txGrants: [
@@ -77,19 +77,19 @@ test("applying one plan twice pays once and keeps the receipt's transaction", ()
     total: 670,
   };
   const tx = "0x" + "ee".repeat(32);
-  const first = applyPlan(wallet, "mainnet", plan, { network: "mainnet", txHash: tx });
+  const first = await applyPlan(wallet, "mainnet", plan, { network: "mainnet", txHash: tx });
   assert.equal(first.granted, 670);
-  assert.equal(getBalance(wallet), 670);
-  const rows = listLedger(wallet);
+  assert.equal(await getBalance(wallet), 670);
+  const rows = await listLedger(wallet);
   assert.equal(rows.length, 3);
   assert.ok(rows.every((row) => row.txHash === tx && row.network === "mainnet"));
 
-  const again = applyPlan(wallet, "mainnet", plan, { network: "mainnet", txHash: tx });
+  const again = await applyPlan(wallet, "mainnet", plan, { network: "mainnet", txHash: tx });
   assert.equal(again.granted, 0);
-  assert.equal(getBalance(wallet), 670);
+  assert.equal(await getBalance(wallet), 670);
 
   // Old databases get the new ledger columns on open.
-  const columns = (db().prepare("PRAGMA table_info(ledger)").all() as { name: string }[]).map((row) => row.name);
+  const columns = (await all<{ name: string }>("SELECT column_name AS name FROM information_schema.columns WHERE table_name = 'ledger'")).map((row) => row.name);
   assert.ok(columns.includes("tx_hash") && columns.includes("network"));
 });
 

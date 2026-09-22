@@ -1,12 +1,12 @@
 // End-to-end check of the spend guard: a call is kept within the balance, and
 // calls running at the same time cannot spend the same credits twice.
 // This script is the AI provider: it listens on MOCK_PORT (default 3462), so
-// start the server pointed at it, sharing SESSION_SECRET and DATABASE_PATH:
-//   UPSTREAM_BASE_URL=http://localhost:3462 UPSTREAM_API_KEY=test DATABASE_PATH=/tmp/kredit-test.db npx next start -p 3458
-//   DATABASE_PATH=/tmp/kredit-test.db BASE_URL=http://localhost:3458 node scripts/guard-test.mjs
+// start the server pointed at it, sharing SESSION_SECRET and DATABASE_URL:
+//   UPSTREAM_BASE_URL=http://localhost:3462 UPSTREAM_API_KEY=test DATABASE_URL=postgres://… npx next start -p 3458
+//   DATABASE_URL=postgres://… BASE_URL=http://localhost:3458 node scripts/guard-test.mjs
 import http from "node:http";
-import { DatabaseSync } from "node:sqlite";
-import { databasePath, sessionCookie } from "./lib/test-session.mjs";
+import { query } from "./lib/db.mjs";
+import { sessionCookie } from "./lib/test-session.mjs";
 
 const base = process.env.BASE_URL ?? "http://localhost:3000";
 
@@ -91,9 +91,8 @@ const check = (name, pass, detail = "") => { results.push(pass); console.log(`${
 
 const WALLET = `0x${Date.now().toString(16).padStart(40, "d")}`; // a fresh wallet every run
 const cookie = await sessionCookie(WALLET);
-const database = new DatabaseSync(databasePath);
 const grant = (credits) =>
-  database.prepare("INSERT INTO ledger (address, amount, kind, memo) VALUES (?, ?, 'claim', 'guard-test')").run(WALLET.toLowerCase(), credits);
+  query("INSERT INTO ledger (address, amount, kind, memo) VALUES (?, ?, 'claim', 'guard-test')", [WALLET.toLowerCase(), credits]);
 const balance = async () => (await (await fetch(`${base}/api/account`, { headers: { cookie } })).json()).balance;
 
 const created = await (await fetch(`${base}/api/keys`, { method: "POST", headers: { cookie, "content-type": "application/json" }, body: JSON.stringify({ name: "guard" }) })).json();
@@ -104,7 +103,7 @@ const chat = (body) =>
   });
 
 // --- a thin balance shortens the answer instead of going into debt
-grant(20);
+await grant(20);
 const thin = await chat({});
 const sent = received.at(-1);
 check("a thin balance caps the answer length", thin.status === 200 && sent.max_tokens > 0 && sent.max_tokens < 8000, `(max_tokens ${sent?.max_tokens})`);
@@ -133,7 +132,7 @@ delayMs = 0;
 check("the hold is given back when the call ends", (await chat({})).status === 200);
 
 // --- a healthy balance is left alone
-grant(100_000);
+await grant(100_000);
 await chat({});
 check("a healthy balance sends the request untouched", received.at(-1).max_tokens === undefined);
 await chat({ max_tokens: 300 });
@@ -217,7 +216,7 @@ check("a streamed response is billed from response.completed", respStream.status
 // A thin balance shortens the answer in every dialect.
 const THIN = `0x${Date.now().toString(16).padStart(40, "f")}`;
 const thinCookie = await sessionCookie(THIN);
-database.prepare("INSERT INTO ledger (address, amount, kind, memo) VALUES (?, 20, 'claim', 'guard-test')").run(THIN.toLowerCase());
+await query("INSERT INTO ledger (address, amount, kind, memo) VALUES (?, 20, 'claim', 'guard-test')", [THIN.toLowerCase()]);
 const thinKey = await (await fetch(`${base}/api/keys`, { method: "POST", headers: { cookie: thinCookie, "content-type": "application/json" }, body: JSON.stringify({ name: "thin" }) })).json();
 await post("/v1/messages", { "x-api-key": thinKey.key }, { ...anthropicBody, max_tokens: 8000 });
 const thinMsg = received.at(-1);

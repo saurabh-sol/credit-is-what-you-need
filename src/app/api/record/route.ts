@@ -32,7 +32,7 @@ export async function GET(request: Request) {
       unindexed,
       ...receipt,
       tasks: receipt.tasks.slice(0, RECENT_TASKS),
-      claimable: previewClaim(session.address, networkId, receipt.tasks).total,
+      claimable: (await previewClaim(session.address, networkId, receipt.tasks)).total,
       // Set when claims on this network go through the KreditReceipts contract.
       onchain: onchainInfo(networkId),
     });

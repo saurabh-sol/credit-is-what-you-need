@@ -50,10 +50,10 @@ export type Caller = { keyId: string; address: string; keyName?: string; keyPref
 export type ErrorShape = typeof apiError;
 
 // `error` shapes the refusals: OpenAI's by default, or the dialect's own.
-export function authenticate(request: Request, error: ErrorShape = apiError): Caller | Response {
+export async function authenticate(request: Request, error: ErrorShape = apiError): Promise<Caller | Response> {
   // OpenAI-style clients send a bearer token; Anthropic-style clients send x-api-key.
   const header = request.headers.get("authorization") ?? `Bearer ${request.headers.get("x-api-key") ?? ""}`;
-  const key = header.startsWith("Bearer ") ? findKey(header.slice(7).trim()) : null;
+  const key = header.startsWith("Bearer ") ? await findKey(header.slice(7).trim()) : null;
   if (!key) {
     return error(401, "Invalid or revoked API key. Create one on your Kredit dashboard.", "invalid_api_key");
   }
@@ -142,9 +142,9 @@ export function settle(
 
 // The charge itself, from token counts in our own shape. `usd` overrides the
 // price list when the provider reported the exact cost.
-export function settleTokens(caller: Caller, model: string, price: ModelPrice, tokens: TokenUsage, usd?: number) {
+export async function settleTokens(caller: Caller, model: string, price: ModelPrice, tokens: TokenUsage, usd?: number) {
   const credits = creditsForUsd(usd ?? usdFor(price, tokens));
-  const balance = recordUsage({
+  const balance = await recordUsage({
     ...caller,
     model,
     inputTokens: tokens.inputTokens,

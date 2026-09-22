@@ -12,7 +12,7 @@ const pricingOf = (price: CatalogPrice | null) => {
 // OpenAI's list shape, plus what each model costs here: credits per million
 // tokens with Kredit's margin already in, so a client can show real prices.
 export const GET = v1(async (request) => {
-  const caller = authenticate(request);
+  const caller = await authenticate(request);
   if (caller instanceof Response) return caller;
 
   const { models } = await catalog();

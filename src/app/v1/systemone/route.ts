@@ -5,7 +5,7 @@ import { apiError, authenticate, chargeHeaders, preflight, v1 } from "@/lib/gate
 // out. Also served at /typesafe/v1/systemone so the TypeSafe SDK can point
 // its base URL at <this server>/typesafe.
 export const POST = v1(async (request) => {
-  const caller = authenticate(request);
+  const caller = await authenticate(request);
   if (caller instanceof Response) return caller;
 
   const body = parseEvaluation(await request.json().catch(() => null));

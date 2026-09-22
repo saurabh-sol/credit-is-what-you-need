@@ -15,7 +15,7 @@ const SERVER_ONLY_FIELDS = ["provider", "providerOptions", "provider_options", "
 
 export async function proxyCall(caller: Caller, request: Request, body: Record<string, unknown>, dialect: Dialect) {
   const { error } = dialect;
-  if (getBalance(caller.address) <= 0) {
+  if ((await getBalance(caller.address)) <= 0) {
     return error(402, "You are out of credits. Earn more on your Kredit dashboard.", "insufficient_credits");
   }
   const parsed = dialect.parse(body);
@@ -45,7 +45,7 @@ export async function proxyCall(caller: Caller, request: Request, body: Record<s
   // not be paid for, and hold the worst case so parallel calls can't overspend.
   const held = heldFor(caller.address);
   const plan = planSpend({
-    available: getBalance(caller.address) - held,
+    available: (await getBalance(caller.address)) - held,
     inputTokens: parsed.inputTokens,
     requestedMaxTokens: parsed.requestedMaxTokens,
     price,
@@ -120,7 +120,7 @@ export async function proxyCall(caller: Caller, request: Request, body: Record<s
     const data = (await response.json()) as Record<string, unknown>;
     const usage = dialect.usageOf(data);
     const cost = (data.usage as { cost?: unknown } | undefined)?.cost; // OpenRouter reports the exact price
-    const charged = charge(usage ?? {}, usage ? "" : dialect.textOf(data), typeof cost === "number" ? cost : undefined);
+    const charged = await charge(usage ?? {}, usage ? "" : dialect.textOf(data), typeof cost === "number" ? cost : undefined);
     return Response.json(data, { headers: chargeHeaders(charged) });
   } finally {
     if (!streaming) release();
@@ -133,7 +133,7 @@ function streamThrough(
   source: ReadableStream<Uint8Array>,
   dialect: Dialect,
   model: string,
-  charge: (tokens: Partial<TokenUsage>, outputText: string) => { credits: number; balance: number },
+  charge: (tokens: Partial<TokenUsage>, outputText: string) => Promise<{ credits: number; balance: number }>,
   release: () => void,
 ) {
   const reader = source.getReader();
@@ -168,11 +168,11 @@ function streamThrough(
     }
     return passthrough;
   };
-  const finish = () => {
+  const finish = async () => {
     if (settled) return null;
     settled = true;
     try {
-      return charge(sawUsage ? usage : {}, output);
+      return await charge(sawUsage ? usage : {}, output);
     } finally {
       release();
     }
@@ -182,7 +182,7 @@ function streamThrough(
     async pull(controller) {
       const { done, value } = await reader.read();
       if (done) {
-        const charged = finish();
+        const charged = await finish();
         const tail = charged && dialect.chargeEvent ? dialect.chargeEvent(model, charged) : "";
         const closing = dialect.terminator ? `${dialect.terminator}\n\n` : "";
         controller.enqueue(encoder.encode(`${pending}${tail}${closing}`));
@@ -192,8 +192,8 @@ function streamThrough(
       const forward = watch(value);
       if (forward) controller.enqueue(encoder.encode(forward));
     },
-    cancel(reason) {
-      finish();
+    async cancel(reason) {
+      await finish();
       return reader.cancel(reason);
     },
   });

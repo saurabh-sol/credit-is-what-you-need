@@ -142,13 +142,13 @@ cd contracts && SIGNER=0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC TREASURY=0x90F
   --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --broadcast
 # prints 0x5FbDB2315678afecb367f032d93F642f64180aa3 on a fresh anvil
 
-SESSION_SECRET=<32+ chars> DATABASE_PATH=/tmp/receipts.db \
+SESSION_SECRET=<32+ chars> DATABASE_URL=<a scratch Postgres> \
 NEXT_PUBLIC_RPC_MAINNET=http://127.0.0.1:8547 EXPLORER_API_MAINNET=http://127.0.0.1:8548 \
 RECEIPTS_ADDRESS_MAINNET=0x5FbDB2315678afecb367f032d93F642f64180aa3 \
 RECEIPT_SIGNER_KEY=0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a \
   npx next dev -p 3471
 
-BASE_URL=http://localhost:3471 SESSION_SECRET=<same> DATABASE_PATH=/tmp/receipts.db \
+BASE_URL=http://localhost:3471 SESSION_SECRET=<same> DATABASE_URL=<same> \
 WALLET_KEY=0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d \
   npm run test:receipts
 ```

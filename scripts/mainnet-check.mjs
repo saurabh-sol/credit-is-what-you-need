@@ -5,7 +5,7 @@
 //
 // Needs a server with mainnet configured (an Alchemy NEXT_PUBLIC_RPC_MAINNET,
 // RECEIPTS_ADDRESS_MAINNET, RECEIPT_SIGNER_KEY, UPSTREAM_API_KEY) and:
-//   BASE_URL=http://localhost:3459 SESSION_SECRET=… DATABASE_PATH=data/kredit.db \
+//   BASE_URL=http://localhost:3459 SESSION_SECRET=… DATABASE_URL=postgres://… \
 //   WALLET_KEY=<a wallet with mainnet history and a little ETH> node scripts/mainnet-check.mjs
 // The claim is a real transaction (a fraction of a cent of gas) and the model
 // calls spend real credits. The key it makes is revoked at the end.

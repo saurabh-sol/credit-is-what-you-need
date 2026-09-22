@@ -1,7 +1,7 @@
 // A real purchase on Robinhood Chain mainnet: quote 0.001 ETH (or ETH_AMOUNT),
 // buy through KreditSwapBuy with WALLET_KEY, hand the hash to the server and
 // check the credits landed. Needs a server with top-ups on and:
-//   BASE_URL=http://localhost:3459 SESSION_SECRET=… DATABASE_PATH=data/kredit.db \
+//   BASE_URL=http://localhost:3459 SESSION_SECRET=… DATABASE_URL=postgres://… \
 //   WALLET_KEY=<a wallet with a little ETH> node --env-file=.env.local scripts/swap-buy-test.mjs
 import { createPublicClient, createWalletClient, http, parseEther, parseEventLogs } from "viem";
 import { privateKeyToAccount } from "viem/accounts";

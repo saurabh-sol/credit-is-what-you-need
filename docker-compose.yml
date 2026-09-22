@@ -1,9 +1,8 @@
 # Start:  docker compose --env-file .env.local up -d --build
 # Open:   http://localhost:4000   (set KREDIT_PORT to change the port)
 #
-# The ledger is one SQLite file, and rate limits and credit holds are kept in
-# memory, so run a single container.
-# Back up the ledger:  docker compose exec kredit node scripts/backup.mjs
+# The database is Neon Postgres (DATABASE_URL in .env.local); rate limits and
+# credit holds are kept in memory, so run a single container.
 services:
   kredit:
     build:
@@ -12,18 +11,11 @@ services:
         NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: ${NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID:-}
         NEXT_PUBLIC_RPC_MAINNET: ${NEXT_PUBLIC_RPC_MAINNET:-}
     image: kredit:latest
-    # Runtime secrets (SESSION_SECRET, UPSTREAM_API_KEY, ...) stay in
-    # .env.local, which is never copied into the image.
+    # Runtime secrets (DATABASE_URL, SESSION_SECRET, UPSTREAM_API_KEY, ...)
+    # stay in .env.local, which is never copied into the image.
     env_file:
       - path: .env.local
         required: false
-    environment:
-      DATABASE_PATH: /app/data/kredit.db
     ports:
       - "${KREDIT_PORT:-4000}:3000"
-    volumes:
-      - kredit-data:/app/data
     restart: unless-stopped
-
-volumes:
-  kredit-data:

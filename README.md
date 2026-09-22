@@ -39,12 +39,14 @@ other setting only needs a restart.
 
 ## Back up the ledger
 
+Everything lives in Neon Postgres (`DATABASE_URL`), which keeps its own
+point-in-time history. For a copy you hold yourself:
+
 ```bash
-npm run backup                                          # data/backups/kredit-<time>.db
-docker compose exec kredit node scripts/backup.mjs     # inside Docker
+npm run backup                                          # data/backups/kredit-<time>.json
 ```
 
-It is safe while the site is running, checks the copy, and keeps the newest 14
+It is safe while the site is running, checks the file, and keeps the newest 14
 (`BACKUP_KEEP`). Run it from cron and copy the folder off the server.
 
 ## Learn More

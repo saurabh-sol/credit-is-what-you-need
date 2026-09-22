@@ -4,8 +4,8 @@ import { listUsage, usageByModel } from "@/lib/ledger";
 // GET /v1/usage?from=2026-09-01&to=2026-10-01&limit=100&before=<id>
 // Every call this wallet paid for, newest first, with a per-model summary of
 // the period. `before` continues from the `next` of the previous page.
-export const GET = v1((request) => {
-  const caller = authenticate(request);
+export const GET = v1(async (request) => {
+  const caller = await authenticate(request);
   if (caller instanceof Response) return caller;
 
   const query = new URL(request.url).searchParams;
@@ -27,13 +27,13 @@ export const GET = v1((request) => {
   const before = Number(query.get("before"));
   const limit = Number(query.get("limit"));
 
-  const page = listUsage(caller.address, {
+  const page = await listUsage(caller.address, {
     from,
     to,
     ...(Number.isInteger(before) && before > 0 && { before }),
     ...(Number.isInteger(limit) && limit > 0 && { limit }),
   });
-  const models = usageByModel(caller.address, { from, to });
+  const models = await usageByModel(caller.address, { from, to });
   return Response.json({
     object: "list",
     period: { from: from ?? null, to: to ?? null },

@@ -3,13 +3,13 @@
 // video saved to a file. It spends real money on the gateway (well under $1).
 //
 //   npx next start -p 3458         (with UPSTREAM_API_KEY set to a Vercel AI Gateway key)
-//   DATABASE_PATH=... BASE_URL=http://localhost:3458 node scripts/gateway-demo.mjs
+//   DATABASE_URL=... BASE_URL=http://localhost:3458 node scripts/gateway-demo.mjs
 //
 // Credits are seeded straight into the database (local testing only).
 import fs from "node:fs";
 import path from "node:path";
-import { DatabaseSync } from "node:sqlite";
-import { databasePath, sessionCookie } from "./lib/test-session.mjs";
+import { query } from "./lib/db.mjs";
+import { sessionCookie } from "./lib/test-session.mjs";
 
 const base = process.env.BASE_URL ?? "http://localhost:3000";
 const out = process.env.DEMO_OUT ?? "out";
@@ -20,9 +20,7 @@ fs.mkdirSync(out, { recursive: true });
 
 const WALLET = `0x${Date.now().toString(16).padStart(40, "a")}`;
 const cookie = await sessionCookie(WALLET);
-new DatabaseSync(databasePath)
-  .prepare("INSERT INTO ledger (address, amount, kind, memo) VALUES (?, 5000, 'claim', 'gateway-demo')")
-  .run(WALLET.toLowerCase());
+await query("INSERT INTO ledger (address, amount, kind, memo) VALUES (?, 5000, 'claim', 'gateway-demo')", [WALLET.toLowerCase()]);
 const { key } = await (await fetch(`${base}/api/keys`, { method: "POST", headers: { cookie, "content-type": "application/json" }, body: JSON.stringify({ name: "demo" }) })).json();
 const auth = { authorization: `Bearer ${key}`, "content-type": "application/json" };
 const balance = async () => (await (await fetch(`${base}/v1/account`, { headers: auth })).json()).balance;
