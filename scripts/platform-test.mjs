@@ -43,7 +43,7 @@ check("playground needs a session", signedOut.status === 401);
 const broke = await app("/api/playground", { method: "POST", body: JSON.stringify(hello) });
 check("playground refuses an empty balance", broke.status === 402, `(${(await json(broke)).error.code})`);
 
-const database = new DatabaseSync(process.env.DATABASE_PATH ?? "data/fuel.db");
+const database = new DatabaseSync(process.env.DATABASE_PATH ?? "data/kredit.db");
 database.prepare("INSERT INTO ledger (address, amount, kind, memo) VALUES (?, 500, 'claim', 'platform-test')").run(WALLET.toLowerCase());
 
 const reply = await app("/api/playground", { method: "POST", body: JSON.stringify(hello) });

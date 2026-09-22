@@ -9,7 +9,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 
-const source = process.env.DATABASE_PATH ?? "data/fuel.db";
+const source = process.env.DATABASE_PATH ?? "data/kredit.db";
 const dir = process.env.BACKUP_DIR ?? path.join(path.dirname(source), "backups");
 const keep = Math.max(1, Number(process.env.BACKUP_KEEP) || 14);
 

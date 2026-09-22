@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { formatCredits } from "@/lib/format";
-import { useFuelAccount } from "@/lib/use-fuel-account";
+import { useKreditAccount } from "@/lib/use-kredit-account";
 
 const kindLabel: Record<string, string> = {
   claim: "Tasks",
@@ -31,7 +31,7 @@ function when(iso: string) {
 
 // Every credit that came in or went out, newest first.
 export function ActivityTable({ limit }: { limit?: number }) {
-  const { data, isError } = useFuelAccount();
+  const { data, isError } = useKreditAccount();
   const rows = data?.activity.slice(0, limit);
 
   if (isError) {

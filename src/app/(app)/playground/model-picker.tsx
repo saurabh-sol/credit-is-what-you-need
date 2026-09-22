@@ -6,7 +6,7 @@ import { CheckIcon, SearchIcon } from "@/components/icons";
 import { ModelLogo } from "@/components/model-logo";
 import type { Catalog, CatalogPrice, ModelType } from "@/lib/catalog";
 import { formatCredits } from "@/lib/format";
-import { api } from "@/lib/use-fuel-account";
+import { api } from "@/lib/use-kredit-account";
 import { ChevronDownIcon } from "./icons";
 
 const SHOWN = 60;

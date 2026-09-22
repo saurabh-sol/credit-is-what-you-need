@@ -2,13 +2,13 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useSyncExternalStore } from "react";
-import { ACCOUNT_KEY, api, useFuelAccount } from "@/lib/use-fuel-account";
+import { ACCOUNT_KEY, api, useKreditAccount } from "@/lib/use-kredit-account";
 
 type NewKey = { id: string; key: string; name: string };
 
 export function ApiKeys() {
   const queryClient = useQueryClient();
-  const { data } = useFuelAccount();
+  const { data } = useKreditAccount();
   const [name, setName] = useState("");
   const [fresh, setFresh] = useState<NewKey | null>(null);
   const [copied, setCopied] = useState(false);
