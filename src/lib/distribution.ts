@@ -1,7 +1,7 @@
 import { db } from "./db.ts";
 
 // The public side of the ledger: who earned what, and the name they chose to
-// go by. Only credits coming in are shown; what a wallet spends is its own business.
+// go by. Spending is only ever shown as one total per wallet, never call by call.
 
 const lower = (address: string) => address.toLowerCase();
 
@@ -51,13 +51,12 @@ export type DistributionRow = {
   lastEarnedAt: string;
 };
 
-export type RecentEarning = {
-  id: number;
+export type ActiveWallet = {
   address: string;
   name: string | null;
-  kind: string;
-  amount: number;
-  createdAt: string;
+  claimed: number; // everything earned, bought credits aside
+  used: number;
+  lastActiveAt: string;
 };
 
 type TokenTotals = Map<string, { decimals: number; amount: bigint }>;
@@ -126,17 +125,21 @@ export function distribution(options: { search?: string; limit?: number } = {}) 
     }
   }
 
-  const recent = database
+  // One line per wallet that has claimed, the ones putting their credits to work first.
+  const active = database
     .prepare(
-      `SELECT l.id AS id, l.address AS address, p.name AS name, l.kind AS kind, l.amount AS amount, l.created_at AS createdAt
+      `SELECT l.address AS address, p.name AS name,
+         SUM(CASE WHEN l.amount > 0 AND l.kind != 'topup' THEN l.amount ELSE 0 END) AS claimed,
+         -SUM(CASE WHEN l.amount < 0 THEN l.amount ELSE 0 END) AS used,
+         MAX(l.created_at) AS lastActiveAt
        FROM ledger l LEFT JOIN profiles p ON p.address = l.address
-       WHERE l.amount > 0 ORDER BY l.id DESC LIMIT 12`,
+       GROUP BY l.address HAVING claimed > 0 ORDER BY used DESC, claimed DESC, l.address LIMIT 12`,
     )
     .all()
     // node:sqlite rows have no prototype, which React will not pass to a client component.
-    .map((row) => ({ ...row })) as RecentEarning[];
+    .map((row) => ({ ...row })) as ActiveWallet[];
 
-  return { totals: { ...totals, tokensPaid: asList(everyToken) }, wallets, recent };
+  return { totals: { ...totals, tokensPaid: asList(everyToken) }, wallets, active };
 }
 
 export type Distribution = ReturnType<typeof distribution>;

@@ -16,7 +16,6 @@ export const sources: { kind: EarningKind; label: string; shade: string }[] = [
   { kind: "referral", label: "Referrals", shade: "bg-accent/20" },
   { kind: "topup", label: "Bought", shade: "bg-fog/35" },
 ];
-export const sourceLabel: Record<string, string> = Object.fromEntries(sources.map((source) => [source.kind, source.label]));
 
 export const usd = (credits: number) =>
   `$${(credits / CREDITS_PER_USD).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
