@@ -1,5 +1,5 @@
-import { catalog, priceFor, typeFor } from "@/lib/catalog";
-import { apiError, authenticate, chargeHeaders, preflight, settle, upstream, v1 } from "@/lib/gateway";
+import { catalog, priceFor, typeFor, upstreamFor } from "@/lib/catalog";
+import { apiError, authenticate, chargeHeaders, preflight, settle, upstreams, v1 } from "@/lib/gateway";
 import { getBalance } from "@/lib/ledger";
 import { creditsFor, estimateTokens } from "@/lib/pricing";
 
@@ -16,12 +16,12 @@ export const POST = v1(async (request) => {
   if (!body || typeof body.model !== "string" || body.input === undefined) {
     return apiError(400, "Send a JSON body with `model` and `input` (a string or an array of strings).", "invalid_body");
   }
-  const { baseUrl, apiKey } = upstream();
-  if (!apiKey) return apiError(503, "No AI provider is configured on this server yet.", "provider_not_configured");
+  if (upstreams().length === 0) return apiError(503, "No AI provider is configured on this server yet.", "provider_not_configured");
 
   const type = await typeFor(body.model);
   if (type && type !== "embedding") return apiError(400, `"${body.model}" is not an embedding model.`, "model_not_supported");
   const price = await priceFor(body.model);
+  const { baseUrl, apiKey } = await upstreamFor(body.model);
   if (!price) {
     if (!(await catalog()).live) {
       return apiError(502, "The AI provider's model list could not be read. Try again in a moment.", "provider_unreachable");
