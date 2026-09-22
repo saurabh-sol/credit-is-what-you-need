@@ -54,3 +54,14 @@ export function BaseUrl() {
   const origin = useOrigin();
   return <CodeBlock title="Base URL" code={`${origin}/v1`} />;
 }
+
+// A code sample with "{origin}" replaced by this site's real address.
+export function OriginCode({ title, code }: { title?: string; code: string }) {
+  const origin = useOrigin();
+  return <CodeBlock title={title} code={code.replaceAll("{origin}", origin)} />;
+}
+
+export function OriginTabs({ tabs }: { tabs: { name: string; code: string }[] }) {
+  const origin = useOrigin();
+  return <CodeTabs tabs={tabs.map((tab) => ({ name: tab.name, code: tab.code.replaceAll("{origin}", origin) }))} />;
+}

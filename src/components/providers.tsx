@@ -51,7 +51,8 @@ function WalletKit({ children }: { children: React.ReactNode }) {
       sessionAdapter(queryClient, () => {
         // Signing in leads to the dashboard, unless the wallet was connected to
         // use the page the visitor is already on.
-        const staysHere = ["/playground", "/docs"].includes(window.location.pathname);
+        const { pathname } = window.location;
+        const staysHere = pathname === "/playground" || pathname === "/docs" || pathname.startsWith("/docs/");
         if (!staysHere) router.push("/dashboard");
       }),
     [queryClient, router],
