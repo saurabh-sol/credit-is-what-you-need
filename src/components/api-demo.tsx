@@ -3,7 +3,7 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { CopyButton } from "@/components/code-block";
 import { prefersReducedMotion, useInView } from "@/components/motion/use-in-view";
-import { snippetNames as tabs, snippets, type SnippetName as Tab } from "@/lib/snippets";
+import { demoSnippetNames as tabs, snippets, type SnippetName as Tab } from "@/lib/snippets";
 
 // What the built-in test model really answers, headers included.
 const response = `{ "role": "assistant", "content": "Kredit echo: hi" }`;

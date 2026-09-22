@@ -225,6 +225,10 @@ await post("/v1/responses", { authorization: `Bearer ${thinKey.key}` }, { model:
 const thinResp = received.at(-1);
 check("a thin balance shortens Anthropic and Responses calls too", thinMsg.max_tokens > 0 && thinMsg.max_tokens < 8000 && thinResp.max_output_tokens > 0 && thinResp.max_output_tokens < 64_000, `(max_tokens ${thinMsg.max_tokens}, max_output_tokens ${thinResp.max_output_tokens})`);
 
+const spec = await fetch(`${base}/v1/openapi.json`);
+const specBody = await spec.json();
+check("/v1/openapi.json is public and lists every endpoint", spec.status === 200 && specBody.openapi === "3.1.0" && ["/chat/completions", "/responses", "/messages", "/embeddings", "/models", "/account", "/usage"].every((path) => path in specBody.paths) && specBody.servers[0].url === `${base}/v1`);
+
 console.log(`\n${results.filter(Boolean).length}/${results.length} passed`);
 provider.close();
 process.exit(results.every(Boolean) ? 0 : 1);
