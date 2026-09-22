@@ -61,16 +61,6 @@ export const docGroups: DocGroup[] = [
       { slug: "platform/security", title: "Privacy and security", description: "What is stored, what is public, and how keys and sessions are protected." },
     ],
   },
-  {
-    title: "Self-hosting",
-    pages: [
-      { slug: "self-hosting/configuration", title: "Configuration", description: "Every environment variable, what it does and its default." },
-      { slug: "self-hosting/docker", title: "Docker", description: "Build and run the image, keep the ledger on a volume." },
-      { slug: "self-hosting/render", title: "Render", description: "One-click deployment from the repository blueprint." },
-      { slug: "self-hosting/data", title: "Data and backups", description: "The SQLite ledger, what lives in it and how to back it up." },
-      { slug: "self-hosting/testing", title: "Testing", description: "Unit tests, end-to-end scripts and the contract tests." },
-    ],
-  },
 ];
 
 export const allPages = docGroups.flatMap((group) => group.pages.map((page) => ({ ...page, group: group.title })));
