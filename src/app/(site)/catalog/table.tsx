@@ -1,19 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { CopyButton } from "@/components/code-block";
 import { CheckIcon, CloseIcon, SearchIcon } from "@/components/icons";
 import { MakerLogo, ModelLogo } from "@/components/model-logo";
-import type { Capability, CatalogModel, CatalogPrice, ModelType } from "@/lib/catalog";
+import type { Capability, CatalogModel, ModelType } from "@/lib/catalog";
 import { formatCredits } from "@/lib/format";
 import { makerOf } from "@/lib/providers";
 import { SITE_URL } from "@/lib/site";
 import { snippets } from "@/lib/snippets";
+import { credits, tokens, TURN_IN, TURN_OUT, turnCost, turnUnit } from "./price";
 
-// The catalog: every model the server can reach, in a table grouped by maker.
-// Each maker is a row that folds its models away; a model row opens into its
-// details. The filter bar sticks under the header. The page gives it the data.
+// The catalog: every model the server can reach. A strip of maker tiles
+// narrows the list; each maker is a card of its models with the price of a
+// turn and a bar that shows how that price compares. A model row opens into
+// its details. The page gives it the data.
 
 export type Maker = { id: string; name: string; logo?: string; count: number };
 
@@ -54,22 +56,6 @@ const ChevronIcon = ({ className = "size-4" }: { className?: string }) => (
   </svg>
 );
 
-// A typical turn: a 1,000-token prompt and a 500-token answer, the basis the
-// cheapest/priciest sort compares on.
-const TURN_IN = 1_000;
-const TURN_OUT = 500;
-
-function turnCost(price: CatalogPrice | null) {
-  if (!price) return Infinity;
-  if (price.per === "image") return price.credits;
-  if (price.per === "second") return price.from;
-  return (price.input * TURN_IN + price.output * TURN_OUT) / 1_000_000;
-}
-
-// Credits with the decimals a small number needs and none a big one does.
-const credits = (value: number) => (value < 10 ? value.toFixed(2).replace(/\.?0+$/, "") : formatCredits(Math.round(value)));
-
-const tokens = (count?: number) => (count ? (count >= 1_000_000 ? `${(count / 1_000_000).toFixed(1).replace(/\.0$/, "")}M` : `${Math.round(count / 1000)}K`) : "");
 
 const released = (seconds?: number) =>
   seconds ? new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(new Date(seconds * 1000)) : "";
@@ -97,75 +83,13 @@ const SORTS: { id: Sort; label: string }[] = [
   { id: "name", label: "Name" },
 ];
 
-// Cells share one grid, so the header lines up with every row.
-const COLUMNS = "grid-cols-[minmax(0,1fr)_5.5rem_4.5rem] md:grid-cols-[minmax(0,1fr)_5.5rem_5.5rem_4rem_4.5rem] xl:grid-cols-[minmax(0,1fr)_5.5rem_5.5rem_4rem_7rem_3rem_6.5rem_6.5rem_4.5rem]";
-const cell = "px-3 py-3 leading-5";
-const num = `${cell} text-right font-mono text-xs tabular-nums whitespace-nowrap`;
-
-// A dropdown that closes on a click outside or Escape.
-function Menu({ label, active, children, width = "w-64" }: { label: React.ReactNode; active?: boolean; children: React.ReactNode; width?: string }) {
-  const [open, setOpen] = useState(false);
-  const box = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (event: PointerEvent) => !box.current?.contains(event.target as Node) && setOpen(false);
-    const onKey = (event: KeyboardEvent) => event.key === "Escape" && setOpen(false);
-    window.addEventListener("pointerdown", onDown);
-    window.addEventListener("keydown", onKey);
-    return () => {
-      window.removeEventListener("pointerdown", onDown);
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
-  return (
-    <div ref={box} className="relative">
-      <button
-        type="button"
-        aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}
-        className={`btn-ghost gap-1.5 px-3.5 py-2 text-xs whitespace-nowrap ${active ? "border-accent/55 text-fog" : ""}`}
-      >
-        {label}
-        <ChevronIcon className={`size-3.5 text-mist transition ${open ? "rotate-180" : ""}`} />
-      </button>
-      {open && (
-        <div className={`card absolute right-0 z-30 mt-2 ${width} animate-rise overflow-hidden p-1.5 shadow-[0_18px_40px_-20px_var(--shade,rgb(0_0_0/0.35))]`}>
-          {children}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function MenuItem({ checked, onClick, children }: { checked: boolean; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      type="button"
-      role="menuitemcheckbox"
-      aria-checked={checked}
-      onClick={onClick}
-      className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left text-[0.8125rem] text-fog transition hover:bg-fog/5"
-    >
-      {children}
-      {checked && <CheckIcon className="ml-auto size-3.5 text-accent" />}
-    </button>
-  );
-}
-
 const Mark = ({ value }: { value?: boolean }) =>
-  value === undefined ? (
-    <span className="text-mist/50">–</span>
-  ) : value ? (
-    <CheckIcon className="inline size-3.5 text-fog" />
-  ) : (
-    <CloseIcon className="inline size-3.5 text-mist/50" />
-  );
+  value === undefined ? <span className="text-mist/50">–</span> : value ? <CheckIcon className="inline size-3.5 text-fog" /> : <CloseIcon className="inline size-3.5 text-mist/50" />;
 
 export function CatalogTable({ makers, models, live }: { makers: Maker[]; models: CatalogModel[]; live: boolean }) {
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState<ModelType | "all">("all");
   const [picked, setPicked] = useState<Set<string>>(new Set());
-  const [makerQuery, setMakerQuery] = useState("");
   const [needs, setNeeds] = useState<Set<Capability>>(new Set());
   const [sort, setSort] = useState<Sort>("featured");
   const [folded, setFolded] = useState<Set<string>>(new Set());
@@ -190,6 +114,16 @@ export function CatalogTable({ makers, models, live }: { makers: Maker[]; models
       ),
     [models, kind, picked, needs, needle],
   );
+
+  // The priciest turn of each kind in view, so every bar is drawn to the same scale.
+  const ceiling = useMemo(() => {
+    const top = new Map<ModelType, number>();
+    for (const model of filtered) {
+      const cost = turnCost(model.price);
+      if (Number.isFinite(cost)) top.set(model.type, Math.max(top.get(model.type) ?? 0, cost));
+    }
+    return top;
+  }, [filtered]);
 
   // Models sorted, then grouped under their makers; the groups take the order
   // of their first model, so "cheapest" puts the maker with the cheapest model first.
@@ -216,26 +150,58 @@ export function CatalogTable({ makers, models, live }: { makers: Maker[]; models
 
   if (!live) return null;
 
-  const makerMatches = makers.filter((entry) => !makerQuery || entry.name.toLowerCase().includes(makerQuery.toLowerCase()) || entry.id.includes(makerQuery.toLowerCase()));
   const filtering = kind !== "all" || picked.size > 0 || needs.size > 0 || needle;
   const allFolded = groups.length > 0 && groups.every((group) => folded.has(group.maker.id));
+  const rank = (id: string) => (FEATURED.includes(id) ? FEATURED.indexOf(id) - FEATURED.length : 0);
+  const strip = [...makers].sort((a, b) => rank(a.id) - rank(b.id) || b.count - a.count || a.name.localeCompare(b.name));
 
   return (
-    <section className="mt-14" aria-label="Model catalog">
-      {/* The filter bar stays under the site header while the table scrolls. */}
-      <div className="sticky top-16 z-20 -mx-4 border-b border-line bg-ink/85 px-4 py-3 backdrop-blur-xl">
+    <section className="mt-16" aria-label="Model catalog">
+      {/* Makers as a strip of tiles; tap one to keep only its models. */}
+      <div className="flex items-end justify-between gap-3">
+        <h2 className="text-xl font-semibold tracking-tight">Makers</h2>
+        {picked.size > 0 && (
+          <button type="button" onClick={() => setPicked(new Set())} className="text-xs text-mist underline decoration-line underline-offset-4 hover:text-fog">
+            Show all makers
+          </button>
+        )}
+      </div>
+      <ul className="-mx-4 mt-4 flex snap-x list-none gap-2 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {strip.map((entry) => {
+          const active = picked.has(entry.id);
+          return (
+            <li key={entry.id} className="m-0 shrink-0 snap-start">
+              <button
+                type="button"
+                aria-pressed={active}
+                onClick={() => setPicked(toggle(picked, entry.id))}
+                className={`card card-lift flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-left transition ${active ? "border-accent/60 bg-accent/5" : "hover:border-fog/25"}`}
+              >
+                <MakerLogo maker={entry} className="size-5" />
+                <span className="leading-4">
+                  <span className="block text-[0.8125rem] font-medium text-fog">{entry.name}</span>
+                  <span className="block font-mono text-[0.625rem] text-mist tabular-nums">{entry.count}</span>
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+
+      {/* The filter bar stays under the site header while the cards scroll. */}
+      <div className="sticky top-16 z-20 -mx-4 mt-6 border-y border-line bg-ink/85 px-4 py-3 backdrop-blur-xl">
         <div className="flex flex-wrap items-center gap-2">
-          <label className="field flex min-w-52 flex-1 items-center gap-2 rounded-lg px-3 py-2 text-mist">
+          <label className="field flex min-w-52 flex-1 items-center gap-2 rounded-full px-4 py-2 text-mist">
             <SearchIcon />
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search models and makers…"
+              placeholder={`Search ${formatCredits(models.length)} models`}
               aria-label="Search models"
               className="w-full bg-transparent text-[0.8125rem] text-fog placeholder:text-mist focus:outline-none"
             />
           </label>
-          <div role="radiogroup" aria-label="Kind of model" className="inline-flex overflow-x-auto rounded-lg border border-line bg-surface p-0.5">
+          <div role="radiogroup" aria-label="Kind of model" className="inline-flex overflow-x-auto rounded-full border border-line bg-surface p-0.5">
             {KINDS.map((entry) => (
               <button
                 key={entry.id}
@@ -243,63 +209,47 @@ export function CatalogTable({ makers, models, live }: { makers: Maker[]; models
                 role="radio"
                 aria-checked={kind === entry.id}
                 onClick={() => setKind(entry.id)}
-                className={`rounded-md px-2.5 py-1.5 text-xs whitespace-nowrap transition-colors ${kind === entry.id ? "bg-raised text-fog shadow-[0_1px_2px_var(--shade)]" : "text-mist hover:text-fog"}`}
+                className={`rounded-full px-3 py-1.5 text-xs whitespace-nowrap transition-colors ${kind === entry.id ? "bg-fog text-ink" : "text-mist hover:text-fog"}`}
               >
                 {entry.label}
               </button>
             ))}
           </div>
-          <div className="ml-auto flex flex-wrap items-center gap-2">
-            <Menu label={picked.size ? `${picked.size} ${picked.size === 1 ? "maker" : "makers"}` : "Makers"} active={picked.size > 0} width="w-64">
-              <label className="field mb-1.5 flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-mist">
-                <SearchIcon className="size-3.5" />
-                <input
-                  value={makerQuery}
-                  onChange={(event) => setMakerQuery(event.target.value)}
-                  placeholder="Search makers…"
-                  aria-label="Search makers"
-                  className="w-full bg-transparent text-xs text-fog placeholder:text-mist focus:outline-none"
-                />
-              </label>
-              <div className="max-h-72 overflow-y-auto">
-                <MenuItem checked={picked.size === 0} onClick={() => setPicked(new Set())}>
-                  All makers
-                </MenuItem>
-                {makerMatches.map((entry) => (
-                  <MenuItem key={entry.id} checked={picked.has(entry.id)} onClick={() => setPicked(toggle(picked, entry.id))}>
-                    <MakerLogo maker={entry} className="size-4" />
-                    <span className="truncate">{entry.name}</span>
-                    <span className="font-mono text-[0.6875rem] text-mist tabular-nums">{entry.count}</span>
-                  </MenuItem>
-                ))}
-              </div>
-            </Menu>
-            <Menu label={needs.size ? `${needs.size} ${needs.size === 1 ? "capability" : "capabilities"}` : "Capabilities"} active={needs.size > 0} width="w-56">
-              <MenuItem checked={needs.size === 0} onClick={() => setNeeds(new Set())}>
-                Any
-              </MenuItem>
-              {CAPABILITIES.map((entry) => (
-                <MenuItem key={entry.id} checked={needs.has(entry.id)} onClick={() => setNeeds(toggle(needs, entry.id))}>
-                  <CapabilityIcon id={entry.id} className="size-4 text-mist" />
-                  {entry.label}
-                </MenuItem>
-              ))}
-            </Menu>
-            <Menu label={`Sort: ${SORTS.find((entry) => entry.id === sort)!.label}`} width="w-44">
+          <label className="field flex w-auto items-center gap-2 rounded-full px-4 py-2 text-xs text-mist">
+            Sort
+            <select value={sort} onChange={(event) => setSort(event.target.value as Sort)} aria-label="Sort models" className="bg-transparent text-fog focus:outline-none">
               {SORTS.map((entry) => (
-                <MenuItem key={entry.id} checked={sort === entry.id} onClick={() => setSort(entry.id)}>
+                <option key={entry.id} value={entry.id}>
                   {entry.label}
-                </MenuItem>
+                </option>
               ))}
-            </Menu>
-          </div>
+            </select>
+          </label>
+        </div>
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          {CAPABILITIES.map((entry) => {
+            const active = needs.has(entry.id);
+            return (
+              <button
+                key={entry.id}
+                type="button"
+                aria-pressed={active}
+                onClick={() => setNeeds(toggle(needs, entry.id))}
+                className={`chip gap-1.5 transition ${active ? "border-accent/60 bg-accent/10 text-fog" : "hover:border-fog/25 hover:text-fog"}`}
+              >
+                <CapabilityIcon id={entry.id} className="size-3" />
+                {entry.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-mist tabular-nums" role="status">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs text-mist tabular-nums" role="status">
         <p>
           {filtered.length === models.length ? `${formatCredits(models.length)} models` : `${formatCredits(filtered.length)} of ${formatCredits(models.length)} models`} from{" "}
-          {formatCredits(groups.length)} {groups.length === 1 ? "maker" : "makers"}. Prices are credits per million tokens; 1,000 credits = $1.
+          {formatCredits(groups.length)} {groups.length === 1 ? "maker" : "makers"}. A turn is a {formatCredits(TURN_IN)}-token prompt with a {TURN_OUT}-token answer;
+          1,000 credits = $1.
           {filtering && (
             <>
               {" "}
@@ -318,7 +268,7 @@ export function CatalogTable({ makers, models, live }: { makers: Maker[]; models
             </>
           )}
         </p>
-        {groups.length > 0 && (
+        {groups.length > 1 && (
           <button
             type="button"
             onClick={() => setFolded(allFolded ? new Set() : new Set(groups.map((group) => group.maker.id)))}
@@ -330,123 +280,105 @@ export function CatalogTable({ makers, models, live }: { makers: Maker[]; models
       </div>
 
       {groups.length === 0 ? (
-        <p className="card mt-3 px-4 py-10 text-center text-sm text-mist">No model matches that.</p>
+        <p className="card mt-4 px-4 py-12 text-center text-sm text-mist">No model matches that.</p>
       ) : (
-        <div className="mt-3 overflow-hidden rounded-xl border border-line bg-surface">
-          <div className={`grid ${COLUMNS} border-b border-line font-mono text-[0.6875rem] tracking-wider text-mist uppercase`}>
-            <div className={cell}>Model</div>
-            <div className={num}>Input</div>
-            <div className={num}>Output</div>
-            <div className={`${num} hidden md:block`}>Context</div>
-            <div className={`${cell} hidden xl:block`}>Capabilities</div>
-            <div className={`${cell} hidden text-center xl:block`}>ZDR</div>
-            <div className={`${cell} hidden text-center xl:block`}>No training</div>
-            <div className={`${num} hidden xl:block`}>Released</div>
-            <div className={`${cell} hidden md:block`} />
-          </div>
-
+        <div className="mt-4 grid gap-4">
           {groups.map((group) => {
             const shut = folded.has(group.maker.id);
+            const from = Math.min(...group.models.map((model) => turnCost(model.price)));
             return (
-              <div key={group.maker.id}>
+              <article key={group.maker.id} className="card overflow-hidden">
                 <button
                   type="button"
                   aria-expanded={!shut}
                   onClick={() => setFolded(toggle(folded, group.maker.id))}
-                  className="flex w-full items-center gap-3 border-b border-line bg-raised/60 px-3 py-2.5 text-left transition hover:bg-raised"
+                  className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition hover:bg-fog/[0.025] sm:px-5"
                 >
-                  <ChevronIcon className={`size-4 text-mist transition ${shut ? "-rotate-90" : ""}`} />
-                  <MakerLogo maker={group.maker} className="size-5" />
-                  <span className="text-[0.8125rem] font-medium text-fog">{group.maker.name}</span>
-                  <span className="font-mono text-[0.6875rem] text-mist tabular-nums">
-                    {group.models.length} {group.models.length === 1 ? "model" : "models"}
+                  <MakerLogo maker={group.maker} className="size-7" />
+                  <span className="min-w-0 flex-1 leading-5">
+                    <span className="block text-[0.9375rem] font-semibold text-fog">{group.maker.name}</span>
+                    <span className="block font-mono text-[0.6875rem] text-mist tabular-nums">
+                      {group.models.length} {group.models.length === 1 ? "model" : "models"}
+                      {Number.isFinite(from) && ` · from ${credits(from)} credits a turn`}
+                    </span>
                   </span>
+                  <ChevronIcon className={`size-4 text-mist transition ${shut ? "-rotate-90" : ""}`} />
                 </button>
 
-                {!shut &&
-                  group.models.map((model) => {
-                    const open = openId === model.id;
-                    const mode = playgroundMode[model.type];
-                    const tryable = mode && model.price !== null;
-                    const price = model.price;
-                    return (
-                      <div key={model.id} className="border-b border-line last:border-b-0">
-                        <div
-                          role="button"
-                          tabIndex={0}
-                          aria-expanded={open}
-                          onClick={() => setOpenId(open ? null : model.id)}
-                          onKeyDown={(event) => {
-                            if (event.key === "Enter" || event.key === " ") {
-                              event.preventDefault();
-                              setOpenId(open ? null : model.id);
-                            }
-                          }}
-                          className={`grid ${COLUMNS} cursor-pointer items-center transition-colors hover:bg-fog/[0.03] ${open ? "bg-fog/[0.03]" : ""}`}
-                        >
-                          <div className={`${cell} flex min-w-0 items-center gap-2.5`}>
-                            <ModelLogo model={model.id} className="size-4 text-mist" />
-                            <span className="min-w-0">
-                              <span className="block truncate font-mono text-[0.8125rem] text-fog">{model.id}</span>
-                              <span className="block truncate text-[0.6875rem] text-mist md:hidden">{model.name}</span>
+                {!shut && (
+                  <ul className="m-0 list-none border-t border-line p-0">
+                    {group.models.map((model, index) => {
+                      const open = openId === model.id;
+                      const mode = playgroundMode[model.type];
+                      const tryHref = mode && model.price ? `/playground?model=${encodeURIComponent(model.id)}&mode=${mode}` : null;
+                      const cost = turnCost(model.price);
+                      const top = ceiling.get(model.type) ?? 0;
+                      // Square root, so a 100× price gap is still a bar you can read, not a sliver.
+                      const share = Number.isFinite(cost) && top > 0 ? Math.max(0.03, Math.sqrt(cost / top)) : 0;
+                      return (
+                        <li key={model.id} className="m-0 border-b border-line/70 last:border-b-0">
+                          <div
+                            role="button"
+                            tabIndex={0}
+                            aria-expanded={open}
+                            onClick={() => setOpenId(open ? null : model.id)}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter" || event.key === " ") {
+                                event.preventDefault();
+                                setOpenId(open ? null : model.id);
+                              }
+                            }}
+                            style={{ animationDelay: `${Math.min(index, 10) * 35}ms` }}
+                            className={`flex animate-rise cursor-pointer items-center gap-3 px-4 py-3 transition-colors hover:bg-fog/[0.03] sm:px-5 ${open ? "bg-fog/[0.03]" : ""}`}
+                          >
+                            <ModelLogo model={model.id} className="size-5 shrink-0 text-mist" />
+                            <span className="min-w-0 flex-1 leading-5">
+                              <span className="block truncate text-[0.875rem] font-medium text-fog">{model.name}</span>
+                              <span className="block truncate font-mono text-[0.6875rem] text-mist">{model.id}</span>
                             </span>
-                          </div>
-                          {price?.per === "million_tokens" ? (
-                            <>
-                              <div className={`${num} text-fog`}>{credits(price.input)}</div>
-                              <div className={`${num} text-fog`}>{credits(price.output)}</div>
-                            </>
-                          ) : price?.per === "image" ? (
-                            <>
-                              <div className={`${num} text-fog`}>{credits(price.credits)}<span className="text-mist"> / img</span></div>
-                              <div className={`${num} text-mist`}>–</div>
-                            </>
-                          ) : price?.per === "second" ? (
-                            <>
-                              <div className={`${num} text-fog`}>{credits(price.from)}<span className="text-mist"> / s</span></div>
-                              <div className={`${num} text-mist`}>–</div>
-                            </>
-                          ) : (
-                            <>
-                              <div className={`${num} text-mist`}>–</div>
-                              <div className={`${num} text-mist`}>–</div>
-                            </>
-                          )}
-                          <div className={`${num} hidden text-mist md:block`}>{tokens(model.contextWindow) || "–"}</div>
-                          <div className={`${cell} hidden items-center gap-1.5 text-mist xl:flex`}>
-                            {model.capabilities?.slice(0, 4).map((capability) => (
-                              <span key={capability} title={capabilityLabel.get(capability)}>
-                                <CapabilityIcon id={capability} />
-                              </span>
-                            ))}
-                            {(model.capabilities?.length ?? 0) > 4 && <span className="font-mono text-[0.6875rem]">+{model.capabilities!.length - 4}</span>}
-                            {!model.capabilities?.length && <span className="text-mist/50">–</span>}
-                          </div>
-                          <div className={`${cell} hidden text-center xl:block`}>
-                            <Mark value={model.zdr} />
-                          </div>
-                          <div className={`${cell} hidden text-center xl:block`}>
-                            <Mark value={model.noTraining} />
-                          </div>
-                          <div className={`${num} hidden text-mist xl:block`}>{released(model.released) || "–"}</div>
-                          <div className={`${cell} hidden text-right md:block`}>
-                            {tryable ? (
-                              <Link
-                                href={`/playground?model=${encodeURIComponent(model.id)}&mode=${mode}`}
-                                onClick={(event) => event.stopPropagation()}
-                                className="btn-ghost px-2.5 py-1 text-xs"
-                              >
+                            <span className="hidden w-24 shrink-0 items-center gap-1.5 text-mist lg:flex">
+                              {model.capabilities?.slice(0, 4).map((capability) => (
+                                <span key={capability} title={capabilityLabel.get(capability)}>
+                                  <CapabilityIcon id={capability} />
+                                </span>
+                              ))}
+                              {(model.capabilities?.length ?? 0) > 4 && <span className="font-mono text-[0.625rem]">+{model.capabilities!.length - 4}</span>}
+                            </span>
+                            <span className="hidden w-14 shrink-0 text-right font-mono text-[0.6875rem] text-mist tabular-nums md:block">{tokens(model.contextWindow)}</span>
+                            <span className="hidden w-24 shrink-0 text-right font-mono text-[0.6875rem] text-mist tabular-nums xl:block">{released(model.released)}</span>
+                            <span className="w-28 shrink-0 text-right sm:w-36">
+                              {model.price ? (
+                                <>
+                                  <span className="block font-mono text-sm text-fog tabular-nums">
+                                    {credits(cost)} <span className="text-[0.6875rem] text-mist">{turnUnit(model.price)}</span>
+                                  </span>
+                                  <span className="mt-1 ml-auto block h-1 w-20 overflow-hidden rounded-full bg-raised sm:w-28">
+                                    <span
+                                      className="block h-full rounded-full bg-gradient-to-r from-accent-dim to-accent"
+                                      style={{ width: `${share * 100}%` }}
+                                    />
+                                  </span>
+                                </>
+                              ) : (
+                                <span className="font-mono text-[0.6875rem] text-mist">not for sale here</span>
+                              )}
+                            </span>
+                            {tryHref ? (
+                              <Link href={tryHref} onClick={(event) => event.stopPropagation()} className="btn-ghost hidden shrink-0 px-3 py-1 text-xs md:inline-flex">
                                 Try
                               </Link>
-                            ) : null}
+                            ) : (
+                              <span className="hidden w-12 shrink-0 md:block" />
+                            )}
+                            <ChevronIcon className={`size-3.5 shrink-0 text-mist transition ${open ? "rotate-180" : ""}`} />
                           </div>
-                        </div>
-
-                        {open && <ModelDetail model={model} tryHref={tryable ? `/playground?model=${encodeURIComponent(model.id)}&mode=${mode}` : null} />}
-                      </div>
-                    );
-                  })}
-              </div>
+                          {open && <ModelDetail model={model} tryHref={tryHref} />}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </article>
             );
           })}
         </div>
@@ -475,13 +407,13 @@ function ModelDetail({ model, tryHref }: { model: CatalogModel; tryHref: string 
   if (model.maxOutputTokens) facts.push(["Max output", `${formatCredits(model.maxOutputTokens)} tokens`]);
   if (model.modalities) facts.push(["Modalities", `${model.modalities.input.join(", ") || "text"} → ${model.modalities.output.join(", ") || "text"}`]);
   if (model.released) facts.push(["Released", released(model.released)]);
-  facts.push(["Zero data retention", model.zdr === undefined ? "unknown" : model.zdr ? "yes" : "not on every route"]);
-  facts.push(["Trains on prompts", model.noTraining === undefined ? "unknown" : model.noTraining ? "never" : "may"]);
+  facts.push(["Zero data retention", <Mark key="zdr" value={model.zdr} />]);
+  facts.push(["Never trains on prompts", <Mark key="training" value={model.noTraining} />]);
 
   const curl = model.type === "language" ? snippets.curl({ origin: SITE_URL, model: model.id, message: "hi" }) : null;
 
   return (
-    <div className="animate-rise grid gap-6 border-t border-line/60 bg-ink/40 px-4 py-5 md:grid-cols-[1.1fr_1fr] md:px-6">
+    <div className="animate-rise grid gap-6 border-t border-line/70 bg-ink/50 px-4 py-5 sm:px-5 md:grid-cols-[1.1fr_1fr] md:px-6">
       <div>
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="text-lg font-semibold tracking-tight">{model.name}</h3>
