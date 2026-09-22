@@ -5,8 +5,8 @@ import { costExamples } from "@/lib/cost-examples";
 import { ECHO_MODEL } from "@/lib/gateway";
 import { MAX_ACTIVE_KEYS } from "@/lib/limits";
 import { CREDITS_PER_USD, MARGIN, MIN_CREDITS_PER_REQUEST } from "@/lib/pricing";
-import { featuredProviders, makerOf } from "@/lib/providers";
-import { OriginCode } from "../quickstart";
+import { featuredProviders, makerInfo, makerOf } from "@/lib/providers";
+import { BaseUrl, OriginCode } from "../quickstart";
 import { Callout, Doc, Endpoint, H2, H3, number, Param, Params, Table } from "../ui";
 
 // The API reference, remaining pages. Numbers are read from the pricing and
@@ -47,6 +47,66 @@ export function Embeddings() {
         <code>402 insufficient_credits</code> and the message{" "}
         <code>This call needs about N credits, more than your balance covers.</code>
       </p>
+    </Doc>
+  );
+}
+
+export function Evaluations() {
+  return (
+    <Doc slug="api/evaluations" lede="Typed answers about a piece of text, from TypeSafe AI's Jev: a probability, a choice from options you give, or a level on a rubric. For routing, classifying and checking things in code, without parsing prose.">
+      <Endpoint method="POST" path="/v1/systemone" />
+      <Endpoint method="POST" path="/typesafe/v1/systemone" note="the same endpoint under TypeSafe's path" />
+      <OriginCode
+        title="curl"
+        code={`curl {origin}/v1/systemone \\
+  -H "Authorization: Bearer $KREDIT_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{ "model": "typesafe-ai/jev",
+        "state": "I was charged twice for my subscription and want the second charge refunded.",
+        "questions": {
+          "refund": { "type": "noul", "instructions": "Is the customer asking for money back?" },
+          "team": { "type": "choice", "instructions": "Which team should handle this?",
+                    "criteria": { "billing": "Charges and refunds", "technical": "Bugs and outages" } },
+          "urgency": { "type": "score", "instructions": "How urgent is this?",
+                       "criteria": ["Can wait a few days", "Should be handled today", "The customer is blocked"] } } }'
+
+{ "model": "typesafe-ai/jev",
+  "answers": {
+    "refund": { "type": "noul", "noul": 0.98 },
+    "team": { "type": "choice", "choice": "billing", "confidence": 1, "probabilities": { "billing": 1, "technical": 0 } },
+    "urgency": { "type": "score", "score": 1.95, "legend": { "0": "Can wait a few days", "1": "Should be handled today", "2": "The customer is blocked" } } },
+  "usage": { "input_tokens": 368, "output_tokens": 62 } }`}
+      />
+      <H2>Request</H2>
+      <Params>
+        <Param name="model" type="string" required>
+          An evaluation model (<code>typesafe-ai/jev</code>). A chat model here answers <code>400 model_not_supported</code>;
+          an evaluation model on <code>/v1/chat/completions</code> is refused the same way.
+        </Param>
+        <Param name="state" type="string | object" required>
+          What the model looks at: a message, a document, a JSON record.
+        </Param>
+        <Param name="questions" type="object" required>
+          Named questions, each with a <code>type</code> and <code>instructions</code>. <code>noul</code> answers with a
+          probability that the statement holds. <code>choice</code> needs <code>criteria</code>, an object of option
+          names and descriptions, and answers with one of them plus the probability of each. <code>score</code> needs{" "}
+          <code>criteria</code>, an array of rubric levels from lowest to highest, and answers with the expected level
+          (1.95 sits between the second and third) and a <code>legend</code> naming them. All questions are answered in
+          parallel against the same state.
+        </Param>
+      </Params>
+      <H2>Response</H2>
+      <p>
+        TypeSafe&apos;s JSON, plus <code>x-kredit-credits-charged</code> and <code>x-kredit-balance</code>. Billed on the
+        input tokens the gateway reports; the answers cost nothing. There is no streaming, and the balance is checked
+        against an estimate of the input before the call goes out.
+      </p>
+      <H2>With the TypeSafe SDK</H2>
+      <p>
+        The SDK works unchanged: give it your Kredit key as <code>apiKey</code> and the base URL below, with{" "}
+        <code>/typesafe</code> in place of <code>/v1</code>.
+      </p>
+      <BaseUrl />
     </Doc>
   );
 }
@@ -175,8 +235,12 @@ export async function Models() {
     const maker = makerOf(model.id);
     counts.set(maker, (counts.get(maker) ?? 0) + 1);
   }
+  counts.delete(makerOf(ECHO_MODEL));
+  // Every maker the server has: OpenAI and TypeSafe AI (Jev) first, then the rest by size.
+  const pinned = ["openai", "typesafe-ai"];
+  const rank = (id: string) => (pinned.includes(id) ? pinned.indexOf(id) - pinned.length : 0);
   const makers = live
-    ? featuredProviders.filter((maker) => counts.has(maker.id)).sort((a, b) => counts.get(b.id)! - counts.get(a.id)!)
+    ? [...counts.keys()].map(makerInfo).sort((a, b) => rank(a.id) - rank(b.id) || counts.get(b.id)! - counts.get(a.id)! || a.name.localeCompare(b.name))
     : featuredProviders;
 
   return (
@@ -203,8 +267,8 @@ export async function Models() {
           <code>:online</code> is priced like its base model.
         </Param>
         <Param name="type" type="string">
-          <code>language</code>, <code>embedding</code>, <code>image</code>, <code>video</code> or <code>other</code>.
-          Each endpoint accepts only its own type.
+          <code>language</code>, <code>embedding</code>, <code>image</code>, <code>video</code>, <code>evaluation</code>{" "}
+          or <code>other</code>. Each endpoint accepts only its own type.
         </Param>
         <Param name="context_window" type="integer">
           Present when the provider publishes it.

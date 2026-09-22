@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import { Account, Billing, Embeddings, Errors, Images, Limits, Models, OpenApi, Videos } from "./api-more";
+import { Account, Billing, Embeddings, Errors, Evaluations, Images, Limits, Models, OpenApi, Videos } from "./api-more";
 import { Authentication, ChatCompletions, Messages, Responses, Streaming } from "./api-core";
 import { Claims, Record, ReferralsPage, Scoring, StreaksPage, TopUps } from "./earn";
 import { HowItWorks, QuickstartPage, Rules } from "./getting-started";
@@ -23,6 +23,7 @@ export const pages: Record<string, ComponentType> = {
   "api/responses": Responses,
   "api/messages": Messages,
   "api/embeddings": Embeddings,
+  "api/evaluations": Evaluations,
   "api/images": Images,
   "api/videos": Videos,
   "api/models": Models,

@@ -1,7 +1,7 @@
 import { heldFor, hold, planSpend } from "./budget.ts";
-import { catalog, priceFor, typeFor } from "./catalog.ts";
+import { catalog, priceFor, typeFor, upstreamFor } from "./catalog.ts";
 import type { Dialect } from "./dialects.ts";
-import { chargeHeaders, ECHO_MODEL, settleTokens, upstream, type Caller } from "./gateway.ts";
+import { chargeHeaders, ECHO_MODEL, settleTokens, upstreams, type Caller } from "./gateway.ts";
 import { getBalance } from "./ledger.ts";
 import { estimateTokens, type TokenUsage } from "./pricing.ts";
 
@@ -21,8 +21,7 @@ export async function proxyCall(caller: Caller, request: Request, body: Record<s
   const parsed = dialect.parse(body);
   if (typeof parsed === "string") return error(400, parsed, "invalid_body");
 
-  const { baseUrl, apiKey, isOpenRouter } = upstream();
-  if (!apiKey) {
+  if (upstreams().length === 0) {
     return error(
       503,
       `No AI provider is configured on this server yet. Use the model "${ECHO_MODEL}" on /v1/chat/completions to test your key.`,
@@ -34,6 +33,7 @@ export async function proxyCall(caller: Caller, request: Request, body: Record<s
   const type = await typeFor(parsed.model);
   if (type && type !== "language") return error(400, `"${parsed.model}" is not a chat model.`, "model_not_supported");
   const price = await priceFor(parsed.model);
+  const { baseUrl, apiKey, isOpenRouter } = await upstreamFor(parsed.model);
   if (!price) {
     if (!(await catalog()).live) {
       return error(502, "The AI provider's model list could not be read. Try again in a moment.", "provider_unreachable");

@@ -1,4 +1,4 @@
-import { ECHO_MODEL, upstream } from "./gateway.ts";
+import { ECHO_MODEL, upstream, upstreams, type Upstream } from "./gateway.ts";
 import { cheapestVideoRate, CREDITS_PER_USD, ECHO_PRICE, MARGIN, type ModelPrice, type PriceTier, type VideoRate } from "./pricing.ts";
 
 // The models this deployment can reach, read from the provider once and kept
@@ -8,7 +8,7 @@ import { cheapestVideoRate, CREDITS_PER_USD, ECHO_PRICE, MARGIN, type ModelPrice
 // Vercel AI Gateway publishes its list, with prices, at /v1/models without a
 // key. OpenRouter's shape is read too, so either can sit behind UPSTREAM_BASE_URL.
 
-export type ModelType = "language" | "embedding" | "image" | "video" | "other";
+export type ModelType = "language" | "embedding" | "image" | "video" | "evaluation" | "other";
 
 // What a caller pays, margin included, in the unit the model is sold by.
 export type CatalogPrice =
@@ -31,6 +31,7 @@ type Loaded = {
   raw: Record<string, unknown>[]; // the provider's own entries, passed through by /v1/models
   prices: Map<string, ModelPrice>;
   types: Map<string, ModelType>;
+  sources: Map<string, Upstream>; // which provider serves each model
 };
 
 const ECHO: CatalogModel = {
@@ -103,7 +104,7 @@ function priceOf(model: Record<string, unknown>): ModelPrice | null {
   // Vercel: input/output; OpenRouter: prompt/completion. Embedding models
   // write nothing back, so they list no output price.
   const input = num(pricing.input) ?? num(pricing.prompt) ?? (flat ? 0 : undefined);
-  const output = num(pricing.output) ?? num(pricing.completion) ?? (type === "embedding" || flat ? 0 : undefined);
+  const output = num(pricing.output) ?? num(pricing.completion) ?? (type === "embedding" || type === "evaluation" || flat ? 0 : undefined);
   if (input === undefined || output === undefined) return null;
   const top = model.top_provider as Record<string, unknown> | undefined;
   const maxOutputTokens = num(model.max_tokens) ?? num(top?.max_completion_tokens);
@@ -124,57 +125,71 @@ function priceOf(model: Record<string, unknown>): ModelPrice | null {
 
 function typeOf(model: Record<string, unknown>): ModelType {
   const type = model.type;
-  if (type === "language" || type === "embedding" || type === "image" || type === "video") return type;
+  if (type === "language" || type === "embedding" || type === "image" || type === "video" || type === "evaluation") return type;
   if (type === undefined) return "language"; // OpenRouter lists language models only
   return "other";
+}
+
+// The provider's display name, without the maker OpenRouter puts in front ("OpenAI: GPT-4o").
+function modelName(model: Record<string, unknown>, id: string) {
+  const name = typeof model.name === "string" ? model.name : id;
+  return name.includes(": ") ? name.slice(name.indexOf(": ") + 2) : name;
+}
+
+// One provider's list, parsed; null when it could not be read.
+async function fetchModels({ baseUrl, apiKey }: Upstream): Promise<Record<string, unknown>[] | null> {
+  try {
+    const response = await fetch(`${baseUrl}/models`, {
+      headers: { authorization: `Bearer ${apiKey}` },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!response.ok) return null;
+    const data = ((await response.json()).data ?? []) as Record<string, unknown>[];
+    return data.filter((model) => typeof model.id === "string");
+  } catch {
+    // A provider's list is a nicety; the echo model is always available.
+    return null;
+  }
 }
 
 async function load(): Promise<Loaded> {
   const cached = holder.kreditCatalog;
   if (cached && cached.at > Date.now() - CACHE_MS) return cached.value;
 
-  const { baseUrl, apiKey } = upstream();
-  let value: Loaded = {
-    catalog: { live: false, models: [ECHO] },
+  const providers = upstreams();
+  const lists = await Promise.all(providers.map(fetchModels));
+  const value: Loaded = {
+    catalog: { live: lists.some(Boolean), models: [ECHO] },
     raw: [],
     prices: new Map([[ECHO_MODEL, ECHO_PRICE]]),
     types: new Map([[ECHO_MODEL, "language"]]),
+    sources: new Map(),
   };
-  if (apiKey) {
-    try {
-      const response = await fetch(`${baseUrl}/models`, {
-        headers: { authorization: `Bearer ${apiKey}` },
-        signal: AbortSignal.timeout(10_000),
+  // Providers are merged in order, so a model on both is served by the first.
+  for (const [index, list] of lists.entries()) {
+    for (const model of list ?? []) {
+      const id = model.id as string;
+      if (value.sources.has(id)) continue;
+      // OpenRouter's own routers (openrouter/auto, …) pick a model for you; the price can't be known in advance.
+      if (id.startsWith("openrouter/")) continue;
+      const price = priceOf(model);
+      const type = typeOf(model);
+      if (price) value.prices.set(id, price);
+      value.types.set(id, type);
+      value.sources.set(id, providers[index]);
+      value.raw.push(model);
+      value.catalog.models.push({
+        id,
+        name: modelName(model, id),
+        provider: providerOf(id),
+        type,
+        price: price ? catalogPrice(price, type) : null,
+        ...(price?.contextWindow && { contextWindow: price.contextWindow }),
       });
-      if (response.ok) {
-        const data = ((await response.json()).data ?? []) as Record<string, unknown>[];
-        const known = data.filter((model) => typeof model.id === "string");
-        const prices = new Map(value.prices);
-        const types = new Map(value.types);
-        const models: CatalogModel[] = [ECHO];
-        for (const model of known) {
-          const id = model.id as string;
-          const price = priceOf(model);
-          const type = typeOf(model);
-          if (price) prices.set(id, price);
-          types.set(id, type);
-          models.push({
-            id,
-            name: typeof model.name === "string" ? model.name : id,
-            provider: providerOf(id),
-            type,
-            price: price ? catalogPrice(price, type) : null,
-            ...(price?.contextWindow && { contextWindow: price.contextWindow }),
-          });
-        }
-        value = { catalog: { live: true, models }, raw: known, prices, types };
-      }
-    } catch {
-      // The provider's list is a nicety; the echo model is always available.
     }
   }
   // A failed fetch is retried on the next request instead of being cached.
-  if (value.catalog.live || !apiKey) holder.kreditCatalog = { at: Date.now(), value };
+  if (lists.every(Boolean)) holder.kreditCatalog = { at: Date.now(), value };
   return value;
 }
 
@@ -188,6 +203,16 @@ export const providerModels = async () => (await load()).raw;
 export async function priceFor(modelId: string) {
   const { prices } = await load();
   return prices.get(modelId) ?? prices.get(modelId.split(":")[0]) ?? null;
+}
+
+// The provider a model is sent to: the one that lists it, else the main one.
+// A variant such as "openai/gpt-4o:online" is OpenRouter's way of asking for
+// extras, so it goes there whenever OpenRouter is connected.
+export async function upstreamFor(modelId: string): Promise<Upstream> {
+  const { sources } = await load();
+  const providers = upstreams();
+  const openRouter = modelId.includes(":") ? providers.find((provider) => provider.isOpenRouter) : undefined;
+  return sources.get(modelId) ?? openRouter ?? sources.get(modelId.split(":")[0]) ?? providers[0] ?? upstream();
 }
 
 export async function typeFor(modelId: string) {

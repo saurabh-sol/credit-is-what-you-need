@@ -10,6 +10,7 @@ import type { Catalog } from "@/lib/catalog";
 import { Composer } from "./composer";
 import { ModeSwitch } from "./mode-switch";
 import { Settings } from "./settings";
+import { Evaluate } from "./evaluate";
 import { Studio } from "./studio";
 import { Transcript } from "./transcript";
 import { DEFAULT_MODELS, type Creation, type Failure, type ImageOptions, type Mode, type Turn, type VideoOptions } from "./types";
@@ -173,7 +174,7 @@ export function Playground() {
 
   async function make(prompt: string) {
     const text = prompt.trim();
-    if (!text || busy || blocked || mode === "text") return;
+    if (!text || busy || blocked || mode === "text" || mode === "evaluate") return;
     const id = (lastId.current += 1);
     const kind = mode;
     setCreations((current) => [{ id, kind, prompt: text, model, files: [] }, ...current]);
@@ -248,6 +249,8 @@ export function Playground() {
               }}
             />
           </>
+        ) : mode === "evaluate" ? (
+          <Evaluate model={model} state={signedIn ? "ready" : session.isLoading ? "loading" : "signed-out"} blocked={blocked} />
         ) : (
           <Studio
             mode={mode}
