@@ -28,9 +28,7 @@ the credits into its ledger (`POST /api/claim/confirm`).
 | KreditSwapBuy, Robinhood Chain mainnet (4663) | [`0x5965ab9b7FE7119d909f1e63B6Ad0e72a62715FA`](https://robinhoodchain.blockscout.com/address/0x5965ab9b7FE7119d909f1e63B6Ad0e72a62715FA) | block 69564721, tx `0xbc2139480f5fc01239f89704ba25687a4f2cf33185c3311c405977462b68bf9f` | [Sourcify](https://sourcify.dev/server/v2/contract/4663/0x5965ab9b7FE7119d909f1e63B6Ad0e72a62715FA) |
 
 Owner and treasury are the deployer wallet `0xBeed…3323`; the signer is `0x59B5…7764`.
-KreditSwapBuy trades through SwapRouter02 with WETH `0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73`;
-its token is unset (buying off) until `scripts/swap-buy-admin.mjs set-token`.
-Set `TOPUP_SWAP_ADDRESS=0x5965ab9b7FE7119d909f1e63B6Ad0e72a62715FA` next to the `TOPUP_TOKEN_*` values.
+KreditSwapBuy is superseded by KreditCheckout (below) and has no token set.
 Set `RECEIPTS_ADDRESS_MAINNET=0x46C668199e07eDD479A9309B0866cD6900E88bdD` and
 `RECEIPTS_FROM_BLOCK_MAINNET=69528429` next to the signer key.
 
@@ -90,67 +88,52 @@ cast send <address> "setToken(address,uint8,uint256)" $TOKEN 18 100000000 --rpc-
 # 100000000 = 100 credits per whole token (credits × 1e6)
 ```
 
-## KreditSwapBuy: buying credits with ETH
+## KreditCheckout: buying credits with USDG or ETH
 
-`src/KreditSwapBuy.sol` lets a wallet buy credits with ETH in one transaction.
-`buyWithEth(minTokens, deadline)` sends the ETH to Uniswap v3's SwapRouter02
-(`0xCaf681a66D020601342297493863E78C959E5cb2` on Robinhood Chain), swaps it
-for the project token with the treasury as the recipient, and emits
-`Purchased(buyer, token, ethIn, amount, credits)`. The contract never holds
-funds: a swap that returns less than `minTokens`, or lands after `deadline`,
-reverts the whole purchase. One purchase is capped at `maxCreditsPerBuy`
-(100,000 credits by default). Owner-only: `setToken` (token, decimals, pool
-fee tier, credits per token × 1e6), `setTreasury`, `setMaxCreditsPerBuy`,
-`setPaused`, `transferOwnership`.
+`src/KreditCheckout.sol` sells credits at a fixed dollar price. USDG (Global
+Dollar, `0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168`, 6 decimals) is the unit
+of account: `usdgPerCredit` base units buy one credit, 800 = $0.0008, so 1,000
+credits cost $0.80.
 
-Deploy (buying stays off until `setToken`):
+- `buyWithUsdg(credits)` moves exactly `costOf(credits)` USDG from the buyer to
+  the treasury (`transferFrom`, so the buyer approves that amount first).
+- `buyWithEth(minCredits, deadline)` sends the ETH to Uniswap v3's SwapRouter02
+  (`0xCaf681a66D020601342297493863E78C959E5cb2`), swaps it for USDG through the
+  WETH/USDG pool (fee tier 100 = 0.01%) with the treasury as the recipient, and
+  credits whatever whole credits the USDG that came out buys. Fewer than
+  `minCredits`, or a block after `deadline`, reverts the whole purchase.
+
+Both emit `Purchased(buyer, USDG, ethIn, usdgAmount, credits)` (the same event
+KreditSwapBuy wrote, `ethIn` zero for USDG). The contract never holds funds.
+One purchase is capped at `maxCreditsPerBuy` (100,000 credits by default).
+Owner-only: `setPrice`, `setTreasury`, `setMaxCreditsPerBuy`, `setPaused`,
+`transferOwnership`.
+
+Deploy (buying is on as soon as the server has `TOPUP_CHECKOUT_ADDRESS`):
 
 ```sh
 cd contracts && forge build
-node --env-file=.env.local scripts/deploy-swap-buy.mjs     # DEPLOYER_KEY, TOPUP_TREASURY_ADDRESS
-# or: TREASURY=$TREASURY forge script script/DeploySwapBuy.s.sol --rpc-url mainnet --private-key $DEPLOYER_KEY --broadcast
+node --env-file=.env.local scripts/deploy-checkout.mjs     # DEPLOYER_KEY, TOPUP_TREASURY_ADDRESS
+# or: TREASURY=$TREASURY forge script script/DeployCheckout.s.sol --rpc-url mainnet --private-key $DEPLOYER_KEY --broadcast
 ```
 
-Verify: `forge verify-contract <address> src/KreditSwapBuy.sol:KreditSwapBuy --chain 4663 --verifier sourcify --constructor-args $(cast abi-encode "constructor(address,address,address)" $OWNER $TREASURY 0xCaf681a66D020601342297493863E78C959E5cb2)`,
+Verify: `forge verify-contract <address> src/KreditCheckout.sol:KreditCheckout --chain 4663 --verifier sourcify --constructor-args $(cast abi-encode "constructor(address,address,address,address,uint24,uint256)" $OWNER $TREASURY 0xCaf681a66D020601342297493863E78C959E5cb2 0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168 100 800)`,
 then Blockscout's "Verify & publish" page as for KreditReceipts (single file,
-0.8.28, paris, optimizer 2000 runs; the file inlines its router interface).
+0.8.28, paris, optimizer 2000 runs; the file inlines its interfaces).
 
-Switch a token on, with the on-chain checks first:
-
-```sh
-node --env-file=.env.local scripts/swap-buy-admin.mjs check <token>          # symbol, decimals, WETH pools, a quote
-node --env-file=.env.local scripts/swap-buy-admin.mjs set-token <token> 3000  # 0.01 credits per token = 100 tokens per credit
-node --env-file=.env.local scripts/swap-buy-admin.mjs status
-```
-
-`set-token` also calls `setToken` on KreditReceipts so both contracts price
-the token the same way. Then put `TOPUP_SWAP_ADDRESS`, `TOPUP_POOL_FEE` and
-the `TOPUP_TOKEN_*` values it prints into the server's environment, and run
-`scripts/swap-buy-test.mjs` for a real purchase.
-
-## Testing end to end
-
-`scripts/receipts-test.mjs` runs the whole flow against a local chain: scan,
-signed receipt, on-chain claim, confirmation, replay, and recovery of a claim
-the browser never confirmed. It needs four things running:
+Operate it:
 
 ```sh
-anvil --port 8547 --chain-id 4663
-node scripts/lib/mock-explorer.mjs 8548              # a fake Blockscout with a fake record
-cd contracts && SIGNER=0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC TREASURY=0x90F79bf6EB2c4f870365E785982E1f101E93b906 \
-  forge script script/Deploy.s.sol --rpc-url http://127.0.0.1:8547 \
-  --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --broadcast
-# prints 0x5FbDB2315678afecb367f032d93F642f64180aa3 on a fresh anvil
-
-SESSION_SECRET=<32+ chars> DATABASE_URL=<a scratch Postgres> \
-NEXT_PUBLIC_RPC_MAINNET=http://127.0.0.1:8547 EXPLORER_API_MAINNET=http://127.0.0.1:8548 \
-RECEIPTS_ADDRESS_MAINNET=0x5FbDB2315678afecb367f032d93F642f64180aa3 \
-RECEIPT_SIGNER_KEY=0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a \
-  npx next dev -p 3471
-
-BASE_URL=http://localhost:3471 SESSION_SECRET=<same> DATABASE_URL=<same> \
-WALLET_KEY=0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d \
-  npm run test:receipts
+node --env-file=.env.local scripts/checkout-admin.mjs status            # price, cap, pool, an ETH quote for 1,000 credits
+node --env-file=.env.local scripts/checkout-admin.mjs set-price 800     # $0.0008 per credit
+node --env-file=.env.local scripts/checkout-admin.mjs pause | unpause
 ```
 
-The keys above are anvil's well-known test keys; never use them anywhere real.
+Then run `scripts/checkout-test.mjs` for a real purchase each way (the ETH leg
+pays USDG to the treasury, which can then pay the USDG leg).
+
+## KreditSwapBuy (superseded)
+
+`src/KreditSwapBuy.sol` was the first take: ETH swapped for a project token.
+It is still deployed (table above) with no token set, so it does nothing, and
+the app no longer reads it. KreditCheckout replaced it.

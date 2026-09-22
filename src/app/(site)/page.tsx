@@ -176,7 +176,7 @@ const stats = [
 ];
 
 const topUpPoints = [
-  "You pay from your own wallet, straight to the treasury.",
+  "You pay from your own wallet, straight to the treasury, and the contract writes the receipt.",
   "The server credits only what the transaction receipt proves.",
   "Every top-up shows on the public distribution page.",
 ];
@@ -200,7 +200,7 @@ const faqs = [
   },
   {
     question: "Can I buy credits instead of earning them?",
-    answer: "Earning is the main way and costs nothing. Once top-ups are open you can also send the project token from your own wallet and receive credits when the chain confirms the payment. Every top-up is listed on the public distribution page.",
+    answer: "Earning is the main way and costs nothing. Once top-ups are open you can also buy credits at a fixed price, 1,000 credits for $0.80, paid in USDG or ETH from your own wallet, and they land when the chain confirms the payment. Every top-up is listed on the public distribution page.",
   },
   {
     question: "What if a key leaks?",
@@ -465,10 +465,11 @@ export default function Home() {
       <section id="buy" className="mx-auto max-w-6xl px-4 py-24 md:py-32">
         <div className="grid items-center gap-x-16 gap-y-12 lg:grid-cols-[1.2fr_1fr]">
           <div>
-            <SectionHeading eyebrow="Need more?" title="Top up with the project token">
+            <SectionHeading eyebrow="Need more?" title="Top up with USDG or ETH">
               Earning comes first, and it is free. When a big job needs more than your
-              record has earned, send tokens from your own wallet and the credits land
-              as soon as the chain confirms. Nothing is approved, locked or held.
+              record has earned, buy credits at a fixed price, 1,000 for $0.80, paid in
+              USDG or ETH from your own wallet. The credits land as soon as the chain
+              confirms. Nothing is locked or held.
             </SectionHeading>
             <Reveal delay={260}>
               <ul className="mt-8 space-y-3 text-sm text-mist">

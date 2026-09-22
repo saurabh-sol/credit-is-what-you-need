@@ -282,7 +282,7 @@ export function usageByModel(address: string, filter: { from?: string; to?: stri
   );
 }
 
-// --- Buying credits with the project token -----------------------------------
+// --- Buying credits with USDG or ETH -----------------------------------------
 
 export class TopUpUsedError extends Error {}
 

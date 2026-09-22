@@ -22,7 +22,7 @@ export const docGroups: DocGroup[] = [
       { slug: "earn/streaks", title: "Streaks", description: "Consecutive active days pay a growing daily bonus." },
       { slug: "earn/referrals", title: "Referrals", description: "Invite a wallet and earn a share of every claim it makes." },
       { slug: "earn/claims", title: "Claims and receipts", description: "How a claim is paid, and the on-chain receipt that proves it." },
-      { slug: "earn/top-ups", title: "Buying credits", description: "Pay with the project token when you need more than you earned." },
+      { slug: "earn/top-ups", title: "Buying credits", description: "Pay in USDG or ETH when you need more than you earned." },
     ],
   },
   {

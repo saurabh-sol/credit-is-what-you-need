@@ -71,7 +71,7 @@ const models = await json(await fetch(`${base}/api/models`));
 check("the model catalog always has the test model", models.models.some((model) => model.id === "kredit/echo"));
 const { config } = await json(await fetch(`${base}/api/topup`));
 if (config) {
-  check("top-up config names the chain to pay on", Number.isInteger(config.chainId) && config.creditsPerToken > 0);
+  check("top-up config names the chain to pay on", Number.isInteger(config.chainId) && config.usdgPerCredit > 0);
   const junk = await app("/api/topup", { method: "POST", body: JSON.stringify({ hash: "0x1234" }) });
   check("a malformed payment hash is refused", junk.status === 400);
 } else {

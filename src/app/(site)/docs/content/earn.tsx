@@ -355,39 +355,41 @@ export function Claims() {
 
 export function TopUps() {
   return (
-    <Doc slug="earn/top-ups" lede="Earning is the main way in and costs nothing. When a job needs more than you earned, you can buy credits with ETH or with the project token, straight from your wallet.">
+    <Doc slug="earn/top-ups" lede="Earning is the main way in and costs nothing. When a job needs more than you earned, you can buy credits at a fixed price, 1,000 credits for $0.80, paid in USDG or in ETH straight from your wallet.">
       <H2>How a top-up works</H2>
       <Steps>
-        <Step title="Choose an amount">
+        <Step title="Choose how many credits">
           <p>
-            On <Link href="/dashboard/credits">Credits</Link>, pick a preset or type an amount of ETH. The card asks
-            Uniswap for the current price and shows what you get: <em>N TOKEN buys 1 credit</em>. If you already
-            hold the token, switch the card to pay with it directly.
+            On <Link href="/dashboard/credits">Credits</Link>, pick a preset or type a number of credits. The price
+            is fixed in dollars: <em>{number(1000)} credits cost $0.80</em>. Then choose to pay in USDG (a dollar
+            stablecoin on Robinhood Chain) or in ETH; for ETH the card asks Uniswap what that many dollars cost
+            right now.
           </p>
         </Step>
         <Step title="Pay">
           <p>
-            Paying in ETH is one transaction to the <code>KreditSwapBuy</code> contract. It swaps your ETH for the
-            token on Uniswap v3 with the treasury as the recipient, so the tokens go from the pool to the treasury
-            and nowhere else, and it writes a <code>Purchased</code> event: the receipt anyone can read on
-            Blockscout. If the pool gives less than 1% under the quote, or the price moves for ten minutes, the
-            whole transaction reverts and your ETH stays with you. Paying in tokens is a plain ERC-20{" "}
-            <code>transfer</code> to the treasury. Nothing is approved or held either way.
+            Both ways are a call to the <code>KreditCheckout</code> contract, which pays the treasury and writes a{" "}
+            <code>Purchased</code> event: the receipt anyone can read on Blockscout. Paying in USDG is an approval
+            for exactly the price, then <code>buyWithUsdg</code>, which moves that USDG from your wallet to the
+            treasury. Paying in ETH is one <code>buyWithEth</code> transaction: the contract swaps your ETH for
+            USDG on Uniswap v3 with the treasury as the recipient, so the USDG goes from the pool to the treasury
+            and nowhere else. The card sends 1% more ETH than the quote so the swap still clears if the price
+            moves; the extra buys a few more credits. If the pool gives less than you asked for, or the price
+            moves for ten minutes, the whole transaction reverts and your ETH stays with you. Nothing is held.
           </p>
         </Step>
         <Step title="The server checks the receipt">
           <p>
             The dashboard submits the transaction hash. The server reads the transaction receipt and counts{" "}
-            <strong>only</strong> a <code>Purchased</code> event from the swap contract for your signed-in wallet,
-            or Transfer events of the right token from your wallet to the treasury. Other contracts, other tokens,
-            other senders and other recipients in the same transaction count for nothing.
+            <strong>only</strong> a <code>Purchased</code> event from the checkout contract for your signed-in
+            wallet. Other contracts, other buyers and other tokens in the same transaction count for nothing.
           </p>
         </Step>
         <Step title="Credits are added">
           <p>
-            Credits are <code>tokens received × credits per token</code>, rounded down to whole credits, and never
-            more than the contract recorded. Each payment works exactly once; submitting the same hash again answers{" "}
-            <code>409</code>.
+            Credits are <code>USDG received ÷ price per credit</code>, rounded down to whole credits, and never
+            more than the contract recorded. Each payment works exactly once; submitting the same hash again
+            answers <code>409</code>.
           </p>
         </Step>
       </Steps>
@@ -395,9 +397,9 @@ export function TopUps() {
       <H2>From your own code</H2>
       <Endpoint method="GET" path="/api/topup" note="public" />
       <p>
-        Answers <code>{`{ "config": null }`}</code> while buying is off, or the token, symbol, decimals, treasury,
-        credits per token, network and chain id when it is on, plus <code>swap</code> (the swap contract, the
-        Uniswap router and quoter, WETH, the pool fee and the per-purchase cap) when paying in ETH is on.
+        Answers <code>{`{ "config": null }`}</code> while buying is off, or the checkout contract, the USDG token
+        (address, symbol, decimals), the treasury, the price in USDG base units per credit, the Uniswap router and
+        quoter, WETH, the pool fee, the per-purchase cap, the network and the chain id when it is on.
       </p>
       <Endpoint method="POST" path="/api/topup" note="session cookie" />
       <Params>
@@ -409,10 +411,10 @@ export function TopUps() {
       </Params>
       <Callout>
         <p>
-          Buying stays switched off until the operator sets the token, treasury and price. The token price in ETH
-          floats with the market; the number of tokens per credit does not. Every top-up is listed on the public
-          distribution board as <em>Bought</em>, with the tokens paid in. {number(CREDITS_PER_USD)} credits
-          are worth $1 of AI usage whichever way they arrived.
+          Buying stays switched off until the operator sets the checkout contract and the treasury. The price
+          in ETH floats with the market; the price in dollars does not. Every top-up is listed on the public
+          distribution board as <em>Bought</em>, with the USDG paid in. {number(CREDITS_PER_USD)} credits are
+          worth $1 of AI usage whichever way they arrived.
         </p>
       </Callout>
     </Doc>

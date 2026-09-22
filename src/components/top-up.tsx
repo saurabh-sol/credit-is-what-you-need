@@ -2,45 +2,38 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { erc20Abi, formatEther, parseEther, type Address } from "viem";
+import { erc20Abi, formatEther, type Address } from "viem";
 import { useAccount, useBalance, useReadContract, useSwitchChain, useWriteContract } from "wagmi";
 import { CheckIcon, CoinsIcon } from "@/components/icons";
+import { CHECKOUT_ABI } from "@/lib/checkout-abi";
 import { formatCredits } from "@/lib/format";
-import { SWAP_BUY_ABI } from "@/lib/swap-buy-abi";
-import { creditsForPayment, formatTokenAmount, parseTokenAmount, type TopUpConfig } from "@/lib/topup";
+import { costOfCredits, formatTokenAmount, formatUsd, parseCredits, type TopUpConfig } from "@/lib/topup";
 import { QUOTER_V2_ABI } from "@/lib/uniswap";
 import { ACCOUNT_KEY, api } from "@/lib/use-kredit-account";
 import { rewardChains } from "@/lib/wagmi";
 
-type Step = "idle" | "switching" | "signing" | "confirming" | "crediting" | "done";
+type Step = "idle" | "switching" | "approving" | "signing" | "confirming" | "crediting" | "done";
 const stepText: Record<Step, string> = {
   idle: "",
   switching: "Switching network in your wallet",
+  approving: "Approve the USDG in your wallet, then confirm the purchase",
   signing: "Confirm the payment in your wallet",
   confirming: "Waiting for the chain to confirm",
   crediting: "Checking the payment and adding credits",
   done: "",
 };
 
-type Mode = "eth" | "token";
-const tokenPresets = ["1000", "5000", "20000"];
-const ethPresets = ["0.001", "0.005", "0.02"];
-const SLIPPAGE_BPS = BigInt(100); // 1%
+type Mode = "eth" | "usdg";
+const presets = ["1000", "5000", "20000"];
+const SLIPPAGE_BPS = BigInt(100); // ETH sent on top of the quote, so the swap still clears if the price moves 1%
 const SWAP_DEADLINE_SECONDS = 10 * 60;
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// "0.005" -> wei. Returns null for anything that is not a plain positive decimal.
-function parseEthAmount(text: string) {
-  if (!/^\d{1,12}(\.\d{1,18})?$/.test(text.trim())) return null;
-  const wei = parseEther(text.trim());
-  return wei > BigInt(0) ? wei : null;
-}
-
 type Config = TopUpConfig & { chainId: number };
 
-// Pay with ETH (swapped for the project token on Uniswap, straight into the
-// treasury) or with the token itself. Either way the server credits whatever
-// the transaction receipt proves.
+// Pick how many credits, pay the fixed dollar price in USDG or in ETH. Either
+// way the checkout contract pays the treasury and writes a receipt, and the
+// server credits whatever that receipt proves.
 export function TopUp() {
   const { data } = useQuery({
     queryKey: ["topup-config"],
@@ -48,14 +41,16 @@ export function TopUp() {
     staleTime: 600_000,
   });
   const config = data?.config;
-  const [mode, setMode] = useState<Mode | null>(null);
+  const [mode, setMode] = useState<Mode>("eth");
+  const [amount, setAmount] = useState(presets[0]);
+  const credits = parseCredits(amount);
 
   if (data && !config) {
     return (
       <Shell>
         <p className="mt-2 max-w-md leading-relaxed text-mist">
-          Soon you will be able to pay with ETH or the project token and get credits on the spot, for when your
-          on-chain record has not earned enough yet. The rest of Kredit works without it.
+          Soon you will be able to pay with ETH or USDG and get credits on the spot, for when your on-chain record
+          has not earned enough yet. The rest of Kredit works without it.
         </p>
         <p className="chip mt-5">
           <span className="size-1.5 rounded-full bg-mist breathe" /> Not open yet
@@ -71,18 +66,67 @@ export function TopUp() {
     );
   }
 
-  const current: Mode = mode ?? (config.swap ? "eth" : "token");
+  const cost = credits ? costOfCredits(credits, config) : null;
+  const overCap = credits !== null && credits > config.maxCreditsPerBuy;
   return (
     <Shell>
-      {current === "eth" && config.swap ? <PayWithEth config={config} /> : <PayWithToken config={config} />}
-      {config.swap && (
-        <button
-          type="button"
-          onClick={() => setMode(current === "eth" ? "token" : "eth")}
-          className="mt-5 text-xs text-mist underline-offset-4 hover:text-fog hover:underline"
-        >
-          {current === "eth" ? `Have ${config.symbol} already? Pay with it directly` : "Pay with ETH instead"}
-        </button>
+      <p className="mt-2 max-w-md leading-relaxed text-mist">
+        <span className="text-fog">1,000 credits cost {formatUsd(costOfCredits(1_000, config))}</span>, paid in USDG or the same
+        value in ETH. The payment goes straight to Kredit&apos;s treasury through the checkout contract, which writes the
+        receipt; nothing is held.
+      </p>
+
+      <label htmlFor="topup-credits" className="mt-6 block text-sm text-mist">
+        Credits to buy
+      </label>
+      <div className="mt-2 flex gap-2">
+        <input id="topup-credits" inputMode="numeric" value={amount} onChange={(event) => setAmount(event.target.value)} className="field font-mono" />
+        {presets.map((preset) => (
+          <button
+            key={preset}
+            type="button"
+            onClick={() => setAmount(preset)}
+            className={`btn-ghost shrink-0 px-3.5 font-mono text-sm ${amount === preset ? "border-accent/55" : ""}`}
+          >
+            {Number(preset).toLocaleString("en-US")}
+          </button>
+        ))}
+      </div>
+      <p className="mt-2 text-xs text-mist">
+        {credits && cost ? (
+          <>
+            <span className="font-mono text-accent">{formatCredits(credits)}</span> credits for{" "}
+            <span className="font-mono text-fog">{formatUsd(cost)}</span>, about ${(credits / 1000).toFixed(2)} of AI usage
+          </>
+        ) : (
+          "Enter a whole number of credits, like 1000"
+        )}
+      </p>
+      {overCap && (
+        <p className="mt-2 text-xs text-danger">
+          One purchase is capped at {formatCredits(config.maxCreditsPerBuy)} credits. Buy in smaller amounts.
+        </p>
+      )}
+
+      <div className="mt-6 flex gap-2" role="tablist" aria-label="Pay with">
+        {(["eth", "usdg"] as const).map((option) => (
+          <button
+            key={option}
+            type="button"
+            role="tab"
+            aria-selected={mode === option}
+            onClick={() => setMode(option)}
+            className={`btn-ghost px-4 text-sm ${mode === option ? "border-accent/55 text-fog" : ""}`}
+          >
+            {option === "eth" ? "Pay with ETH" : "Pay with USDG"}
+          </button>
+        ))}
+      </div>
+
+      {mode === "eth" ? (
+        <PayWithEth key="eth" config={config} credits={overCap ? null : credits} />
+      ) : (
+        <PayWithUsdg key="usdg" config={config} credits={overCap ? null : credits} />
       )}
     </Shell>
   );
@@ -132,59 +176,62 @@ function usePurchase() {
     }
   }
 
-  const reset = () => setStep("idle");
-  return { step, setStep, error, bought, busy, run, reset };
+  return { step, setStep, error, bought, busy, run };
 }
 
-function PayWithEth({ config }: { config: Config }) {
-  const swap = config.swap!;
+function useWallet() {
   const chain = rewardChains[0];
   const { address, chainId } = useAccount();
   const { switchChainAsync: switchChain } = useSwitchChain();
   const { writeContractAsync: writeContract } = useWriteContract();
+  const ensureChain = async (setStep: (step: Step) => void) => {
+    if (chainId !== chain.id) {
+      setStep("switching");
+      await switchChain({ chainId: chain.id });
+    }
+  };
+  return { chain, address, writeContract, ensureChain };
+}
+
+function PayWithEth({ config, credits }: { config: Config; credits: number | null }) {
+  const { chain, address, writeContract, ensureChain } = useWallet();
   const balance = useBalance({ address, chainId: chain.id, query: { enabled: Boolean(address) } });
-
-  const [amount, setAmount] = useState(ethPresets[1]);
-  const [debounced, setDebounced] = useState(amount);
+  const [debounced, setDebounced] = useState(credits);
   useEffect(() => {
-    const timer = setTimeout(() => setDebounced(amount), 250);
+    const timer = setTimeout(() => setDebounced(credits), 250);
     return () => clearTimeout(timer);
-  }, [amount]);
-  const wei = parseEthAmount(debounced);
+  }, [credits]);
+  const cost = debounced ? costOfCredits(debounced, config) : null;
 
-  // What the pool would give right now; the real swap takes at most 1% less.
+  // The ETH the pool wants right now for that much USDG; 1% more is sent so a
+  // small move before the block lands still clears, and buys a few extra credits.
   const quote = useReadContract({
     abi: QUOTER_V2_ABI,
-    address: swap.quoter as Address,
-    functionName: "quoteExactInputSingle",
-    args: wei
-      ? [{ tokenIn: swap.weth as Address, tokenOut: config.token as Address, amountIn: wei, fee: swap.poolFee, sqrtPriceLimitX96: BigInt(0) }]
+    address: config.quoter as Address,
+    functionName: "quoteExactOutputSingle",
+    args: cost
+      ? [{ tokenIn: config.weth as Address, tokenOut: config.token as Address, amount: cost, fee: config.poolFee, sqrtPriceLimitX96: BigInt(0) }]
       : undefined,
     chainId: chain.id,
-    query: { enabled: Boolean(wei), staleTime: 15_000, refetchInterval: 30_000, retry: 1 },
+    query: { enabled: Boolean(cost), staleTime: 15_000, refetchInterval: 30_000, retry: 1 },
   });
-  const tokensOut = quote.data?.[0];
-  const credits = tokensOut !== undefined ? creditsForPayment(tokensOut, config) : 0;
-  const tooMuch = wei !== null && balance.data !== undefined && wei > balance.data.value;
-  const overCap = credits > swap.maxCreditsPerBuy;
-  const { step, setStep, error, bought, busy, run, reset } = usePurchase();
+  const quoted = quote.data?.[0];
+  const wei = quoted !== undefined ? (quoted * (BigInt(10_000) + SLIPPAGE_BPS)) / BigInt(10_000) : undefined;
+  const tooMuch = wei !== undefined && balance.data !== undefined && wei > balance.data.value;
+  const { step, setStep, error, bought, busy, run } = usePurchase();
 
   async function pay() {
-    if (!wei || !address || tokensOut === undefined) return;
+    if (!debounced || !address || wei === undefined) return;
     await run(
       async () => {
-        if (chainId !== chain.id) {
-          setStep("switching");
-          await switchChain({ chainId: chain.id });
-        }
+        await ensureChain(setStep);
         setStep("signing");
-        const minTokens = (tokensOut * (BigInt(10_000) - SLIPPAGE_BPS)) / BigInt(10_000);
         const deadline = BigInt(Math.floor(Date.now() / 1000) + SWAP_DEADLINE_SECONDS);
         return writeContract({
-          abi: SWAP_BUY_ABI,
-          address: swap.address as Address,
+          abi: CHECKOUT_ABI,
+          address: config.checkout as Address,
           functionName: "buyWithEth",
-          args: [minTokens, deadline],
+          args: [BigInt(debounced), deadline],
           value: wei,
           chainId: chain.id,
         });
@@ -195,55 +242,18 @@ function PayWithEth({ config }: { config: Config }) {
 
   return (
     <>
-      <p className="mt-2 max-w-md leading-relaxed text-mist">
-        Pay in ETH. Uniswap swaps it for {config.symbol} and{" "}
-        <span className="text-fog">{formatCredits(1 / config.creditsPerToken)} {config.symbol} buys 1 credit</span>. The
-        swap and the receipt happen in one transaction; nothing is approved or held.
-      </p>
-
-      <label htmlFor="topup-eth" className="mt-6 block text-sm text-mist">
-        Amount in ETH
-      </label>
-      <div className="mt-2 flex gap-2">
-        <input
-          id="topup-eth"
-          inputMode="decimal"
-          value={amount}
-          disabled={busy}
-          onChange={(event) => {
-            setAmount(event.target.value);
-            reset();
-          }}
-          className="field font-mono"
-        />
-        {ethPresets.map((preset) => (
-          <button
-            key={preset}
-            type="button"
-            disabled={busy}
-            onClick={() => {
-              setAmount(preset);
-              reset();
-            }}
-            className={`btn-ghost shrink-0 px-3.5 font-mono text-sm ${amount === preset ? "border-accent/55" : ""}`}
-          >
-            {preset}
-          </button>
-        ))}
-      </div>
-      <p className="mt-2 flex flex-wrap justify-between gap-2 text-xs text-mist">
+      <p className="mt-4 flex flex-wrap justify-between gap-2 text-xs text-mist">
         <span>
-          {!wei ? (
-            "Enter an amount, like 0.005"
+          {!debounced ? (
+            "Pick how many credits first"
           ) : quote.isError ? (
-            <span className="text-danger">No price right now; the pool may be empty. Try again in a moment.</span>
-          ) : tokensOut === undefined ? (
-            "Getting a price from Uniswap"
+            <span className="text-danger">No ETH price right now. Try again in a moment, or pay with USDG.</span>
+          ) : wei === undefined ? (
+            "Getting the ETH price from Uniswap"
           ) : (
             <>
-              About {formatTokenAmount(tokensOut, config.decimals, 0)} {config.symbol}, so you get{" "}
-              <span className="font-mono text-accent">{formatCredits(credits)}</span> credits, about ${(credits / 1000).toFixed(2)} of
-              AI usage
+              Pay <span className="font-mono text-fog">{formatEth(wei)} ETH</span>: Uniswap swaps it to USDG for the treasury and
+              you get at least <span className="font-mono text-accent">{formatCredits(debounced)}</span> credits
             </>
           )}
         </span>
@@ -251,19 +261,14 @@ function PayWithEth({ config }: { config: Config }) {
           <span className={tooMuch ? "text-danger" : ""}>You hold {formatEth(balance.data.value)} ETH</span>
         )}
       </p>
-      {overCap && (
-        <p className="mt-2 text-xs text-danger">
-          One purchase is capped at {formatCredits(swap.maxCreditsPerBuy)} credits. Buy in smaller amounts.
-        </p>
-      )}
 
       <button
         type="button"
         onClick={pay}
-        disabled={busy || !wei || credits < 1 || tooMuch || overCap || !address}
+        disabled={busy || !debounced || wei === undefined || tooMuch || !address}
         className="btn-primary mt-5 w-full px-5 py-2.5 text-sm sm:w-auto"
       >
-        {!address ? "Reconnect your wallet to pay" : busy ? "Working" : `Pay ${wei ? amount : ""} ETH`}
+        {!address ? "Reconnect your wallet to pay" : busy ? "Working" : `Pay ${wei !== undefined ? formatEth(wei) : ""} ETH`}
       </button>
 
       <Status step={step} bought={bought} error={error} />
@@ -271,11 +276,8 @@ function PayWithEth({ config }: { config: Config }) {
   );
 }
 
-function PayWithToken({ config }: { config: Config }) {
-  const chain = rewardChains[0];
-  const { address, chainId } = useAccount();
-  const { switchChainAsync: switchChain } = useSwitchChain();
-  const { writeContractAsync: writeContract } = useWriteContract();
+function PayWithUsdg({ config, credits }: { config: Config; credits: number | null }) {
+  const { chain, address, writeContract, ensureChain } = useWallet();
   const held = useReadContract({
     abi: erc20Abi,
     address: config.token as Address,
@@ -284,96 +286,76 @@ function PayWithToken({ config }: { config: Config }) {
     chainId: chain.id,
     query: { enabled: Boolean(address) },
   });
-
-  const [amount, setAmount] = useState(tokenPresets[1]);
-  const units = parseTokenAmount(amount, config.decimals);
-  const credits = units ? creditsForPayment(units, config) : 0;
-  const tooMuch = units !== null && held.data !== undefined && units > held.data;
-  const { step, setStep, error, bought, busy, run, reset } = usePurchase();
+  const allowance = useReadContract({
+    abi: erc20Abi,
+    address: config.token as Address,
+    functionName: "allowance",
+    args: address && [address, config.checkout as Address],
+    chainId: chain.id,
+    query: { enabled: Boolean(address) },
+  });
+  const cost = credits ? costOfCredits(credits, config) : null;
+  const tooMuch = cost !== null && held.data !== undefined && cost > held.data;
+  const needsApproval = cost !== null && allowance.data !== undefined && allowance.data < cost;
+  const { step, setStep, error, bought, busy, run } = usePurchase();
 
   async function pay() {
-    if (!units || !address) return;
+    if (!credits || !cost || !address) return;
     await run(
       async () => {
-        if (chainId !== chain.id) {
-          setStep("switching");
-          await switchChain({ chainId: chain.id });
+        await ensureChain(setStep);
+        if (needsApproval) {
+          // Approve exactly this purchase; the contract can never take more.
+          setStep("approving");
+          await writeContract({
+            abi: erc20Abi,
+            address: config.token as Address,
+            functionName: "approve",
+            args: [config.checkout as Address, cost],
+            chainId: chain.id,
+          });
         }
         setStep("signing");
         return writeContract({
-          abi: erc20Abi,
-          address: config.token as Address,
-          functionName: "transfer",
-          args: [config.treasury as Address, units],
+          abi: CHECKOUT_ABI,
+          address: config.checkout as Address,
+          functionName: "buyWithUsdg",
+          args: [BigInt(credits)],
           chainId: chain.id,
         });
       },
-      () => held.refetch(),
+      () => {
+        held.refetch();
+        allowance.refetch();
+      },
     );
   }
 
   return (
     <>
-      <p className="mt-2 max-w-md leading-relaxed text-mist">
-        <span className="text-fog">{formatCredits(1 / config.creditsPerToken)} {config.symbol} buys 1 credit</span>. You send
-        the tokens from your own wallet; nothing is approved or held.
-      </p>
-
-      <label htmlFor="topup-amount" className="mt-6 block text-sm text-mist">
-        Amount in {config.symbol}
-      </label>
-      <div className="mt-2 flex gap-2">
-        <input
-          id="topup-amount"
-          inputMode="decimal"
-          value={amount}
-          disabled={busy}
-          onChange={(event) => {
-            setAmount(event.target.value);
-            reset();
-          }}
-          className="field font-mono"
-        />
-        {tokenPresets.map((preset) => (
-          <button
-            key={preset}
-            type="button"
-            disabled={busy}
-            onClick={() => {
-              setAmount(preset);
-              reset();
-            }}
-            className={`btn-ghost shrink-0 px-3.5 font-mono text-sm ${amount === preset ? "border-accent/55" : ""}`}
-          >
-            {Number(preset).toLocaleString("en-US")}
-          </button>
-        ))}
-      </div>
-      <p className="mt-2 flex flex-wrap justify-between gap-2 text-xs text-mist">
+      <p className="mt-4 flex flex-wrap justify-between gap-2 text-xs text-mist">
         <span>
-          {units ? (
+          {cost ? (
             <>
-              You get <span className="font-mono text-accent">{formatCredits(credits)}</span> credits, about $
-              {(credits / 1000).toFixed(2)} of AI usage
+              Pay <span className="font-mono text-fog">{formatTokenAmount(cost, config.decimals)} USDG</span> from your wallet
+              {needsApproval ? ", after one approval for exactly that amount" : ""}
             </>
           ) : (
-            "Enter an amount, like 12.5"
+            "Pick how many credits first"
           )}
         </span>
         {held.data !== undefined && (
-          <span className={tooMuch ? "text-danger" : ""}>
-            You hold {formatTokenAmount(held.data, config.decimals)} {config.symbol}
-          </span>
+          <span className={tooMuch ? "text-danger" : ""}>You hold {formatTokenAmount(held.data, config.decimals, 2)} USDG</span>
         )}
       </p>
 
       <button
         type="button"
         onClick={pay}
-        disabled={busy || !units || credits < 1 || tooMuch || !address}
+        disabled={busy || !cost || tooMuch || !address}
         className="btn-primary mt-5 w-full px-5 py-2.5 text-sm sm:w-auto"
       >
-        {!address ? "Reconnect your wallet to pay" : busy ? "Working" : `Pay ${units ? amount : ""} ${config.symbol}`}
+        {!address ? "Reconnect your wallet to pay" : busy ? "Working" : `Pay ${cost ? formatTokenAmount(cost, config.decimals) : ""} USDG`}
       </button>
 
       <Status step={step} bought={bought} error={error} />

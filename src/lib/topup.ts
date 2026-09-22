@@ -1,67 +1,57 @@
 import type { NetworkId } from "./networks.ts";
 import { POOL_FEES, UNISWAP_MAINNET } from "./uniswap.ts";
 
-// Buying credits with the project's own token. Two ways in, one rule: only
-// tokens that provably reached the treasury count.
-//   - send tokens straight to the treasury (an ERC-20 transfer), or
-//   - pay ETH to the KreditSwapBuy contract, which swaps it for the token on
-//     Uniswap v3 with the treasury as the recipient and emits `Purchased`.
+// Buying credits at a fixed dollar price through the KreditCheckout contract.
+// USDG (a dollar stablecoin) is the unit of account: `usdgPerCredit` base units
+// buy one credit, 800 = $0.0008, so 1,000 credits cost $0.80. Two ways to pay,
+// one rule: only what the contract recorded in a `Purchased` event counts.
+//   - pay USDG: the contract moves exactly the price from the wallet to the treasury;
+//   - pay ETH: the contract swaps it for USDG on Uniswap v3 with the treasury as
+//     the recipient and credits whatever whole credits came out.
 // The server reads the transaction's receipt and credits what it can prove.
 // Pure logic lives here so the money rules are easy to test.
 
-// How to buy with ETH: the swap contract and the pool it trades through.
-export type SwapConfig = {
-  address: string; // lowercase KreditSwapBuy address
-  router: string; // Uniswap v3 SwapRouter02
-  quoter: string; // Uniswap v3 QuoterV2, for the price preview
-  weth: string; // what the router wraps ETH into
-  poolFee: number; // the WETH/token pool's fee tier
-  maxCreditsPerBuy: number;
-};
+// USDG (Global Dollar) on Robinhood Chain, 6 decimals.
+export const USDG_MAINNET = { address: "0x5fc5360d0400a0fd4f2af552add042d716f1d168", symbol: "USDG", decimals: 6 } as const;
+export const DEFAULT_USDG_PER_CREDIT = 800; // $0.0008: 1,000 credits = $0.80
 
 export type TopUpConfig = {
   network: NetworkId;
-  token: string; // lowercase ERC-20 address
+  checkout: string; // lowercase KreditCheckout address
+  token: string; // lowercase USDG address
   treasury: string; // lowercase address that receives payments
   symbol: string;
   decimals: number;
-  creditsPerToken: number;
-  swap: SwapConfig | null; // null = only direct token transfers
+  usdgPerCredit: number; // USDG base units per credit
+  router: string; // Uniswap v3 SwapRouter02
+  quoter: string; // Uniswap v3 QuoterV2, for the ETH price preview
+  weth: string; // what the router wraps ETH into
+  poolFee: number; // the WETH/USDG pool's fee tier
+  maxCreditsPerBuy: number;
 };
 
 const isAddress = (value: string | undefined): value is string => /^0x[0-9a-fA-F]{40}$/.test(value ?? "");
 
-// Top-ups stay switched off until the token, the treasury and a price are set.
+// Top-ups stay switched off until the checkout contract and the treasury are set.
 export function topUpConfig(env: Record<string, string | undefined> = process.env): TopUpConfig | null {
-  const token = env.TOPUP_TOKEN_ADDRESS;
+  const checkout = env.TOPUP_CHECKOUT_ADDRESS;
   const treasury = env.TOPUP_TREASURY_ADDRESS;
-  const creditsPerToken = Number(env.TOPUP_CREDITS_PER_TOKEN);
-  const decimals = Number(env.TOPUP_TOKEN_DECIMALS ?? 18);
-  const network: NetworkId = "mainnet";
-  if (!isAddress(token) || !isAddress(treasury)) return null;
-  if (!(creditsPerToken > 0) || !Number.isInteger(decimals) || decimals < 0 || decimals > 36) return null;
-  return {
-    network,
-    token: token.toLowerCase(),
-    treasury: treasury.toLowerCase(),
-    symbol: env.TOPUP_TOKEN_SYMBOL?.trim() || "TOKEN",
-    decimals,
-    creditsPerToken,
-    swap: swapConfig(env),
-  };
-}
-
-// Paying with ETH needs the KreditSwapBuy address; the pool fee tier and the
-// cap default to what the contract is deployed with.
-export function swapConfig(env: Record<string, string | undefined> = process.env): SwapConfig | null {
-  const address = env.TOPUP_SWAP_ADDRESS;
-  if (!isAddress(address)) return null;
-  const poolFee = Number(env.TOPUP_POOL_FEE ?? 3000);
+  if (!isAddress(checkout) || !isAddress(treasury)) return null;
+  const usdgPerCredit = Number(env.TOPUP_USDG_PER_CREDIT ?? DEFAULT_USDG_PER_CREDIT);
+  const poolFee = Number(env.TOPUP_POOL_FEE ?? 100);
   const maxCreditsPerBuy = Number(env.TOPUP_MAX_CREDITS_PER_BUY ?? 100_000);
+  if (!Number.isInteger(usdgPerCredit) || usdgPerCredit < 1) return null;
   if (!(POOL_FEES as readonly number[]).includes(poolFee)) return null;
   if (!(maxCreditsPerBuy > 0)) return null;
+  const token = env.TOPUP_USDG_ADDRESS;
   return {
-    address: address.toLowerCase(),
+    network: "mainnet",
+    checkout: checkout.toLowerCase(),
+    token: (isAddress(token) ? token : USDG_MAINNET.address).toLowerCase(),
+    treasury: treasury.toLowerCase(),
+    symbol: USDG_MAINNET.symbol,
+    decimals: USDG_MAINNET.decimals,
+    usdgPerCredit,
     router: UNISWAP_MAINNET.swapRouter02,
     quoter: UNISWAP_MAINNET.quoterV2,
     weth: UNISWAP_MAINNET.weth,
@@ -72,23 +62,7 @@ export function swapConfig(env: Record<string, string | undefined> = process.env
 
 export type ReceiptLog = { address: string; topics: readonly string[]; data: string };
 
-// keccak256("Transfer(address,address,uint256)")
-const TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
 const topicAddress = (topic: string) => `0x${topic.slice(-40)}`.toLowerCase();
-
-// How many base units of `token` moved from `payer` to `treasury` in these logs.
-// Anything else in the transaction (other tokens, other senders) counts for nothing.
-export function paymentIn(logs: readonly ReceiptLog[], want: { token: string; treasury: string; payer: string }) {
-  let total = BigInt(0);
-  for (const log of logs) {
-    if (log.address.toLowerCase() !== want.token.toLowerCase()) continue;
-    if (log.topics.length !== 3 || log.topics[0].toLowerCase() !== TRANSFER_TOPIC) continue;
-    if (topicAddress(log.topics[1]) !== want.payer.toLowerCase()) continue;
-    if (topicAddress(log.topics[2]) !== want.treasury.toLowerCase()) continue;
-    total += BigInt(log.data);
-  }
-  return total;
-}
 
 // keccak256("Purchased(address,address,uint256,uint256,uint256)")
 const PURCHASED_TOPIC = "0xb362243af1e2070d7d5bf8d713f2e0fab64203f1b71462afbe20572909788c5e";
@@ -96,14 +70,14 @@ const word = (data: string, index: number) => BigInt(`0x${data.slice(2 + index *
 
 export type Purchase = { ethIn: bigint; amount: bigint; credits: bigint };
 
-// The purchase the swap contract recorded for `buyer` in these logs: how much
-// ETH went in, how many base units of `token` reached the treasury, and the
-// credits the contract says that bought. Anything else (other contracts, other
-// buyers, other tokens) counts for nothing. One transaction holds at most one
-// purchase per buyer, so the first match wins.
-export function purchaseIn(logs: readonly ReceiptLog[], want: { swap: string; token: string; buyer: string }): Purchase | null {
+// The purchase the checkout contract recorded for `buyer` in these logs: how
+// much ETH went in (zero for a USDG payment), how many USDG base units reached
+// the treasury, and the credits the contract says that bought. Anything else
+// (other contracts, other buyers, other tokens) counts for nothing. One
+// transaction holds at most one purchase per buyer, so the first match wins.
+export function purchaseIn(logs: readonly ReceiptLog[], want: { checkout: string; token: string; buyer: string }): Purchase | null {
   for (const log of logs) {
-    if (log.address.toLowerCase() !== want.swap.toLowerCase()) continue;
+    if (log.address.toLowerCase() !== want.checkout.toLowerCase()) continue;
     if (log.topics.length !== 3 || log.topics[0].toLowerCase() !== PURCHASED_TOPIC) continue;
     if (topicAddress(log.topics[1]) !== want.buyer.toLowerCase()) continue;
     if (topicAddress(log.topics[2]) !== want.token.toLowerCase()) continue;
@@ -113,21 +87,30 @@ export function purchaseIn(logs: readonly ReceiptLog[], want: { swap: string; to
   return null;
 }
 
-// Whole credits only, rounded down: a payment never buys more than it paid for.
-export function creditsForPayment(amount: bigint, config: Pick<TopUpConfig, "decimals" | "creditsPerToken">) {
-  // The price may be fractional (e.g. 2.5 credits per token), so scale it to an integer first.
-  const PRICE_SCALE = 1_000_000;
-  const price = BigInt(Math.round(config.creditsPerToken * PRICE_SCALE));
-  const credits = (amount * price) / (BigInt(10) ** BigInt(config.decimals) * BigInt(PRICE_SCALE));
+// Whole credits for `amount` USDG base units, rounded down: a payment never
+// buys more than it paid for. Mirrors KreditCheckout.creditsFor.
+export function creditsForPayment(amount: bigint, config: Pick<TopUpConfig, "usdgPerCredit">) {
+  const credits = amount / BigInt(config.usdgPerCredit);
   return credits > BigInt(Number.MAX_SAFE_INTEGER) ? Number.MAX_SAFE_INTEGER : Number(credits);
 }
 
-// "12.5" -> base units. Returns null for anything that is not a plain positive decimal.
-export function parseTokenAmount(text: string, decimals: number) {
-  const match = /^(\d{1,30})(?:\.(\d+))?$/.exec(text.trim());
-  if (!match || (match[2]?.length ?? 0) > decimals) return null;
-  const units = BigInt(match[1] + (match[2] ?? "").padEnd(decimals, "0"));
-  return units > BigInt(0) ? units : null;
+// USDG base units that `credits` credits cost. Mirrors KreditCheckout.costOf.
+export function costOfCredits(credits: number, config: Pick<TopUpConfig, "usdgPerCredit">) {
+  return BigInt(credits) * BigInt(config.usdgPerCredit);
+}
+
+// "$0.80" for 1,000 credits at 800 per credit.
+export function formatUsd(units: bigint, decimals = USDG_MAINNET.decimals) {
+  const dollars = Number(units) / 10 ** decimals;
+  return `$${dollars.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: dollars < 0.1 ? 4 : 2 })}`;
+}
+
+// "1000" -> 1000. Returns null for anything that is not a plain positive whole number.
+export function parseCredits(text: string) {
+  const match = /^\d{1,12}$/.exec(text.trim().replace(/,/g, ""));
+  if (!match) return null;
+  const credits = Number(match[0]);
+  return credits > 0 ? credits : null;
 }
 
 export function formatTokenAmount(units: bigint, decimals: number, maxFraction = 4) {

@@ -117,18 +117,22 @@ invited wallet keeps everything it earned. (`src/lib/referrals.ts`)
   paid twice or for a claim that did not happen. Claims are capped and pay once, so there
   is nothing to farm.
 
-### 5. Buying credits with the token (optional)
+### 5. Buying credits with USDG or ETH (optional)
 
-If the site owner has switched top-ups on, you can buy extra credits with the project's
-token (`src/lib/topup.ts`, `src/app/api/topup/route.ts`):
+If the site owner has switched top-ups on, you can buy credits at a fixed dollar
+price, 1,000 credits for $0.80, through the `KreditCheckout` contract
+(`contracts/src/KreditCheckout.sol`, `src/lib/topup.ts`, `src/app/api/topup/route.ts`):
 
-1. From the dashboard, send tokens from your wallet to the treasury address.
+1. From the dashboard, pick how many credits and pay in USDG (approve, then buy) or in
+   ETH (one transaction; the contract swaps it for USDG on Uniswap v3). Either way the
+   USDG lands in the treasury and the contract writes a `Purchased` receipt.
 2. The site submits the transaction hash to the server.
-3. The server reads the transaction on-chain and counts **only** tokens of the right kind
-   that went **from your signed-in wallet to the treasury**.
+3. The server reads the transaction on-chain and counts **only** a `Purchased` event
+   from the checkout contract **for your signed-in wallet**, and never more credits than
+   the contract recorded.
 4. Credits are added, rounded down to whole credits. Each payment works once.
 
-Until the owner sets the token, treasury and price, this section says buying is not open.
+Until the owner sets the contract address and the treasury, this section says buying is not open.
 
 ### 6. Spending credits
 
@@ -213,7 +217,7 @@ it again.
   - `EXPLORER_API_*`, `BLOCKSCOUT_API_KEY`: where wallet history is read from.
   - `RECEIPTS_ADDRESS_*`, `RECEIPT_SIGNER_KEY`: the on-chain receipts contract and the
     key that signs receipts. Empty means claims stay off-chain.
-  - `TOPUP_*`: token, treasury and price. Top-ups stay off until all are set.
+  - `TOPUP_*`: checkout contract, treasury and price. Top-ups stay off until the first two are set.
 - Checks: `npm test` (unit tests for every money rule), `npm run lint`, `npm run build`,
   `npm run test:contracts` (the contract), `npm run test:receipts` (the whole on-chain
   claim on a local chain; see `contracts/README.md`).

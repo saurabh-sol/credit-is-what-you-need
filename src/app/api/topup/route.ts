@@ -2,7 +2,7 @@ import type { Hash } from "viem";
 import { chains, publicClient } from "@/lib/chain";
 import { recordTopUp, TopUpUsedError } from "@/lib/ledger";
 import { getSession } from "@/lib/session";
-import { creditsForPayment, paymentIn, purchaseIn, topUpConfig } from "@/lib/topup";
+import { creditsForPayment, purchaseIn, topUpConfig } from "@/lib/topup";
 
 // What the buy-credits form needs to know. `null` means top-ups are switched off.
 export async function GET() {
@@ -10,8 +10,8 @@ export async function GET() {
   return Response.json({ config: config && { ...config, chainId: chains[config.network].chain.id } });
 }
 
-// The user has paid, either by sending tokens to the treasury or by buying
-// through the swap contract; turn that transaction into credits.
+// The user has paid through the checkout contract, in USDG or in ETH; turn
+// that transaction into credits.
 export async function POST(request: Request) {
   const session = await getSession();
   if (!session) return Response.json({ error: "Sign in first" }, { status: 401 });
@@ -37,30 +37,18 @@ export async function POST(request: Request) {
     return Response.json({ error: "That transaction failed on-chain, so nothing was paid." }, { status: 400 });
   }
 
-  // A purchase through the swap contract: it swapped the wallet's ETH for the
-  // token with the treasury as the recipient and wrote what it bought. The
-  // server prices the token amount itself and never credits more than the
-  // contract recorded, so the two rates cannot drift in the buyer's favour.
-  const purchase = config.swap && purchaseIn(receipt.logs, { swap: config.swap.address, token: config.token, buyer: session.address });
-  let amount: bigint;
-  let credits: number;
-  if (purchase) {
-    amount = purchase.amount;
-    credits = Math.min(creditsForPayment(amount, config), Number(purchase.credits));
-  } else {
-    // Only tokens that left the signed-in wallet for the treasury count.
-    amount = paymentIn(receipt.logs, { token: config.token, treasury: config.treasury, payer: session.address });
-    credits = creditsForPayment(amount, config);
-  }
-  if (credits < 1) {
-    return Response.json(
-      { error: `No ${config.symbol} payment from your wallet to Kredit was found in that transaction.` },
-      { status: 400 },
-    );
+  // The checkout contract moved the wallet's USDG (or the USDG its ETH bought)
+  // to the treasury and wrote what that bought. The server prices the USDG
+  // amount itself and never credits more than the contract recorded, so the
+  // two rates cannot drift in the buyer's favour.
+  const purchase = purchaseIn(receipt.logs, { checkout: config.checkout, token: config.token, buyer: session.address });
+  const credits = purchase ? Math.min(creditsForPayment(purchase.amount, config), Number(purchase.credits)) : 0;
+  if (!purchase || credits < 1) {
+    return Response.json({ error: "No purchase from your wallet through Kredit's checkout was found in that transaction." }, { status: 400 });
   }
 
   try {
-    const balance = await recordTopUp({ ...config, hash, address: session.address, amount, credits });
+    const balance = await recordTopUp({ ...config, hash, address: session.address, amount: purchase.amount, credits });
     return Response.json({ credits, balance });
   } catch (error) {
     if (error instanceof TopUpUsedError) return Response.json({ error: error.message }, { status: 409 });
