@@ -355,33 +355,39 @@ export function Claims() {
 
 export function TopUps() {
   return (
-    <Doc slug="earn/top-ups" lede="Earning is the main way in and costs nothing. When a job needs more than you earned, you can buy credits with the project token, straight from your wallet.">
+    <Doc slug="earn/top-ups" lede="Earning is the main way in and costs nothing. When a job needs more than you earned, you can buy credits with ETH or with the project token, straight from your wallet.">
       <H2>How a top-up works</H2>
       <Steps>
         <Step title="Choose an amount">
           <p>
-            On <Link href="/dashboard/credits">Credits</Link>, pick a preset (10, 50 or 250 tokens) or type an amount.
-            The card shows the rate: <em>1 TOKEN buys N credits</em>.
+            On <Link href="/dashboard/credits">Credits</Link>, pick a preset or type an amount of ETH. The card asks
+            Uniswap for the current price and shows what you get: <em>N TOKEN buys 1 credit</em>. If you already
+            hold the token, switch the card to pay with it directly.
           </p>
         </Step>
-        <Step title="Send the tokens">
+        <Step title="Pay">
           <p>
-            Your wallet switches to the top-up network if needed and sends a plain ERC-20 <code>transfer</code> to
-            the treasury. Nothing is approved or held; the tokens go from your wallet to the treasury and nowhere
-            else.
+            Paying in ETH is one transaction to the <code>KreditSwapBuy</code> contract. It swaps your ETH for the
+            token on Uniswap v3 with the treasury as the recipient, so the tokens go from the pool to the treasury
+            and nowhere else, and it writes a <code>Purchased</code> event: the receipt anyone can read on
+            Blockscout. If the pool gives less than 1% under the quote, or the price moves for ten minutes, the
+            whole transaction reverts and your ETH stays with you. Paying in tokens is a plain ERC-20{" "}
+            <code>transfer</code> to the treasury. Nothing is approved or held either way.
           </p>
         </Step>
         <Step title="The server checks the receipt">
           <p>
             The dashboard submits the transaction hash. The server reads the transaction receipt and counts{" "}
-            <strong>only</strong> Transfer events of the right token, from your signed-in wallet, to the treasury.
-            Other tokens, other senders and other recipients in the same transaction count for nothing.
+            <strong>only</strong> a <code>Purchased</code> event from the swap contract for your signed-in wallet,
+            or Transfer events of the right token from your wallet to the treasury. Other contracts, other tokens,
+            other senders and other recipients in the same transaction count for nothing.
           </p>
         </Step>
         <Step title="Credits are added">
           <p>
-            Credits are <code>amount × credits per token</code>, rounded down to whole credits. Each payment works
-            exactly once; submitting the same hash again answers <code>409</code>.
+            Credits are <code>tokens received × credits per token</code>, rounded down to whole credits, and never
+            more than the contract recorded. Each payment works exactly once; submitting the same hash again answers{" "}
+            <code>409</code>.
           </p>
         </Step>
       </Steps>
@@ -390,7 +396,8 @@ export function TopUps() {
       <Endpoint method="GET" path="/api/topup" note="public" />
       <p>
         Answers <code>{`{ "config": null }`}</code> while buying is off, or the token, symbol, decimals, treasury,
-        credits per token, network and chain id when it is on.
+        credits per token, network and chain id when it is on, plus <code>swap</code> (the swap contract, the
+        Uniswap router and quoter, WETH, the pool fee and the per-purchase cap) when paying in ETH is on.
       </p>
       <Endpoint method="POST" path="/api/topup" note="session cookie" />
       <Params>
@@ -402,8 +409,9 @@ export function TopUps() {
       </Params>
       <Callout>
         <p>
-          Buying stays switched off until the operator sets the token, treasury and price. Every top-up is listed on
-          the public distribution board as <em>Bought</em>, with the tokens paid in. {number(CREDITS_PER_USD)} credits
+          Buying stays switched off until the operator sets the token, treasury and price. The token price in ETH
+          floats with the market; the number of tokens per credit does not. Every top-up is listed on the public
+          distribution board as <em>Bought</em>, with the tokens paid in. {number(CREDITS_PER_USD)} credits
           are worth $1 of AI usage whichever way they arrived.
         </p>
       </Callout>

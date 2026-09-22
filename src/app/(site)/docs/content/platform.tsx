@@ -188,7 +188,11 @@ export function Security() {
         <li>Signing in is a signature over a message, never a transaction. It grants no allowance and can be revoked by signing out.</li>
         <li>Nonces are single use and expire in five minutes; a captured sign-in message cannot be replayed.</li>
         <li>Sessions are server-side rows named by a signed, httpOnly, same-site cookie. Signing out kills the row, so a copied cookie is dead too.</li>
-        <li>Top-ups are plain token transfers from your wallet to the treasury. Nothing is approved, nothing is held.</li>
+        <li>
+          Top-ups are plain token transfers from your wallet to the treasury, or one call to the swap contract that
+          trades your ETH for the token on Uniswap with the treasury as the recipient. Nothing is approved, nothing
+          is held.
+        </li>
         <li>On-chain receipts are signed by the server and submitted by you. The contract records them; it never holds tokens.</li>
       </ul>
 

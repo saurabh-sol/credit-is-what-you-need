@@ -85,6 +85,44 @@ cast send <address> "setToken(address,uint8,uint256)" $TOKEN 18 100000000 --rpc-
 # 100000000 = 100 credits per whole token (credits × 1e6)
 ```
 
+## KreditSwapBuy: buying credits with ETH
+
+`src/KreditSwapBuy.sol` lets a wallet buy credits with ETH in one transaction.
+`buyWithEth(minTokens, deadline)` sends the ETH to Uniswap v3's SwapRouter02
+(`0xCaf681a66D020601342297493863E78C959E5cb2` on Robinhood Chain), swaps it
+for the project token with the treasury as the recipient, and emits
+`Purchased(buyer, token, ethIn, amount, credits)`. The contract never holds
+funds: a swap that returns less than `minTokens`, or lands after `deadline`,
+reverts the whole purchase. One purchase is capped at `maxCreditsPerBuy`
+(100,000 credits by default). Owner-only: `setToken` (token, decimals, pool
+fee tier, credits per token × 1e6), `setTreasury`, `setMaxCreditsPerBuy`,
+`setPaused`, `transferOwnership`.
+
+Deploy (buying stays off until `setToken`):
+
+```sh
+cd contracts && forge build
+node --env-file=.env.local scripts/deploy-swap-buy.mjs     # DEPLOYER_KEY, TOPUP_TREASURY_ADDRESS
+# or: TREASURY=$TREASURY forge script script/DeploySwapBuy.s.sol --rpc-url mainnet --private-key $DEPLOYER_KEY --broadcast
+```
+
+Verify: `forge verify-contract <address> src/KreditSwapBuy.sol:KreditSwapBuy --chain 4663 --verifier sourcify --constructor-args $(cast abi-encode "constructor(address,address,address)" $OWNER $TREASURY 0xCaf681a66D020601342297493863E78C959E5cb2)`,
+then Blockscout's "Verify & publish" page as for KreditReceipts (single file,
+0.8.28, paris, optimizer 2000 runs; the file inlines its router interface).
+
+Switch a token on, with the on-chain checks first:
+
+```sh
+node --env-file=.env.local scripts/swap-buy-admin.mjs check <token>          # symbol, decimals, WETH pools, a quote
+node --env-file=.env.local scripts/swap-buy-admin.mjs set-token <token> 3000  # 0.01 credits per token = 100 tokens per credit
+node --env-file=.env.local scripts/swap-buy-admin.mjs status
+```
+
+`set-token` also calls `setToken` on KreditReceipts so both contracts price
+the token the same way. Then put `TOPUP_SWAP_ADDRESS`, `TOPUP_POOL_FEE` and
+the `TOPUP_TOKEN_*` values it prints into the server's environment, and run
+`scripts/swap-buy-test.mjs` for a real purchase.
+
 ## Testing end to end
 
 `scripts/receipts-test.mjs` runs the whole flow against a local chain: scan,
