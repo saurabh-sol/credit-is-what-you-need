@@ -22,6 +22,7 @@ import {
   TerminalIcon,
   UsersIcon,
 } from "@/components/icons";
+import { LibraryIcon } from "@/app/(app)/playground/icons";
 import { Identicon } from "@/components/identicon";
 import { WalletButton } from "@/components/wallet-button";
 import { formatCredits, shortAddress } from "@/lib/format";
@@ -36,6 +37,7 @@ const product: Destination[] = [
   { name: "Earn credits", href: "/dashboard/earn", icon: BoltIcon },
   { name: "API keys", href: "/dashboard/keys", icon: KeyIcon },
   { name: "Playground", href: "/playground", icon: PlayIcon },
+  { name: "Library", href: "/playground/library", icon: LibraryIcon },
   { name: "Activity", href: "/dashboard/activity", icon: ActivityIcon },
   { name: "Buy credits", href: "/dashboard/credits", icon: CoinsIcon },
   { name: "Settings", href: "/dashboard/settings", icon: SettingsIcon },

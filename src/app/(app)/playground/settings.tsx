@@ -8,17 +8,23 @@ import { formatCredits } from "@/lib/format";
 import { HOUSE_STYLE } from "@/lib/house-style";
 import { IMAGE_SIZES, VIDEO_ASPECTS, VIDEO_DURATIONS, VIDEO_RESOLUTIONS } from "@/lib/media-options";
 import { CREDITS_PER_USD } from "@/lib/pricing";
+import { ColumnsIcon } from "./icons";
 import { ModelPicker } from "./model-picker";
-import type { ImageOptions, Mode, VideoOptions } from "./types";
+import { PRESETS, type ImageOptions, type Mode, type VideoOptions } from "./types";
 
 type SettingsProps = {
   mode: Mode;
   model: string;
   onModel: (model: string) => void;
+  // A second model to answer the same messages, side by side. Null for none.
+  compareModel: string | null;
+  onCompareModel: (model: string | null) => void;
   signedIn: boolean;
   balance: number | undefined;
   // Read only when a message is sent, so typing here re-renders nothing.
   systemPrompt: RefObject<HTMLTextAreaElement | null>;
+  // Called when the person leaves the system prompt box, so a saved conversation can remember it.
+  onSystemPrompt: (value: string) => void;
   image: ImageOptions;
   onImage: (options: ImageOptions) => void;
   video: VideoOptions;
@@ -53,8 +59,9 @@ function Choices<T extends string | number>({ label, options, value, onChange, f
   );
 }
 
-export function Settings({ mode, model, onModel, signedIn, balance, systemPrompt, image, onImage, video, onVideo, estimate }: SettingsProps) {
+export function Settings({ mode, model, onModel, compareModel, onCompareModel, signedIn, balance, systemPrompt, onSystemPrompt, image, onImage, video, onVideo, estimate }: SettingsProps) {
   const empty = balance !== undefined && balance <= 0;
+  const presets = PRESETS.map((preset) => (preset.name === "Plain" ? { ...preset, prompt: HOUSE_STYLE } : preset));
 
   return (
     <aside
@@ -67,6 +74,29 @@ export function Settings({ mode, model, onModel, signedIn, balance, systemPrompt
           <div className="mt-3">
             <ModelPicker value={model} onChange={onModel} type={modelType[mode]} />
           </div>
+          {mode === "text" && (
+            <div className="mt-3">
+              {compareModel === null ? (
+                <button type="button" onClick={() => onCompareModel(model)} className="btn-sm">
+                  <ColumnsIcon className="size-3.5" />
+                  Compare with a second model
+                </button>
+              ) : (
+                <>
+                  <p className="flex items-center justify-between text-xs text-mist">
+                    <span>Compared with</span>
+                    <button type="button" onClick={() => onCompareModel(null)} className="underline decoration-line underline-offset-4 hover:text-fog">
+                      Stop comparing
+                    </button>
+                  </p>
+                  <div className="mt-1.5">
+                    <ModelPicker value={compareModel} onChange={onCompareModel} type="language" />
+                  </div>
+                  <p className="mt-2 text-xs leading-relaxed text-mist">Both models answer every message and both are billed. Replies sit side by side.</p>
+                </>
+              )}
+            </div>
+          )}
         </section>
 
         <section>
@@ -146,6 +176,21 @@ export function Settings({ mode, model, onModel, signedIn, balance, systemPrompt
               <label htmlFor="system-prompt">System prompt</label>
               <span className="text-xs font-normal text-mist">Optional</span>
             </h2>
+            <div role="group" aria-label="Presets" className="mt-3 flex flex-wrap gap-1.5">
+              {presets.map((preset) => (
+                <button
+                  key={preset.name}
+                  type="button"
+                  onClick={() => {
+                    if (systemPrompt.current) systemPrompt.current.value = preset.prompt;
+                    onSystemPrompt(preset.prompt);
+                  }}
+                  className="rounded-md border border-line px-2.5 py-1 font-mono text-xs text-mist transition-colors hover:text-fog"
+                >
+                  {preset.name}
+                </button>
+              ))}
+            </div>
             <textarea
               id="system-prompt"
               ref={systemPrompt}
@@ -153,12 +198,13 @@ export function Settings({ mode, model, onModel, signedIn, balance, systemPrompt
               spellCheck={false}
               aria-describedby="system-prompt-note"
               defaultValue={HOUSE_STYLE}
+              onBlur={(event) => onSystemPrompt(event.target.value)}
               placeholder="You are a terse assistant. Answer in plain language."
               className="field mt-3 max-h-64 min-h-24 resize-none rounded-lg px-3 py-2.5 text-[0.8125rem] leading-relaxed [field-sizing:content]"
             />
             <p id="system-prompt-note" className="mt-2 text-xs leading-relaxed text-mist">
               Sent ahead of the conversation on every request, and billed like any other text. The default asks for plain,
-              professional replies without Markdown symbols. Edit or clear it to change the style.
+              professional replies without Markdown symbols. Pick a preset or write your own; a saved conversation keeps it.
             </p>
           </section>
         )}

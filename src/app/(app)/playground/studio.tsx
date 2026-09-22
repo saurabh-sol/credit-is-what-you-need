@@ -97,6 +97,7 @@ export function Studio({ mode, state, creations, busy, blocked, estimate, onMake
                         {creation.model}
                         {creation.ms !== undefined && ` · ${(creation.ms / 1000).toFixed(1)}s`}
                         {creation.cost !== undefined && ` · ${formatCredits(creation.cost)} credits`}
+                        {creation.saved && " · in your library"}
                       </p>
                     </div>
                   </div>

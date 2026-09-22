@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { CopyButton } from "@/components/code-block";
 import { ArrowRightIcon } from "@/components/icons";
 import { ModelLogo } from "@/components/model-logo";
 import { WalletButton } from "@/components/wallet-button";
 import { formatCredits } from "@/lib/format";
-import { PersonIcon } from "./icons";
+import { PaperclipIcon, PersonIcon, SpeakerIcon } from "./icons";
 import type { Failure, Turn } from "./types";
 
 const starters = [
@@ -20,6 +20,7 @@ const facts = [
   ["Same gateway", "Requests take the route your API key takes, so what works here works in your code."],
   ["Same balance", "Replies are paid from your credits. Nothing to paste, no card to add."],
   ["Every cost shown", "Each reply lists its model, how long it took and what it cost."],
+  ["Kept for you", "Conversations are saved to your wallet and follow you across devices, until you delete them."],
 ];
 
 const link = "text-fog underline decoration-line underline-offset-4 transition-colors hover:decoration-accent";
@@ -53,12 +54,43 @@ function advice(code?: string) {
 
 const seconds = (ms: number) => `${(ms / 1000).toFixed(1)}s`;
 
-function Row({ turn, streaming }: { turn: Turn; streaming: boolean }) {
+// Reads a reply aloud with the browser's own voice; nothing leaves the page.
+function ReadAloud({ text }: { text: string }) {
+  const [speaking, setSpeaking] = useState(false);
+  const able = useSyncExternalStore(() => () => {}, () => "speechSynthesis" in window, () => false);
+  useEffect(() => () => window.speechSynthesis?.cancel(), []);
+  if (!able) return null;
+  return (
+    <button
+      type="button"
+      aria-pressed={speaking}
+      title={speaking ? "Stop reading" : "Read aloud"}
+      onClick={() => {
+        if (speaking) {
+          window.speechSynthesis.cancel();
+          setSpeaking(false);
+          return;
+        }
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.onend = () => setSpeaking(false);
+        utterance.onerror = () => setSpeaking(false);
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(utterance);
+        setSpeaking(true);
+      }}
+      className={`-my-1 inline-flex size-6 items-center justify-center rounded-md transition-colors hover:text-fog ${speaking ? "text-accent" : ""}`}
+    >
+      <SpeakerIcon className="size-3.5" />
+    </button>
+  );
+}
+
+function Row({ turn, streaming, compact }: { turn: Turn; streaming: boolean; compact?: boolean }) {
   const mine = turn.role === "user";
   return (
     <article
       aria-label={mine ? "Your message" : `Reply from ${turn.model}`}
-      className="flex gap-3.5 border-b border-line/60 py-5 last:border-b-0"
+      className={`flex gap-3.5 py-5 ${compact ? "" : "border-b border-line/60 last:border-b-0"}`}
     >
       <span className={`grid size-7 shrink-0 place-items-center rounded-md border border-line bg-raised ${mine ? "text-mist" : "text-fog"}`}>
         {mine ? <PersonIcon className="size-3.5" /> : <ModelLogo model={turn.model ?? ""} className="size-4" />}
@@ -67,6 +99,16 @@ function Row({ turn, streaming }: { turn: Turn; streaming: boolean }) {
         <p className={`pt-1.5 text-xs leading-4 ${mine ? "font-medium text-fog" : "font-mono text-mist"}`}>
           {mine ? "You" : turn.model}
         </p>
+        {turn.attachments && turn.attachments.length > 0 && (
+          <ul className="mt-1.5 flex flex-wrap gap-1.5">
+            {turn.attachments.map((name, index) => (
+              <li key={`${name}-${index}`} className="flex items-center gap-1 rounded-md border border-line bg-raised px-2 py-0.5 font-mono text-[0.6875rem] text-mist">
+                <PaperclipIcon className="size-3" />
+                {name}
+              </li>
+            ))}
+          </ul>
+        )}
         <p className="mt-1.5 text-[0.9375rem] leading-7 wrap-anywhere whitespace-pre-wrap text-fog">
           {turn.content}
           {streaming && <span className="caret" />}
@@ -91,7 +133,10 @@ function Row({ turn, streaming }: { turn: Turn; streaming: boolean }) {
                 </span>
               </>
             )}
-            <CopyButton text={turn.content} className="-my-1 ml-auto" />
+            <span className="ml-auto flex items-center gap-1">
+              <ReadAloud text={turn.content} />
+              <CopyButton text={turn.content} className="-my-1" />
+            </span>
           </footer>
         )}
       </div>
@@ -102,7 +147,7 @@ function Row({ turn, streaming }: { turn: Turn; streaming: boolean }) {
 function SignedOut() {
   return (
     <div className="my-auto py-10">
-      <h1 className="page-title">Playground</h1>
+      <h1 className="page-title">Workspace</h1>
       <p className="page-lede">
         Talk to any model on the gateway and watch what each reply costs. It spends your own credits, so it needs to
         know whose they are.
@@ -126,10 +171,10 @@ function SignedOut() {
 function Starters({ disabled, onPick }: { disabled: boolean; onPick: (text: string) => void }) {
   return (
     <div className="my-auto py-10">
-      <h1 className="page-title">Playground</h1>
+      <h1 className="page-title">Workspace</h1>
       <p className="page-lede">
         The same gateway your API key uses, paid from the same balance. Pick a model, ask something, and see what the
-        reply cost.
+        reply cost. Switch models mid-conversation, or compare two side by side.
       </p>
       <h2 className="section-label mt-8">Start with</h2>
       <ul>
@@ -151,16 +196,29 @@ function Starters({ disabled, onPick }: { disabled: boolean; onPick: (text: stri
   );
 }
 
+// Consecutive replies that share a group (compare mode) are drawn side by side.
+type Block = { key: string; turns: Turn[] };
+function blocks(turns: Turn[]): Block[] {
+  const out: Block[] = [];
+  for (const turn of turns) {
+    const last = out[out.length - 1];
+    if (turn.group !== undefined && last && last.turns[0].group === turn.group) last.turns.push(turn);
+    else out.push({ key: String(turn.id), turns: [turn] });
+  }
+  return out;
+}
+
 type TranscriptProps = {
   state: "loading" | "signed-out" | "ready";
   turns: Turn[];
   busy: boolean;
   blocked: boolean;
   error: Failure | null;
+  streamingIds: Set<number>;
   onPick: (text: string) => void;
 };
 
-export function Transcript({ state, turns, busy, blocked, error, onPick }: TranscriptProps) {
+export function Transcript({ state, turns, busy, blocked, error, streamingIds, onPick }: TranscriptProps) {
   const scroller = useRef<HTMLDivElement>(null);
   // Whether the reader is at the bottom. Streamed text only pulls the view down while they are.
   const pinned = useRef(true);
@@ -188,13 +246,24 @@ export function Transcript({ state, turns, busy, blocked, error, onPick }: Trans
     >
       <div className="mx-auto flex min-h-full w-full max-w-[760px] flex-col">
         {state === "signed-out" && <SignedOut />}
+        {state === "loading" && turns.length === 0 && <p className="my-auto py-10 text-sm text-mist">Loading the conversation.</p>}
         {state === "ready" && turns.length === 0 && <Starters disabled={blocked || busy} onPick={onPick} />}
 
         {turns.length > 0 && (
           <div className="py-2">
-            {turns.map((turn, index) => (
-              <Row key={turn.id} turn={turn} streaming={busy && index === turns.length - 1 && turn.role === "assistant"} />
-            ))}
+            {blocks(turns).map((block) =>
+              block.turns.length > 1 ? (
+                <div key={block.key} className="grid border-b border-line/60 last:border-b-0 lg:grid-cols-2 lg:divide-x lg:divide-line/60">
+                  {block.turns.map((turn) => (
+                    <div key={turn.id} className="lg:px-4 lg:first:pl-0 lg:last:pr-0">
+                      <Row turn={turn} streaming={streamingIds.has(turn.id)} compact />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <Row key={block.key} turn={block.turns[0]} streaming={streamingIds.has(block.turns[0].id)} />
+              ),
+            )}
           </div>
         )}
 

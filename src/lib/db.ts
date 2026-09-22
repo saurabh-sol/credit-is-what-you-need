@@ -127,6 +127,44 @@ const SCHEMA = `
   );
   CREATE INDEX IF NOT EXISTS pending_claims_address ON pending_claims (address, network);
 
+  -- The workspace: a wallet's conversations, their messages, and its library
+  -- of pictures and clips. Deleting a conversation deletes its messages.
+  CREATE TABLE IF NOT EXISTS conversations (
+    id TEXT PRIMARY KEY,
+    address TEXT NOT NULL,
+    title TEXT NOT NULL,
+    model TEXT NOT NULL,
+    system TEXT,
+    created_at TEXT NOT NULL DEFAULT ${NOW},
+    updated_at TEXT NOT NULL DEFAULT ${NOW}
+  );
+  CREATE INDEX IF NOT EXISTS conversations_address ON conversations (address, updated_at);
+
+  CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    conversation_id TEXT NOT NULL REFERENCES conversations (id) ON DELETE CASCADE,
+    role TEXT NOT NULL,
+    content TEXT NOT NULL,
+    model TEXT,
+    credits INTEGER,
+    ms INTEGER,
+    attachments TEXT,              -- JSON list of file names, never the bytes
+    created_at TEXT NOT NULL DEFAULT ${NOW}
+  );
+  CREATE INDEX IF NOT EXISTS messages_conversation ON messages (conversation_id, id);
+
+  CREATE TABLE IF NOT EXISTS creations (
+    id TEXT PRIMARY KEY,
+    address TEXT NOT NULL,
+    kind TEXT NOT NULL,            -- image | video
+    prompt TEXT NOT NULL,
+    model TEXT NOT NULL,
+    credits INTEGER,
+    files TEXT NOT NULL,           -- JSON [{ base64, mediaType }]
+    created_at TEXT NOT NULL DEFAULT ${NOW}
+  );
+  CREATE INDEX IF NOT EXISTS creations_address ON creations (address, created_at);
+
   -- A large claim from a risky record waits here before it can be paid.
   CREATE TABLE IF NOT EXISTS claim_holds (
     id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,

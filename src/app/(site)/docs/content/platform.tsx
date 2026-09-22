@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { MAX_ACTIVE_KEYS } from "@/lib/limits";
-import { Callout, Doc, Endpoint, H2, Table } from "../ui";
+import { HISTORY_SENT, MAX_CONVERSATIONS, MAX_CREATIONS, MAX_MESSAGE_CHARS } from "@/lib/workspace-limits";
+import { Callout, Doc, Endpoint, H2, number, Table } from "../ui";
 
 // The signed-in product and the public board, written from src/lib/session.ts,
 // the dashboard pages, src/lib/distribution.ts and the playground routes.
@@ -110,24 +111,86 @@ export function Dashboard() {
 
 export function Playground() {
   return (
-    <Doc slug="platform/playground" lede="Talk to any model in the browser. It uses your wallet session, so you never paste a key into a web page, and it is billed exactly like the API.">
+    <Doc slug="platform/playground" title="Workspace" lede="Talk to any model in the browser, keep the conversation, compare two models on the same question, and make pictures and clips. It uses your wallet session, so you never paste a key into a web page, and it is billed exactly like the API.">
+      <H2>What it does</H2>
       <ul>
-        <li>Pick a model from the same catalog the API offers; text, image and video models each get their own mode.</li>
-        <li>Every turn is charged with the same pricing function as the API and appears in your activity as <em>Spent</em>.</li>
         <li>
-          Rate limit: 60 requests per minute <strong>per wallet</strong>. In <code>GET /v1/usage</code> playground calls
-          show <code>{'"key": "playground"'}</code>.
+          <strong>Every model, one balance.</strong> Pick from the same catalog the API offers; text, image, video and
+          evaluation models each get their own mode. The <Link href="/models">model board</Link> opens the workspace
+          on any model with one click.
         </li>
-        <li>Image sizes offered: 1024×1024, 1536×1024, 1024×1536. Video: 4, 6 or 8 seconds, 720p or 1080p, 16:9 or 9:16.</li>
+        <li>
+          <strong>Conversations are kept.</strong> Each chat is saved to your wallet as you go, with the model that
+          answered each message, how long it took and what it cost. They follow you across devices and stay until you
+          delete them. A chat remembers its model and its system prompt.
+        </li>
+        <li>
+          <strong>Switch models mid-chat.</strong> Change the model in the panel and the next reply comes from it, with
+          the whole conversation as context. Each reply says which model wrote it.
+        </li>
+        <li>
+          <strong>Compare two models.</strong> Turn on <em>Compare with a second model</em> and every message goes to
+          both. The replies sit side by side, each with its own cost. Both are billed.
+        </li>
+        <li>
+          <strong>Attach files.</strong> Pictures (up to 4 MB each) go to vision models as images; text files (up to
+          200 KB) are pasted into the message. Up to four per message. The bytes go to the model and are not kept; only
+          the file names are saved with the message.
+        </li>
+        <li>
+          <strong>Voice.</strong> Dictate with the microphone button and read a reply aloud with the speaker button.
+          Both use your browser&apos;s own speech engine; no audio reaches Kredit.
+        </li>
+        <li>
+          <strong>System prompt presets.</strong> Plain (the default), Coder, Reviewer, Translator and Explainer, or
+          write your own. It is sent ahead of every request and billed like any other text.
+        </li>
+        <li>
+          <strong>Library.</strong> Every picture and clip you make is kept under{" "}
+          <Link href="/playground/library">Library</Link> with its prompt, model and cost, until you delete it.
+        </li>
+        <li>
+          <strong>Every cost shown.</strong> Each reply carries its charge; the top bar sums the chat. The charge is the
+          one the gateway reports at the end of the stream, so it is exact.
+        </li>
       </ul>
+
+      <H2>Limits</H2>
+      <Table
+        head={["Limit", "Value"]}
+        rows={[
+          ["Messages sent to the model per turn", `The last ${HISTORY_SENT}`],
+          ["Characters per message", number(MAX_MESSAGE_CHARS)],
+          ["Files per message", "4: pictures up to 4 MB, text files up to 200 KB"],
+          ["Saved conversations per wallet", `${MAX_CONVERSATIONS}; the oldest is dropped past that`],
+          ["Pictures and clips kept per wallet", `${MAX_CREATIONS}; the oldest is dropped past that`],
+          ["Rate limit", "60 requests per minute per wallet"],
+          ["Image sizes", "1024×1024, 1536×1024, 1024×1536"],
+          ["Video", "4, 6 or 8 seconds, 720p or 1080p, 16:9 or 9:16"],
+        ]}
+      />
+
       <H2>Endpoints behind it</H2>
       <Endpoint method="POST" path="/api/playground" note="session cookie" />
       <Endpoint method="POST" path="/api/playground/media" note="session cookie" />
+      <Endpoint method="GET" path="/api/workspace/conversations" note="session cookie" />
+      <Endpoint method="POST" path="/api/workspace/conversations" note="session cookie" />
+      <Endpoint method="GET" path="/api/workspace/conversations/:id" note="session cookie" />
+      <Endpoint method="POST" path="/api/workspace/conversations/:id/messages" note="session cookie" />
+      <Endpoint method="DELETE" path="/api/workspace/conversations/:id" note="session cookie" />
+      <Endpoint method="GET" path="/api/workspace/creations" note="session cookie" />
+      <Endpoint method="DELETE" path="/api/workspace" note="session cookie" />
       <p>
-        Both answer <code>401</code> with code <code>not_signed_in</code> and the message{" "}
-        <code>Sign in with your wallet to use the playground.</code> when there is no session. They are for the
-        page; scripts should use the <Link href="/docs/api/authentication">API with a key</Link>.
+        All answer <code>401</code> when there is no session. They are for the page; scripts should use the{" "}
+        <Link href="/docs/api/authentication">API with a key</Link> or the <Link href="/docs/cli">CLI</Link>. In{" "}
+        <code>GET /v1/usage</code> workspace calls show <code>{'"key": "playground"'}</code>.
       </p>
+      <Callout kind="note" title="Your data">
+        <p>
+          Download everything or clear the workspace from <Link href="/dashboard/settings">Settings</Link>. What is
+          stored is listed in the <Link href="/docs/legal/privacy">privacy policy</Link>.
+        </p>
+      </Callout>
     </Doc>
   );
 }

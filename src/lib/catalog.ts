@@ -16,6 +16,9 @@ export type CatalogPrice =
   | { per: "image"; credits: number }
   | { per: "second"; from: number; resolution: string; rates: { resolution: string; audio?: boolean; credits: number }[] };
 
+// What a model can do, from the provider's tags. Only the ones the catalog shows.
+export type Capability = "tools" | "vision" | "reasoning" | "structured" | "caching" | "audio" | "video" | "pdf";
+
 export type CatalogModel = {
   id: string;
   name: string;
@@ -23,6 +26,14 @@ export type CatalogModel = {
   type: ModelType;
   price: CatalogPrice | null;
   contextWindow?: number;
+  maxOutputTokens?: number;
+  cacheRead?: number; // credits per million cached prompt tokens
+  description?: string;
+  released?: number; // unix seconds
+  capabilities?: Capability[];
+  modalities?: { input: string[]; output: string[] };
+  zdr?: boolean; // zero data retention on every route
+  noTraining?: boolean; // the provider never trains on prompts
 };
 export type Catalog = { live: boolean; models: CatalogModel[] };
 
@@ -123,6 +134,51 @@ function priceOf(model: Record<string, unknown>): ModelPrice | null {
   };
 }
 
+// The provider's tags -> the capabilities the catalog can show. Vercel tags
+// ("tool-use", "vision", …) and modalities are read; OpenRouter lists
+// supported_parameters and input modalities instead.
+const CAPABILITY_TAGS: Record<string, Capability> = {
+  "tool-use": "tools",
+  tools: "tools",
+  vision: "vision",
+  reasoning: "reasoning",
+  "structured-output": "structured",
+  structured_outputs: "structured",
+  response_format: "structured",
+  "explicit-caching": "caching",
+  "implicit-caching": "caching",
+  "prompt-caching": "caching",
+};
+const MODALITY_CAPABILITIES: Record<string, Capability> = { image: "vision", audio: "audio", video: "video", pdf: "pdf", file: "pdf" };
+const strings = (value: unknown) => (Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === "string") : []);
+
+function capabilitiesOf(model: Record<string, unknown>, modalities?: { input: string[]; output: string[] }): Capability[] {
+  const found = new Set<Capability>();
+  for (const tag of [...strings(model.tags), ...strings(model.supported_parameters)]) {
+    const capability = CAPABILITY_TAGS[tag];
+    if (capability) found.add(capability);
+  }
+  for (const modality of modalities?.input ?? []) {
+    const capability = MODALITY_CAPABILITIES[modality];
+    if (capability) found.add(capability);
+  }
+  if (model.reasoning_options || (model.reasoning as Record<string, unknown> | undefined)?.supported === true) found.add("reasoning");
+  const order: Capability[] = ["tools", "vision", "reasoning", "structured", "caching", "audio", "video", "pdf"];
+  return order.filter((capability) => found.has(capability));
+}
+
+function modalitiesOf(model: Record<string, unknown>): { input: string[]; output: string[] } | undefined {
+  // Vercel: modalities.input/output; OpenRouter: architecture.input_modalities/output_modalities.
+  const own = model.modalities as Record<string, unknown> | undefined;
+  const arch = model.architecture as Record<string, unknown> | undefined;
+  const input = strings(own?.input ?? arch?.input_modalities);
+  const output = strings(own?.output ?? arch?.output_modalities);
+  return input.length || output.length ? { input, output } : undefined;
+}
+
+// Vercel writes "all" when a policy holds on every route, "some" when only on a few.
+const policy = (value: unknown) => (value === "all" ? true : value === "some" || value === "none" ? false : undefined);
+
 function typeOf(model: Record<string, unknown>): ModelType {
   const type = model.type;
   if (type === "language" || type === "embedding" || type === "image" || type === "video" || type === "evaluation") return type;
@@ -178,6 +234,10 @@ async function load(): Promise<Loaded> {
       value.types.set(id, type);
       value.sources.set(id, providers[index]);
       value.raw.push(model);
+      const modalities = modalitiesOf(model);
+      const released = num(model.released) ?? num(model.created);
+      const zdr = policy(model.zdr);
+      const noTraining = policy(model.no_training);
       value.catalog.models.push({
         id,
         name: modelName(model, id),
@@ -185,6 +245,14 @@ async function load(): Promise<Loaded> {
         type,
         price: price ? catalogPrice(price, type) : null,
         ...(price?.contextWindow && { contextWindow: price.contextWindow }),
+        ...(price?.maxOutputTokens && { maxOutputTokens: price.maxOutputTokens }),
+        ...(price?.cacheRead !== undefined && { cacheRead: toCredits(price.cacheRead * 1_000_000) }),
+        ...(typeof model.description === "string" && model.description && { description: model.description }),
+        ...(released && { released }),
+        capabilities: capabilitiesOf(model, modalities),
+        ...(modalities && { modalities }),
+        ...(zdr !== undefined && { zdr }),
+        ...(noTraining !== undefined && { noTraining }),
       });
     }
   }
