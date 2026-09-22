@@ -1,5 +1,5 @@
 import { ECHO_MODEL, upstream } from "./gateway.ts";
-import { CREDITS_PER_USD, ECHO_PRICE, MARGIN, type ModelPrice, type PriceTier } from "./pricing.ts";
+import { cheapestVideoRate, CREDITS_PER_USD, ECHO_PRICE, MARGIN, type ModelPrice, type PriceTier, type VideoRate } from "./pricing.ts";
 
 // The models this deployment can reach, read from the provider once and kept
 // for ten minutes. It feeds the docs, the playground, /v1/models, and billing
@@ -8,15 +8,20 @@ import { CREDITS_PER_USD, ECHO_PRICE, MARGIN, type ModelPrice, type PriceTier } 
 // Vercel AI Gateway publishes its list, with prices, at /v1/models without a
 // key. OpenRouter's shape is read too, so either can sit behind UPSTREAM_BASE_URL.
 
-export type ModelType = "language" | "embedding" | "image" | "other";
+export type ModelType = "language" | "embedding" | "image" | "video" | "other";
+
+// What a caller pays, margin included, in the unit the model is sold by.
+export type CatalogPrice =
+  | { per: "million_tokens"; input: number; output: number }
+  | { per: "image"; credits: number }
+  | { per: "second"; from: number; resolution: string; rates: { resolution: string; audio?: boolean; credits: number }[] };
 
 export type CatalogModel = {
   id: string;
   name: string;
   provider: string;
   type: ModelType;
-  // In credits per million tokens, margin included: what a caller pays.
-  credits: { input: number; output: number } | null;
+  price: CatalogPrice | null;
   contextWindow?: number;
 };
 export type Catalog = { live: boolean; models: CatalogModel[] };
@@ -33,16 +38,26 @@ const ECHO: CatalogModel = {
   name: "Echo (test model)",
   provider: "kredit",
   type: "language",
-  credits: perMillion(ECHO_PRICE),
+  price: catalogPrice(ECHO_PRICE, "language"),
 };
 const CACHE_MS = 10 * 60_000;
 const holder = globalThis as { kreditCatalog?: { at: number; value: Loaded } };
 
 const providerOf = (id: string) => (id.includes("/") ? id.split("/")[0] : "other");
 
-export function perMillion(price: ModelPrice) {
-  const credits = (usdPerToken: number) => Math.round(usdPerToken * 1_000_000 * (1 + MARGIN) * CREDITS_PER_USD * 100) / 100;
-  return { input: credits(price.input), output: credits(price.output) };
+function toCredits(usd: number) {
+  return Math.round(usd * (1 + MARGIN) * CREDITS_PER_USD * 100) / 100;
+}
+
+export function catalogPrice(price: ModelPrice, type: ModelType): CatalogPrice | null {
+  if (type === "video") {
+    const rate = cheapestVideoRate(price);
+    if (!rate) return null;
+    const rates = (price.perSecond ?? []).map(({ resolution, audio, usd }) => ({ resolution, ...(audio !== undefined && { audio }), credits: toCredits(usd) }));
+    return { per: "second", from: toCredits(rate.usd), resolution: rate.resolution, rates };
+  }
+  if (type === "image" && price.perImage !== undefined) return { per: "image", credits: toCredits(price.perImage) };
+  return { per: "million_tokens", input: toCredits(price.input * 1_000_000), output: toCredits(price.output * 1_000_000) };
 }
 
 // A number the provider wrote as a string ("0.000003"), or undefined.
@@ -64,14 +79,31 @@ function tiers(value: unknown): PriceTier[] | undefined {
   return parsed.length > 0 ? parsed : undefined;
 }
 
+// Vercel's per-second video prices -> our rates.
+function videoRates(value: unknown): VideoRate[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const rates: VideoRate[] = [];
+  for (const entry of value as { resolution?: unknown; audio?: unknown; cost_per_second?: unknown }[]) {
+    const usd = num(entry?.cost_per_second);
+    if (usd === undefined || typeof entry.resolution !== "string") continue;
+    rates.push({ resolution: entry.resolution.toLowerCase(), usd, ...(typeof entry.audio === "boolean" && { audio: entry.audio }) });
+  }
+  return rates.length > 0 ? rates : undefined;
+}
+
 // The provider's entry -> our price list. Null when there is no usable price.
 function priceOf(model: Record<string, unknown>): ModelPrice | null {
   const pricing = model.pricing as Record<string, unknown> | undefined;
   if (!pricing) return null;
+  const type = typeOf(model);
+  const perImage = num(pricing.image);
+  const perSecond = videoRates(pricing.video_duration_pricing);
+  // Sold by the image or by the second: no token prices needed.
+  const flat = (type === "image" && perImage !== undefined) || (type === "video" && perSecond !== undefined);
   // Vercel: input/output; OpenRouter: prompt/completion. Embedding models
   // write nothing back, so they list no output price.
-  const input = num(pricing.input) ?? num(pricing.prompt);
-  const output = num(pricing.output) ?? num(pricing.completion) ?? (typeOf(model) === "embedding" ? 0 : undefined);
+  const input = num(pricing.input) ?? num(pricing.prompt) ?? (flat ? 0 : undefined);
+  const output = num(pricing.output) ?? num(pricing.completion) ?? (type === "embedding" || flat ? 0 : undefined);
   if (input === undefined || output === undefined) return null;
   const top = model.top_provider as Record<string, unknown> | undefined;
   const maxOutputTokens = num(model.max_tokens) ?? num(top?.max_completion_tokens);
@@ -85,12 +117,14 @@ function priceOf(model: Record<string, unknown>): ModelPrice | null {
     ...(tiers(pricing.output_tiers) && { outputTiers: tiers(pricing.output_tiers) }),
     ...(maxOutputTokens && { maxOutputTokens }),
     ...(contextWindow && { contextWindow }),
+    ...(perImage !== undefined && { perImage }),
+    ...(perSecond && { perSecond }),
   };
 }
 
 function typeOf(model: Record<string, unknown>): ModelType {
   const type = model.type;
-  if (type === "language" || type === "embedding" || type === "image") return type;
+  if (type === "language" || type === "embedding" || type === "image" || type === "video") return type;
   if (type === undefined) return "language"; // OpenRouter lists language models only
   return "other";
 }
@@ -129,7 +163,7 @@ async function load(): Promise<Loaded> {
             name: typeof model.name === "string" ? model.name : id,
             provider: providerOf(id),
             type,
-            credits: price ? perMillion(price) : null,
+            price: price ? catalogPrice(price, type) : null,
             ...(price?.contextWindow && { contextWindow: price.contextWindow }),
           });
         }

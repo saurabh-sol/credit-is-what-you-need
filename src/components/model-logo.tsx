@@ -14,6 +14,9 @@ const colored = new Set([
   "microsoft",
   "zhipu",
   "minimax",
+  "bytedance",
+  "kling",
+  "alibaba",
 ]);
 
 type ProviderLogoProps = { logo: string; className?: string; /** Force the single-color version. */ mono?: boolean };
