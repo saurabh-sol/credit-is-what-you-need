@@ -1,4 +1,5 @@
 import { ECHO_MODEL, upstream, upstreams, type Upstream } from "./gateway.ts";
+import { makerOf } from "./providers.ts";
 import { cheapestVideoRate, CREDITS_PER_USD, ECHO_PRICE, MARGIN, type ModelPrice, type PriceTier, type VideoRate } from "./pricing.ts";
 
 // The models this deployment can reach, read from the provider once and kept
@@ -208,6 +209,13 @@ async function fetchModels({ baseUrl, apiKey }: Upstream): Promise<Record<string
   }
 }
 
+// One spelling for a model whichever gateway lists it: the maker as we name
+// it, the rest lower-cased. OpenRouter's "~" (latest) prefix is dropped too.
+const canonical = (id: string) => {
+  const rest = id.replace(/^~/, "").split("/").slice(1).join("/");
+  return `${makerOf(id)}/${rest.toLowerCase()}`;
+};
+
 async function load(): Promise<Loaded> {
   const cached = holder.kreditCatalog;
   if (cached && cached.at > Date.now() - CACHE_MS) return cached.value;
@@ -222,6 +230,11 @@ async function load(): Promise<Loaded> {
     sources: new Map(),
   };
   // Providers are merged in order, so a model on both is served by the first.
+  // Gateways spell the same model differently ("meta/llama-4" on Vercel,
+  // "meta-llama/llama-4" on OpenRouter), so the catalog lists each model once
+  // under the first spelling. The other spelling still routes and bills, so a
+  // caller who knows it is not turned away.
+  const listed = new Set<string>();
   for (const [index, list] of lists.entries()) {
     for (const model of list ?? []) {
       const id = model.id as string;
@@ -233,6 +246,9 @@ async function load(): Promise<Loaded> {
       if (price) value.prices.set(id, price);
       value.types.set(id, type);
       value.sources.set(id, providers[index]);
+      const key = canonical(id);
+      if (listed.has(key)) continue;
+      listed.add(key);
       value.raw.push(model);
       const modalities = modalitiesOf(model);
       const released = num(model.released) ?? num(model.created);
