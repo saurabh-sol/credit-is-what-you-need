@@ -1,0 +1,32 @@
+{
+  "name": "@kredit/cli",
+  "version": "0.1.0",
+  "description": "Kredit from the terminal: chat with any model, check your balance, read your bill.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "kredit": "bin/kredit.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "commander": "^14.0.0",
+    "picocolors": "^1.1.1"
+  },
+  "keywords": [
+    "kredit",
+    "ai",
+    "cli",
+    "openai",
+    "gateway"
+  ]
+}

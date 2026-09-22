@@ -7,7 +7,9 @@
   },
   "scripts": {
     "dev": "next dev",
+    "prebuild": "npm run cli:pack",
     "build": "next build",
+    "cli:pack": "node scripts/pack-cli.mjs",
     "start": "next start",
     "lint": "eslint",
     "test:auth": "node scripts/auth-test.mjs",

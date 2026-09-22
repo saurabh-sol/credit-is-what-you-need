@@ -31,6 +31,27 @@ export function Integrations() {
       </p>
       <OriginCode title="Node" code={snippets.Anthropic({ origin: "{origin}" })} />
 
+      <H2>Command line</H2>
+      <p>
+        The Kredit CLI talks to any model, shows your balance and reads your bill from a terminal. It installs straight
+        from this server, so there is nothing to sign up for. Node 22 or newer.
+      </p>
+      <OriginCode
+        title="Shell"
+        code={`npm install -g {origin}/cli/kredit-cli.tgz
+kredit login                                  # paste a key from the dashboard
+kredit chat "explain gas fees in one line"
+kredit chat -m anthropic/claude-haiku-4.5     # a conversation, turn by turn
+cat notes.md | kredit chat -s "summarize"     # pipe text in
+kredit models claude                          # find a model and its price
+kredit usage --from 2026-09-01                # what this month cost`}
+      />
+      <p>
+        Every command takes <code>--json</code> for scripts; the cost of each call goes to stderr, so stdout stays clean
+        for pipes. <code>KREDIT_API_KEY</code> and <code>KREDIT_BASE_URL</code> in the environment override the saved
+        settings.
+      </p>
+
       <H2>Claude Code</H2>
       <p>
         Point Claude Code at this host&apos;s <code>/v1</code> with two environment variables, and pick a model id from{" "}

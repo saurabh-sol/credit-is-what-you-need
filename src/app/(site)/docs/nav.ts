@@ -48,7 +48,7 @@ export const docGroups: DocGroup[] = [
   {
     title: "Integrations",
     pages: [
-      { slug: "integrations", title: "SDKs and tools", description: "OpenAI and Anthropic SDKs, Claude Code, the AI SDK, Cursor and more." },
+      { slug: "integrations", title: "SDKs and tools", description: "The command line, OpenAI and Anthropic SDKs, Claude Code, the AI SDK, Cursor and more." },
     ],
   },
   {
