@@ -286,8 +286,8 @@ export function revokeKey(address: string, id: string) {
 export function findKey(key: string) {
   if (!key.startsWith(KEY_PREFIX) && !key.startsWith(LEGACY_KEY_PREFIX)) return null;
   const row = db()
-    .prepare("SELECT id, address FROM api_keys WHERE key_hash = ? AND revoked_at IS NULL")
-    .get(hashKey(key)) as { id: string; address: string } | undefined;
+    .prepare("SELECT id, address, name, prefix FROM api_keys WHERE key_hash = ? AND revoked_at IS NULL")
+    .get(hashKey(key)) as { id: string; address: string; name: string; prefix: string } | undefined;
   return row ?? null;
 }
 
@@ -316,6 +316,53 @@ export function recordUsage(entry: {
       .run(entry.keyId);
     return getBalance(entry.address);
   });
+}
+
+export type UsageRow = {
+  id: number;
+  keyId: string;
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+  credits: number;
+  createdAt: string;
+};
+
+// A page of a wallet's calls, newest first. `before` is the id to continue from.
+export function listUsage(address: string, filter: { from?: string; to?: string; before?: number; limit?: number } = {}) {
+  const limit = Math.min(Math.max(filter.limit ?? 100, 1), 500);
+  const rows = db()
+    .prepare(
+      `SELECT id, key_id AS keyId, model, input_tokens AS inputTokens, output_tokens AS outputTokens, credits, created_at AS createdAt
+       FROM usage WHERE address = ? AND (? IS NULL OR created_at >= ?) AND (? IS NULL OR created_at < ?) AND (? IS NULL OR id < ?)
+       ORDER BY id DESC LIMIT ?`,
+    )
+    .all(
+      lower(address),
+      filter.from ?? null, filter.from ?? null,
+      filter.to ?? null, filter.to ?? null,
+      filter.before ?? null, filter.before ?? null,
+      limit + 1,
+    ) as UsageRow[];
+  const page = rows.slice(0, limit);
+  return { rows: page, next: rows.length > limit ? page[page.length - 1].id : null };
+}
+
+// Spend per model over a period.
+export function usageByModel(address: string, filter: { from?: string; to?: string } = {}) {
+  return db()
+    .prepare(
+      `SELECT model, COUNT(*) AS calls, SUM(input_tokens) AS inputTokens, SUM(output_tokens) AS outputTokens, SUM(credits) AS credits
+       FROM usage WHERE address = ? AND (? IS NULL OR created_at >= ?) AND (? IS NULL OR created_at < ?)
+       GROUP BY model ORDER BY credits DESC`,
+    )
+    .all(lower(address), filter.from ?? null, filter.from ?? null, filter.to ?? null, filter.to ?? null) as {
+    model: string;
+    calls: number;
+    inputTokens: number;
+    outputTokens: number;
+    credits: number;
+  }[];
 }
 
 // --- Buying credits with the project token -----------------------------------
