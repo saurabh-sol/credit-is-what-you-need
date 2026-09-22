@@ -1,13 +1,8 @@
-import { createPublicClient, http, type Hash } from "viem";
-import { robinhood, robinhoodTestnet } from "viem/chains";
+import type { Hash } from "viem";
+import { chains, publicClient } from "@/lib/chain";
 import { recordTopUp, TopUpUsedError } from "@/lib/ledger";
 import { getSession } from "@/lib/session";
 import { creditsForPayment, paymentIn, topUpConfig } from "@/lib/topup";
-
-const chains = {
-  testnet: { chain: robinhoodTestnet, rpc: process.env.NEXT_PUBLIC_RPC_TESTNET },
-  mainnet: { chain: robinhood, rpc: process.env.NEXT_PUBLIC_RPC_MAINNET },
-};
 
 // What the buy-credits form needs to know. `null` means top-ups are switched off.
 export async function GET() {
@@ -27,8 +22,7 @@ export async function POST(request: Request) {
   const hash = typeof body?.hash === "string" && /^0x[0-9a-fA-F]{64}$/.test(body.hash) ? (body.hash as Hash) : null;
   if (!hash) return Response.json({ error: "Send the transaction hash of your payment." }, { status: 400 });
 
-  const { chain, rpc } = chains[config.network];
-  const client = createPublicClient({ chain, transport: http(rpc) });
+  const client = publicClient(config.network);
   let receipt;
   try {
     receipt = await client.getTransactionReceipt({ hash });

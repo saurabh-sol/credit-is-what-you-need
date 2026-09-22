@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { formatCredits } from "@/lib/format";
+import { formatCredits, shortAddress } from "@/lib/format";
+import { networks } from "@/lib/networks";
 import { useKreditAccount } from "@/lib/use-kredit-account";
 
 const kindLabel: Record<string, string> = {
@@ -73,7 +74,23 @@ export function ActivityTable({ limit }: { limit?: number }) {
                   <td>
                     <span className="chip">{kindLabel[entry.kind] ?? entry.kind}</span>
                   </td>
-                  <td className="max-w-64 truncate text-mist">{entry.memo}</td>
+                  <td className="max-w-64 truncate text-mist">
+                    {entry.memo}
+                    {entry.txHash && entry.network && (
+                      <>
+                        {" · "}
+                        <a
+                          href={`${networks[entry.network].explorerUrl}/tx/${entry.txHash}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          title="The on-chain receipt for this credit"
+                          className="font-mono text-xs underline-offset-4 hover:text-accent hover:underline"
+                        >
+                          receipt {shortAddress(entry.txHash)}
+                        </a>
+                      </>
+                    )}
+                  </td>
                   <td className="whitespace-nowrap text-mist" title={new Date(entry.createdAt).toLocaleString()} suppressHydrationWarning>
                     {when(entry.createdAt)}
                   </td>

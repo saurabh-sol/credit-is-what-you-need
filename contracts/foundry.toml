@@ -1,0 +1,21 @@
+[profile.default]
+src = "src"
+out = "out"
+test = "test"
+script = "script"
+libs = ["lib"]
+solc_version = "0.8.28"
+optimizer = true
+optimizer_runs = 2000
+# PUSH0-free bytecode runs on every Arbitrum-stack chain, whatever ArbOS version.
+evm_version = "paris"
+fs_permissions = []
+
+[rpc_endpoints]
+testnet = "https://rpc.testnet.chain.robinhood.com"
+mainnet = "https://rpc.mainnet.chain.robinhood.com"
+
+# Blockscout verifies from source; no key needed for either explorer.
+[etherscan]
+testnet = { key = "none", url = "https://explorer.testnet.chain.robinhood.com/api/", chain = 46630 }
+mainnet = { key = "none", url = "https://robinhoodchain.blockscout.com/api/", chain = 4663 }
