@@ -23,16 +23,20 @@ the credits into its ledger (`POST /api/claim/confirm`).
 
 | Network | Address | Deployed | Source |
 | --- | --- | --- | --- |
-| Robinhood Chain mainnet (4663) | [`0x46C668199e07eDD479A9309B0866cD6900E88bdD`](https://robinhoodchain.blockscout.com/address/0x46C668199e07eDD479A9309B0866cD6900E88bdD) | block 69528429, tx `0x89aecbc105559f535714b578125e7885b2dcca46e39aa781b636bead819db48a` | exact match on [Sourcify](https://sourcify.dev/server/v2/contract/4663/0x46C668199e07eDD479A9309B0866cD6900E88bdD) |
+| Robinhood Chain mainnet (4663) | [`0x46C668199e07eDD479A9309B0866cD6900E88bdD`](https://robinhoodchain.blockscout.com/address/0x46C668199e07eDD479A9309B0866cD6900E88bdD) | block 69528429, tx `0x89aecbc105559f535714b578125e7885b2dcca46e39aa781b636bead819db48a` | verified on Blockscout (partial match, flattened source) and an exact match on [Sourcify](https://sourcify.dev/server/v2/contract/4663/0x46C668199e07eDD479A9309B0866cD6900E88bdD) |
 
 Owner and treasury are the deployer wallet `0xBeed…3323`; the signer is `0x59B5…7764`.
 Set `RECEIPTS_ADDRESS_MAINNET=0x46C668199e07eDD479A9309B0866cD6900E88bdD` and
 `RECEIPTS_FROM_BLOCK_MAINNET=69528429` next to the signer key.
 
 Mainnet Blockscout puts a Cloudflare challenge in front of its API, so
-`forge verify-contract --verifier blockscout` cannot reach it from a server.
-Verify through Sourcify instead (`--verifier sourcify`); Blockscout imports
-Sourcify matches, and Sourcify forwards to Etherscan as well.
+`forge verify-contract --verifier blockscout` cannot reach it from a server,
+and the Sourcify widget on its verification page does not list chain 4663.
+What works: `--verifier sourcify` from the terminal (exact match, and Sourcify
+forwards to Etherscan), then Blockscout's own "Verify & publish" page in a
+browser with the "Solidity (Single file)" method: compiler v0.8.28, EVM
+version paris, optimization on with 2000 runs, and the contents of
+`src/KreditReceipts.sol` pasted in (it has no imports).
 
 ## Test
 
