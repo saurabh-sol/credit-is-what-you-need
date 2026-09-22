@@ -206,11 +206,42 @@
     color: var(--color-mist);
   }
 
-  /* ---------- The receipt waits to print until it is looked at ---------- */
+  /* ---------- Credit meter: the bars fill once the card is looked at ---------- */
 
-  .print-on-view:not(.is-visible) .receipt-print,
-  .print-on-view:not(.is-visible) .print-line {
-    animation-play-state: paused;
+  .meter-row {
+    opacity: 0;
+    transform: translateY(6px);
+    transition:
+      opacity 0.6s var(--ease-out-expo),
+      transform 0.6s var(--ease-out-expo);
+    transition-delay: calc(0.2s + var(--i, 0) * 0.12s);
+  }
+
+  .meter-track {
+    height: 6px;
+    border-radius: 9999px;
+    background: var(--color-raised);
+    overflow: hidden;
+  }
+
+  .meter-bar {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--color-accent-dim), var(--color-accent));
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 1.1s var(--ease-out-expo);
+    transition-delay: calc(0.35s + var(--i, 0) * 0.12s);
+  }
+
+  .meter.is-visible .meter-row {
+    opacity: 1;
+    transform: none;
+  }
+
+  .meter.is-visible .meter-bar {
+    transform: scaleX(1);
   }
 
   /* ---------- Dashboard preview ---------- */
@@ -230,8 +261,10 @@
 
 /* Nothing to wait for without motion, and nothing to un-pause it without JavaScript. */
 @media (prefers-reduced-motion: reduce), (scripting: none) {
-  .print-on-view .receipt-print,
-  .print-on-view .print-line {
-    animation-play-state: running;
+  .meter .meter-row,
+  .meter .meter-bar {
+    opacity: 1;
+    transform: none;
+    transition: none;
   }
 }
