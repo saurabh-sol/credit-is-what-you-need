@@ -30,9 +30,16 @@ const colored = new Map<string, "svg" | "png">([
   // Marks their makers only publish as bitmaps.
   ["mixedbread", "png"],
   ["interfaze", "png"],
+  ["gryphe", "png"],
+  ["anthracite", "png"],
+  ["thedrummer", "png"],
+  ["sao10k", "png"],
+  ["undi95", "png"],
+  ["mancer", "svg"],
+  ["unbiased", "svg"],
 ]);
 // Single-color marks that exist only as bitmaps; the mask uses their alpha channel.
-const bitmapMono = new Set(["quiverai", "typesafe", "inclusionai"]);
+const bitmapMono = new Set(["quiverai", "typesafe", "inclusionai", "nexagi", "writer", "prismml"]);
 
 type ProviderLogoProps = { logo: string; className?: string; /** Force the single-color version. */ mono?: boolean };
 
