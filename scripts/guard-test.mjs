@@ -38,6 +38,30 @@ const provider = http.createServer(async (request, response) => {
   const body = JSON.parse(text);
   received.push(body);
   await new Promise((resolve) => setTimeout(resolve, delayMs));
+  if (request.url === "/messages") {
+    // Anthropic counts cached tokens apart from input_tokens: 200 + 800 cached, 100 out -> 3 credits, as above.
+    if (!body.stream) {
+      return send({ id: "msg-1", type: "message", role: "assistant", model: body.model, content: [{ type: "text", text: "ok" }], stop_reason: "end_turn", usage: { input_tokens: 200, output_tokens: 100, cache_read_input_tokens: 800 } });
+    }
+    response.writeHead(200, { "content-type": "text/event-stream" });
+    const ev = (type, data) => `event: ${type}\ndata: ${JSON.stringify({ type, ...data })}\n\n`;
+    response.write(ev("message_start", { message: { id: "msg-1", type: "message", role: "assistant", model: body.model, content: [], usage: { input_tokens: 200, output_tokens: 1, cache_read_input_tokens: 800 } } }));
+    response.write(ev("content_block_start", { index: 0, content_block: { type: "text", text: "" } }));
+    response.write(ev("content_block_delta", { index: 0, delta: { type: "text_delta", text: "ok" } }));
+    response.write(ev("content_block_stop", { index: 0 }));
+    response.write(ev("message_delta", { delta: { stop_reason: "end_turn" }, usage: { output_tokens: 100 } }));
+    return response.end(ev("message_stop", {}));
+  }
+  if (request.url === "/responses") {
+    const usage = { input_tokens: 1000, output_tokens: 100, input_tokens_details: { cached_tokens: 800 } };
+    const done = { id: "resp-1", object: "response", model: body.model, output: [{ type: "message", role: "assistant", content: [{ type: "output_text", text: "ok" }] }], usage };
+    if (!body.stream) return send(done);
+    response.writeHead(200, { "content-type": "text/event-stream" });
+    const ev = (type, data) => `event: ${type}\ndata: ${JSON.stringify({ type, ...data })}\n\n`;
+    response.write(ev("response.created", { response: { id: "resp-1", object: "response" } }));
+    response.write(ev("response.output_text.delta", { delta: "ok" }));
+    return response.end(ev("response.completed", { response: done }));
+  }
   if (request.url === "/embeddings") {
     return send({ object: "list", model: body.model, data: [{ object: "embedding", index: 0, embedding: [0.1, 0.2] }], usage: { prompt_tokens: 50_000, total_tokens: 50_000 } });
   }
@@ -164,6 +188,42 @@ const embedding = await fetch(`${base}/v1/embeddings`, { method: "POST", headers
 check("/v1/embeddings is billed on input tokens", embedding.status === 200 && embedding.headers.get("x-kredit-credits-charged") === "2" && (await balance()) === beforeEmbed - 2, `(charged ${embedding.headers.get("x-kredit-credits-charged")})`);
 const notEmbed = await fetch(`${base}/v1/embeddings`, { method: "POST", headers: { ...auth, "content-type": "application/json" }, body: JSON.stringify({ model: "mock/vercel", input: "x" }) });
 check("a chat model cannot embed", notEmbed.status === 400 && (await notEmbed.json()).error.code === "model_not_supported");
+
+// --- the other dialects: Anthropic Messages and OpenAI Responses
+const post = (path, headers, body) => fetch(`${base}${path}`, { method: "POST", headers: { "content-type": "application/json", ...headers }, body: JSON.stringify(body) });
+const anthropicBody = { model: "mock/vercel", max_tokens: 500, messages: [{ role: "user", content: "hi" }] };
+
+let start = await balance();
+const msg = await post("/v1/messages", { "x-api-key": created.key }, anthropicBody);
+check("/v1/messages takes the key in x-api-key and bills cached tokens at the cache price", msg.status === 200 && msg.headers.get("x-kredit-credits-charged") === "3" && (await balance()) === start - 3 && received.at(-1).max_tokens === 500, `(${msg.status}, charged ${msg.headers.get("x-kredit-credits-charged")})`);
+start = await balance();
+const msgStream = await post("/v1/messages", { authorization: `Bearer ${created.key}` }, { ...anthropicBody, stream: true });
+const msgEvents = await msgStream.text();
+check("a streamed message is passed through untouched and billed when it ends", msgStream.status === 200 && msgEvents.includes("event: message_stop") && !msgEvents.includes("kredit") && (await balance()) === start - 3, `(balance moved ${start - (await balance())})`);
+const msgNoMax = await post("/v1/messages", { "x-api-key": created.key }, { ...anthropicBody, max_tokens: undefined });
+const msgErr = await msgNoMax.json();
+check("errors use Anthropic's shape on /v1/messages", msgNoMax.status === 400 && msgErr.type === "error" && msgErr.error.type === "invalid_request_error", JSON.stringify(msgErr));
+const msgBadKey = await post("/v1/messages", { "x-api-key": "kredit_sk_nope" }, anthropicBody);
+check("a wrong key on /v1/messages is an authentication_error", msgBadKey.status === 401 && (await msgBadKey.json()).error.type === "authentication_error");
+
+start = await balance();
+const resp = await post("/v1/responses", { authorization: `Bearer ${created.key}` }, { model: "mock/vercel", input: "hi", max_output_tokens: 400 });
+check("/v1/responses is billed from its usage block", resp.status === 200 && resp.headers.get("x-kredit-credits-charged") === "3" && (await balance()) === start - 3 && received.at(-1).max_output_tokens === 400, `(charged ${resp.headers.get("x-kredit-credits-charged")})`);
+start = await balance();
+const respStream = await post("/v1/responses", { authorization: `Bearer ${created.key}` }, { model: "mock/vercel", input: [{ role: "user", content: "hi" }], stream: true });
+const respEvents = await respStream.text();
+check("a streamed response is billed from response.completed", respStream.status === 200 && respEvents.includes("event: response.completed") && (await balance()) === start - 3);
+
+// A thin balance shortens the answer in every dialect.
+const THIN = `0x${Date.now().toString(16).padStart(40, "f")}`;
+const thinCookie = await sessionCookie(THIN);
+database.prepare("INSERT INTO ledger (address, amount, kind, memo) VALUES (?, 20, 'claim', 'guard-test')").run(THIN.toLowerCase());
+const thinKey = await (await fetch(`${base}/api/keys`, { method: "POST", headers: { cookie: thinCookie, "content-type": "application/json" }, body: JSON.stringify({ name: "thin" }) })).json();
+await post("/v1/messages", { "x-api-key": thinKey.key }, { ...anthropicBody, max_tokens: 8000 });
+const thinMsg = received.at(-1);
+await post("/v1/responses", { authorization: `Bearer ${thinKey.key}` }, { model: "mock/vercel", input: "hi" });
+const thinResp = received.at(-1);
+check("a thin balance shortens Anthropic and Responses calls too", thinMsg.max_tokens > 0 && thinMsg.max_tokens < 8000 && thinResp.max_output_tokens > 0 && thinResp.max_output_tokens < 64_000, `(max_tokens ${thinMsg.max_tokens}, max_output_tokens ${thinResp.max_output_tokens})`);
 
 console.log(`\n${results.filter(Boolean).length}/${results.length} passed`);
 provider.close();
