@@ -25,7 +25,12 @@ the credits into its ledger (`POST /api/claim/confirm`).
 | --- | --- | --- | --- |
 | Robinhood Chain mainnet (4663) | [`0x46C668199e07eDD479A9309B0866cD6900E88bdD`](https://robinhoodchain.blockscout.com/address/0x46C668199e07eDD479A9309B0866cD6900E88bdD) | block 69528429, tx `0x89aecbc105559f535714b578125e7885b2dcca46e39aa781b636bead819db48a` | verified on Blockscout (partial match, flattened source) and an exact match on [Sourcify](https://sourcify.dev/server/v2/contract/4663/0x46C668199e07eDD479A9309B0866cD6900E88bdD) |
 
+| KreditSwapBuy, Robinhood Chain mainnet (4663) | [`0x5965ab9b7FE7119d909f1e63B6Ad0e72a62715FA`](https://robinhoodchain.blockscout.com/address/0x5965ab9b7FE7119d909f1e63B6Ad0e72a62715FA) | block 69564721, tx `0xbc2139480f5fc01239f89704ba25687a4f2cf33185c3311c405977462b68bf9f` | [Sourcify](https://sourcify.dev/server/v2/contract/4663/0x5965ab9b7FE7119d909f1e63B6Ad0e72a62715FA) |
+
 Owner and treasury are the deployer wallet `0xBeed…3323`; the signer is `0x59B5…7764`.
+KreditSwapBuy trades through SwapRouter02 with WETH `0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73`;
+its token is unset (buying off) until `scripts/swap-buy-admin.mjs set-token`.
+Set `TOPUP_SWAP_ADDRESS=0x5965ab9b7FE7119d909f1e63B6Ad0e72a62715FA` next to the `TOPUP_TOKEN_*` values.
 Set `RECEIPTS_ADDRESS_MAINNET=0x46C668199e07eDD479A9309B0866cD6900E88bdD` and
 `RECEIPTS_FROM_BLOCK_MAINNET=69528429` next to the signer key.
 
