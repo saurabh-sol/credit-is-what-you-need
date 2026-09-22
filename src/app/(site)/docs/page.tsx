@@ -76,9 +76,6 @@ export default async function Introduction() {
         <Card href="/docs/integrations" title="Integrations">
           OpenAI and Anthropic SDKs, Claude Code, the AI SDK, Cursor, LangChain.
         </Card>
-        <Card href="/docs/self-hosting/docker" title="Run your own">
-          One container, one SQLite file, every environment variable explained.
-        </Card>
       </Cards>
 
       <H2>Your first request</H2>
