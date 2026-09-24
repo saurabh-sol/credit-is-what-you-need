@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Kredit promo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #f8f5ee; --surface: #fdfbf7; --raised: #f1ede4; --line: #ddd6c8;
+    --accent: #c2410c; --accent-dim: #9a3412; --accent-2: #fb6208;
+    --fog: #020100; --mist: #5f574c;
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--ink); }
+  body { font-family: "Geist", system-ui, sans-serif; color: var(--fog); -webkit-font-smoothing: antialiased; }
+  .mono { font-family: "Geist Mono", ui-monospace, monospace; }
+  #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; }
+
+  /* ------------------------------------------------------------ backdrop */
+  .backdrop { position: absolute; inset: 0; }
+  .glow {
+    position: absolute; inset: -20%;
+    background:
+      radial-gradient(60% 55% at 72% 60%, rgb(251 98 8 / 0.16), transparent 70%),
+      radial-gradient(45% 45% at 20% 25%, rgb(194 65 12 / 0.10), transparent 70%);
+    animation: glow-drift 30s linear both;
+  }
+  @keyframes glow-drift { from { transform: translate(-2%, 1%) rotate(0deg); } to { transform: translate(2%, -1%) rotate(3deg); } }
+  .dots {
+    position: absolute; inset: 0;
+    background-image: radial-gradient(rgb(60 40 20 / 0.22) 1.1px, transparent 1.4px);
+    background-size: 26px 26px;
+    -webkit-mask-image: radial-gradient(70% 70% at 60% 50%, #000 20%, transparent 100%);
+    mask-image: radial-gradient(70% 70% at 60% 50%, #000 20%, transparent 100%);
+    opacity: 0.6;
+  }
+
+  /* ------------------------------------------------------------ scenes */
+  .scene { position: absolute; inset: 0; opacity: 0; animation: scene-in 0.55s var(--ease) var(--s) both, scene-out 0.45s ease-in var(--e) both; }
+  @keyframes scene-in { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes scene-out { from { opacity: 1; } to { opacity: 0; } }
+
+  /* Every animated child sets --d (delay after the scene starts). */
+  .rise { opacity: 0; animation: rise 0.9s var(--ease) calc(var(--s) + var(--d, 0s)) both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(28px); filter: blur(6px); } to { opacity: 1; transform: none; filter: blur(0); } }
+  .slide { opacity: 0; animation: slide 1.1s var(--ease) calc(var(--s) + var(--d, 0s)) both; }
+  @keyframes slide { from { opacity: 0; transform: translateX(90px); } to { opacity: 1; transform: none; } }
+  .pop { opacity: 0; animation: pop 0.7s var(--ease) calc(var(--s) + var(--d, 0s)) both; }
+  @keyframes pop { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: scale(1); } }
+  .wipe { position: relative; overflow: hidden; }
+  .wipe > span { display: inline-block; animation: wipe 0.9s var(--ease) calc(var(--s) + var(--d, 0s)) both; }
+  @keyframes wipe { from { transform: translateY(110%); } to { transform: none; } }
+
+  .eyebrow { font-family: "Geist Mono", monospace; font-size: 18px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--accent); font-weight: 500; }
+  h1 { font-size: 132px; line-height: 1.02; letter-spacing: -0.035em; font-weight: 600; }
+  h2 { font-size: 92px; line-height: 1.04; letter-spacing: -0.03em; font-weight: 600; }
+  .sub { font-size: 34px; line-height: 1.45; color: var(--mist); max-width: 24em; }
+  .shine { background: linear-gradient(100deg, var(--accent-dim), var(--accent) 45%, var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+  /* browser frame */
+  .frame {
+    position: absolute; border-radius: 22px; border: 1px solid var(--line); background: var(--surface);
+    box-shadow: 0 40px 90px -30px rgb(60 40 20 / 0.35), 0 10px 30px -10px rgb(60 40 20 / 0.15); overflow: hidden;
+  }
+  .frame .bar { height: 48px; display: flex; align-items: center; gap: 8px; padding: 0 18px; border-bottom: 1px solid var(--line); background: var(--raised); }
+  .frame .bar i { width: 12px; height: 12px; border-radius: 50%; background: var(--line); display: block; }
+  .frame .bar .url { margin-left: 14px; font-family: "Geist Mono", monospace; font-size: 14px; color: var(--mist); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 5px 14px; }
+  .frame .view { position: absolute; top: 48px; left: 0; right: 0; bottom: 0; overflow: hidden; }
+  .frame .view img { position: absolute; left: 0; top: 0; width: 100%; height: auto; transform-origin: 50% 0; animation: burns 6s linear calc(var(--s) + var(--d, 0s)) both; }
+  @keyframes burns { from { transform: translateY(var(--y0, 0)) scale(1); } to { transform: translateY(var(--y1, -30px)) scale(1.04); } }
+
+  .chip { display: inline-flex; align-items: center; gap: 12px; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 12px 22px; font-size: 24px; color: var(--fog); font-weight: 500; }
+  .chip img { width: 30px; height: 30px; object-fit: contain; }
+  .check { color: var(--accent); font-weight: 700; }
+
+  /* ------------------------------------------------------------ S1 logo */
+  #s1 { --s: 0s; --e: 2.55s; display: grid; place-items: center; }
+  #s1 .lockup { display: flex; align-items: center; gap: 34px; }
+  #s1 .orb { width: 150px; height: 150px; opacity: 0; animation: orb-in 1.2s var(--ease) 0.1s both; }
+  @keyframes orb-in { from { opacity: 0; transform: scale(0.5) rotate(-40deg); filter: blur(14px); } to { opacity: 1; transform: none; filter: blur(0); } }
+  #s1 .word { font-size: 148px; font-weight: 600; letter-spacing: -0.04em; }
+  #s1 .word span { display: inline-block; opacity: 0; animation: rise 0.8s var(--ease) both; }
+  #s1 .tag { position: absolute; top: 66%; left: 0; right: 0; text-align: center; --d: 1.1s; }
+
+  /* ------------------------------------------------------------ S2 headline */
+  #s2 { --s: 2.7s; --e: 7.2s; padding: 0 160px; display: flex; flex-direction: column; justify-content: center; }
+  #s2 h1 span.w { display: inline-block; opacity: 0; animation: rise 0.9s var(--ease) both; margin-right: 0.22em; }
+  #s2 .sub { margin-top: 44px; --d: 1.35s; }
+  #s2 .proof { margin-top: 56px; display: flex; gap: 40px; font-size: 26px; color: var(--mist); --d: 1.75s; }
+
+  /* ------------------------------------------------------------ S3 how */
+  #s3 { --s: 7.2s; --e: 12.3s; }
+  #s3 .copy { position: absolute; left: 140px; top: 250px; width: 640px; }
+  #s3 h2 { margin-top: 22px; }
+  #s3 .sub { margin-top: 30px; font-size: 30px; }
+  #s3 .steps { margin-top: 48px; display: flex; flex-direction: column; gap: 14px; font-size: 26px; }
+  #s3 .steps div { display: flex; align-items: center; gap: 18px; }
+  #s3 .steps b { font-family: "Geist Mono", monospace; font-weight: 500; color: var(--accent); font-size: 20px; }
+  #s3 .frame { left: 840px; top: 150px; width: 1040px; height: 790px; --d: 0.35s; }
+
+  /* ------------------------------------------------------------ S4 earn */
+  #s4 { --s: 12.3s; --e: 17.3s; }
+  #s4 .copy { position: absolute; left: 140px; top: 210px; width: 680px; }
+  #s4 .big { margin-top: 18px; font-size: 176px; line-height: 1; letter-spacing: -0.04em; font-weight: 600; font-variant-numeric: tabular-nums; }
+  #s4 .big small { font-size: 40px; letter-spacing: -0.01em; color: var(--mist); font-weight: 500; margin-left: 12px; }
+  #s4 .usd { font-family: "Geist Mono", monospace; font-size: 26px; color: var(--mist); margin-top: 10px; }
+  #s4 .rules { margin-top: 46px; display: grid; gap: 10px; width: 620px; }
+  #s4 .rules div { display: flex; justify-content: space-between; align-items: baseline; padding: 14px 0; border-bottom: 1px solid var(--line); font-size: 27px; }
+  #s4 .rules b { font-family: "Geist Mono", monospace; font-weight: 500; color: var(--accent); font-size: 26px; }
+  #s4 .frame { left: 840px; top: 150px; width: 1040px; height: 790px; --d: 0.35s; }
+
+  /* ------------------------------------------------------------ S5 spend */
+  #s5 { --s: 17.3s; --e: 22.3s; }
+  #s5 .center { position: absolute; left: 0; right: 0; top: 150px; text-align: center; }
+  #s5 h2 { margin-top: 22px; font-size: 108px; }
+  #s5 .sub { margin: 26px auto 0; text-align: center; max-width: 40em; }
+  #s5 .ring { position: absolute; inset: 0; }
+  #s5 .ring .chip { position: absolute; font-size: 22px; padding: 12px 20px; }
+  #s5 .term { position: absolute; left: 340px; top: 660px; width: 1240px; border-radius: 18px; background: #14100c; color: #f1ede4; padding: 34px 40px; font-size: 25px; line-height: 1.7; box-shadow: 0 40px 80px -30px rgb(20 10 0 / 0.5); --d: 0.9s; }
+  #s5 .term .c { color: #9a8f80; }
+  #s5 .term .k { color: #fb9a5a; }
+  #s5 .term .r { color: #a8e6a0; }
+  #s5 .term .cursor { display: inline-block; width: 12px; height: 28px; background: var(--accent-2); vertical-align: -4px; margin-left: 2px; }
+
+  /* ------------------------------------------------------------ S6 top up */
+  #s6 { --s: 22.3s; --e: 26.6s; padding: 0 160px; display: flex; flex-direction: column; justify-content: center; }
+  #s6 h2 { margin-top: 22px; }
+  #s6 .price { margin-top: 48px; display: flex; align-items: center; gap: 42px; font-family: "Geist Mono", monospace; font-weight: 500; letter-spacing: -0.02em; }
+  #s6 .price .n { font-size: 150px; line-height: 1; }
+  #s6 .price .arrow { font-size: 120px; color: var(--accent); }
+  #s6 .price .n.credits { color: var(--accent); }
+  #s6 .price small { display: block; font-size: 24px; color: var(--mist); letter-spacing: 0.02em; margin-top: 10px; }
+  #s6 .coins { margin-top: 54px; display: flex; gap: 20px; align-items: center; }
+  #s6 .coins .chip { font-size: 28px; padding: 16px 28px; }
+  #s6 .coins .chip i { width: 18px; height: 18px; border-radius: 50%; display: inline-block; }
+  #s6 .ca { margin-top: 26px; font-family: "Geist Mono", monospace; font-size: 22px; color: var(--mist); }
+  #s6 .ca b { color: var(--accent); font-weight: 500; margin-right: 12px; }
+
+  /* ------------------------------------------------------------ S7 close */
+  #s7 { --s: 26.6s; --e: 31s; display: grid; place-items: center; text-align: center; }
+  #s7 .lockup { display: flex; align-items: center; gap: 26px; justify-content: center; }
+  #s7 .orb { width: 110px; height: 110px; }
+  #s7 .word { font-size: 110px; font-weight: 600; letter-spacing: -0.04em; }
+  #s7 .url { margin-top: 40px; font-size: 64px; letter-spacing: -0.02em; font-weight: 500; --d: 0.5s; }
+  #s7 .url span { color: var(--accent); }
+  #s7 .line { margin-top: 26px; font-size: 30px; color: var(--mist); --d: 0.85s; }
+  #s7 .foot { position: absolute; bottom: 70px; left: 0; right: 0; text-align: center; font-family: "Geist Mono", monospace; font-size: 17px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--mist); --d: 1.2s; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="backdrop"><div class="glow"></div><div class="dots"></div></div>
+
+  <!-- S1: logo -->
+  <section id="s1" class="scene">
+    <div class="lockup">
+      <img class="orb" src="orb.png" alt="" />
+      <div class="word">
+        <span style="animation-delay:0.55s">K</span><span style="animation-delay:0.62s">r</span><span style="animation-delay:0.69s">e</span><span style="animation-delay:0.76s">d</span><span style="animation-delay:0.83s">i</span><span style="animation-delay:0.90s">t</span>
+      </div>
+    </div>
+    <p class="tag eyebrow rise">AI credits · Robinhood Chain</p>
+  </section>
+
+  <!-- S2: headline -->
+  <section id="s2" class="scene">
+    <h1>
+      <span class="w" style="animation-delay:2.9s">Your</span><span class="w" style="animation-delay:3.0s">on-chain</span><span class="w" style="animation-delay:3.1s">activity</span><br />
+      <span class="w" style="animation-delay:3.25s">has</span><span class="w shine" style="animation-delay:3.4s">purchasing power</span>
+    </h1>
+    <p class="sub rise">Kredit turns your on-chain reputation and activity into AI credits you can spend across models, agents and APIs.</p>
+    <div class="proof rise">
+      <span><span class="check">✓</span>&nbsp; No gas to sign in</span>
+      <span><span class="check">✓</span>&nbsp; OpenAI-compatible</span>
+      <span><span class="check">✓</span>&nbsp; Revoke keys anytime</span>
+    </div>
+  </section>
+
+  <!-- S3: how it works -->
+  <section id="s3" class="scene">
+    <div class="copy">
+      <p class="eyebrow rise" style="--d:0.1s">How it works</p>
+      <h2 class="rise" style="--d:0.2s">Sign once.<br />No gas.</h2>
+      <p class="sub rise" style="--d:0.4s">Connect the wallet you use on Robinhood Chain. The work you already did on-chain does the rest.</p>
+      <div class="steps">
+        <div class="rise" style="--d:0.7s"><b>01</b> Wallet activity</div>
+        <div class="rise" style="--d:0.85s"><b>02</b> Credits, with a receipt for every task</div>
+        <div class="rise" style="--d:1.0s"><b>03</b> Any model</div>
+      </div>
+    </div>
+    <div class="frame slide">
+      <div class="bar"><i></i><i></i><i></i><span class="url">usekredit.space</span></div>
+      <div class="view"><img src="shots/how.png" style="--y0:-40px; --y1:-90px" alt="" /></div>
+    </div>
+  </section>
+
+  <!-- S4: earn -->
+  <section id="s4" class="scene">
+    <div class="copy">
+      <p class="eyebrow rise" style="--d:0.1s">Earn</p>
+      <div class="big rise" style="--d:0.2s"><span id="counter">0</span><small>credits</small></div>
+      <p class="usd rise" style="--d:0.3s">≈ $<span id="usd">0.00</span> of AI usage, earned from your record</p>
+      <div class="rules">
+        <div class="rise" style="--d:0.6s"><span>Deploy a contract</span><b>+500</b></div>
+        <div class="rise" style="--d:0.72s"><span>Contract interaction</span><b>+50</b></div>
+        <div class="rise" style="--d:0.84s"><span>Streaks</span><b>up to 100 / day</b></div>
+        <div class="rise" style="--d:0.96s"><span>Referrals</span><b>10 % of their claims</b></div>
+      </div>
+    </div>
+    <div class="frame slide">
+      <div class="bar"><i></i><i></i><i></i><span class="url">usekredit.space</span></div>
+      <div class="view"><img src="shots/earn.png" style="--y0:-30px; --y1:-80px" alt="" /></div>
+    </div>
+  </section>
+
+  <!-- S5: spend -->
+  <section id="s5" class="scene">
+    <div class="ring">
+      <span class="chip pop" style="left:150px; top:200px; --d:0.5s"><img src="logos/openai.svg" alt="" />OpenAI</span>
+      <span class="chip pop" style="left:1560px; top:330px; --d:0.6s"><img src="logos/anthropic.svg" alt="" />Anthropic</span>
+      <span class="chip pop" style="left:120px; top:420px; --d:0.7s"><img src="logos/google-color.svg" alt="" />Google</span>
+      <span class="chip pop" style="left:1640px; top:480px; --d:0.8s"><img src="logos/meta-color.svg" alt="" />Meta</span>
+      <span class="chip pop" style="left:260px; top:560px; --d:0.9s"><img src="logos/xai.svg" alt="" />xAI</span>
+      <span class="chip pop" style="left:1440px; top:570px; --d:1.0s"><img src="logos/mistral-color.svg" alt="" />Mistral</span>
+      <span class="chip pop" style="left:1660px; top:100px; --d:1.1s"><img src="logos/nvidia-color.svg" alt="" />NVIDIA</span>
+      <span class="chip pop" style="left:80px; top:90px; --d:1.2s"><img src="logos/deepseek-color.svg" alt="" />DeepSeek</span>
+      <span class="chip pop" style="left:1330px; top:80px; --d:1.3s"><img src="logos/microsoft-color.svg" alt="" />Microsoft</span>
+      <span class="chip pop" style="left:340px; top:80px; --d:1.4s"><img src="logos/perplexity-color.svg" alt="" />Perplexity</span>
+      <span class="chip pop" style="left:1620px; top:600px; --d:1.5s"><img src="logos/cohere-color.svg" alt="" />Cohere</span>
+    </div>
+    <div class="center">
+      <p class="eyebrow rise" style="--d:0.1s">Spend</p>
+      <h2 class="rise" style="--d:0.2s">One key. <span class="shine">500+ models.</span></h2>
+      <p class="sub rise" style="--d:0.45s">Text, images and video. Works wherever the OpenAI API works.</p>
+    </div>
+    <div class="term mono rise">
+      <div><span class="c">$</span> curl usekredit.space/v1/chat/completions <span class="c">\</span></div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;-H <span class="k">"Authorization: Bearer kred_sk_9fQk…h2Lw"</span> <span class="c">\</span></div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;-d <span class="k">'{"model": "claude-sonnet-5", "messages": [...]}'</span></div>
+      <div id="resp"><span class="r"></span><span class="cursor"></span></div>
+    </div>
+  </section>
+
+  <!-- S6: top up -->
+  <section id="s6" class="scene">
+    <p class="eyebrow rise" style="--d:0.1s">Need more?</p>
+    <h2 class="rise" style="--d:0.2s">Top up at a fixed price.</h2>
+    <div class="price">
+      <div class="n rise" style="--d:0.45s">$0.80<small>from your own wallet</small></div>
+      <div class="arrow rise" style="--d:0.6s">→</div>
+      <div class="n credits rise" style="--d:0.7s">1,000<small>credits · $1 of AI usage</small></div>
+    </div>
+    <div class="coins">
+      <span class="chip pop" style="--d:0.95s"><i style="background:#1d4ed8"></i>USDG</span>
+      <span class="chip pop" style="--d:1.05s"><i style="background:#3b3b3b"></i>ETH</span>
+      <span class="chip pop" style="--d:1.15s"><i style="background:var(--accent-2)"></i>KRED</span>
+      <span class="rise" style="--d:1.3s; font-size:26px; color:var(--mist); margin-left:14px">The contract writes the receipt. Nothing is held.</span>
+    </div>
+    <p class="ca rise" style="--d:1.45s"><b>KRED</b>0x1b69ba93b8da9cf4cbc8f9c40e7ed25347f86dd1</p>
+  </section>
+
+  <!-- S7: close -->
+  <section id="s7" class="scene">
+    <div>
+      <div class="lockup rise" style="--d:0.1s"><img class="orb" src="orb.png" alt="" /><span class="word">Kredit</span></div>
+      <p class="url rise">use<span>kredit</span>.space</p>
+      <p class="line rise">Your on-chain activity has purchasing power.</p>
+    </div>
+    <p class="foot rise">Built on Robinhood Chain · Independent, not affiliated with Robinhood</p>
+  </section>
+</div>
+
+<script>
+  // Deterministic scrubbing: every CSS animation is paused and set to the same
+  // time, and the few JS-driven bits (counter, typed response) follow it.
+  const ease = (x) => 1 - Math.pow(1 - x, 3);
+  const counter = document.getElementById("counter");
+  const usd = document.getElementById("usd");
+  const resp = document.querySelector("#resp .r");
+  const RESPONSE = "HTTP/1.1 200 OK   x-kredit-balance: 2,836   ← paid with credits, not a card";
+
+  function tick(ms) {
+    const t = ms / 1000;
+    // S4 counter runs from 12.6s over 1.8s to 3,520.
+    const c = Math.min(Math.max((t - 12.6) / 1.8, 0), 1);
+    const n = Math.round(ease(c) * 3520);
+    counter.textContent = n.toLocaleString("en-US");
+    usd.textContent = (n / 1000).toFixed(2);
+    // S5 response line types from 19.2s at 40 chars/s.
+    const chars = Math.min(Math.max(Math.floor((t - 19.2) * 40), 0), RESPONSE.length);
+    resp.textContent = RESPONSE.slice(0, chars);
+  }
+
+  window.seek = (ms) => {
+    for (const a of document.getAnimations()) {
+      a.pause();
+      a.currentTime = ms;
+    }
+    tick(ms);
+  };
+  window.ready = Promise.all([document.fonts.ready, ...[...document.images].map((img) => (img.complete ? Promise.resolve() : new Promise((r) => { img.onload = r; img.onerror = r; })))]).then(() => {
+    window.seek(0);
+    return true;
+  });
+</script>
+</body>
+</html>
