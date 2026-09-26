@@ -176,6 +176,14 @@ export async function scanAddressRpc(network: Network, address: string, transpor
     return { txs, truncated, unindexed: Math.max(0, nonce - txs.length) };
   } catch (error) {
     if (error instanceof ExplorerError) throw error;
+    // Alchemy answers every call with a 429 once the month's quota is spent;
+    // say so instead of "unknown RPC error".
+    const text = error instanceof Error ? `${error.message}\n${(error as { details?: string }).details ?? ""}` : "";
+    if (/capacity limit|\b429\b/i.test(text)) {
+      throw new ExplorerError(
+        `${network.name} scanning is paused: the chain index (Alchemy) has used its monthly quota. It comes back when the quota resets or the plan is upgraded.`,
+      );
+    }
     const detail = error instanceof Error ? error.message.split("\n")[0] : "";
     throw new ExplorerError(`Could not read ${network.name} right now. Try again in a moment.${detail ? ` (${detail})` : ""}`);
   }

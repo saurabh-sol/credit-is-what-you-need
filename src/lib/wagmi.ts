@@ -10,9 +10,12 @@ import { base, robinhood } from "wagmi/chains";
 // lives there can still connect and sign in.
 export const config = createConfig({
   chains: [robinhood, base],
-  // Optional private RPCs (e.g. Alchemy). Without them the public RPCs are used.
+  // The browser talks to the chains' public RPCs. The private RPC (Alchemy,
+  // for the record scanner's index) stays on the server: shipping its key to
+  // browsers spends its quota on every page view and breaks every read on the
+  // site when the quota runs out.
   transports: {
-    [robinhood.id]: http(process.env.NEXT_PUBLIC_RPC_MAINNET),
+    [robinhood.id]: http(),
     [base.id]: http(),
   },
   ssr: true,
