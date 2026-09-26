@@ -4,7 +4,6 @@ import { ApiDemo } from "@/components/api-demo";
 import { Estimator } from "@/components/estimator";
 import { ActivityIcon, ArrowRightIcon, ArrowUpRightIcon, CheckIcon, PlusIcon, SparkIcon, UsersIcon } from "@/components/icons";
 import { DashboardPreview } from "@/components/landing/dashboard-preview";
-import { ContractAddress } from "@/components/landing/contract-address";
 import { CreditMeter } from "@/components/landing/credit-meter";
 import { LoopBeam } from "@/components/landing/loop-beam";
 import { ModelOrbit } from "@/components/landing/model-orbit";
@@ -233,7 +232,6 @@ export default function Home() {
 
         <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 py-16 md:grid-cols-[1.05fr_1fr] md:py-24 lg:gap-16 lg:py-28">
           <div>
-            <ContractAddress style={beat(0)} />
             {/* Sized so each half of the sentence holds one line beside the orbit; phones wrap on their own. */}
             <h1 className="text-4xl font-semibold leading-[1.06] tracking-tight text-balance sm:text-5xl">
               {headline.map((word, index) => (
