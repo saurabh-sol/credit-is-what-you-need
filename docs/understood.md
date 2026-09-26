@@ -5,8 +5,9 @@ Every number here is taken from the code, and the file it comes from is named ne
 
 ## The idea in one paragraph
 
-Kredit turns what a wallet has done on Robinhood Chain into **credits**, and credits pay
-for **AI model calls**. You connect a wallet, the site reads your on-chain history, works
+Kredit is an on-chain OpenRouter: one API key reaches every major AI model. Calls are
+paid in **credits**, and a wallet earns those credits from what it has done on Robinhood
+Chain, or buys them on-chain. You connect a wallet, the site reads your on-chain history, works
 out what you have earned by fixed rules, and you claim it. Then you create an API key and
 use it like an OpenAI key: every call takes a few credits off your balance.
 
@@ -23,7 +24,7 @@ wallet activity on chain ──scan──▶ receipt ──claim──▶ credit
 | Page | Who it is for | What it does |
 | --- | --- | --- |
 | `/` | Everyone | Explains the product. Once signed in, its button becomes "Open dashboard". |
-| `/dashboard` | Signed-in wallets | Overview and balance, with a page each for earning (`/earn`: scan, claim, referrals), credits (`/credits`: buy more), API keys (`/keys`), activity (`/activity`) and settings (`/settings`: display name). |
+| `/dashboard` | Signed-in wallets | Overview and balance, with a page each for earning (`/earn`: scan, claim, referrals), credits (`/credits`: buy more), API keys (`/keys`), activity (`/activity`) and settings (`/settings`: your data). |
 | `/playground` | Signed-in wallets | Chat with any model in the browser, paid from your credits. No key needed. |
 | `/docs` | Developers | How to call the API, with copy-paste code and what typical requests cost. |
 | `/v1/...` | Programs | The API itself (OpenAI-compatible). |

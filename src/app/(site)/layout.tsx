@@ -48,7 +48,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
           <div>
             <Logo />
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-ink/60">
-              Your on-chain activity has purchasing power. Built on Robinhood Chain.
+              One key, every model, settled on-chain. Built on Robinhood Chain.
             </p>
             <Link
               href="/dashboard"

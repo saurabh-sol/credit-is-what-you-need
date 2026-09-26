@@ -26,7 +26,7 @@ export default async function Introduction() {
     <Doc
       slug=""
       title="Kredit documentation"
-      lede="Kredit turns what a wallet has done on Robinhood Chain into credits, and credits pay for AI. One key, every model, the bill in the response headers."
+      lede="Kredit is an on-chain OpenRouter: one key, every model, the bill in the response headers. Your wallet's record on Robinhood Chain earns the credits, and you can top up on-chain when you need more."
     >
       <div className="not-prose flex flex-wrap items-center gap-2">
         <Link href="/docs/quickstart" className="btn-sm btn-sm-primary">

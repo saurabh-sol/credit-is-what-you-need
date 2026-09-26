@@ -212,7 +212,7 @@ const faqs = [
   },
 ];
 
-const headline = ["Your", "on-chain", "activity", "has"];
+const headline = ["One", "key,", "every", "model,"];
 
 // Delay for the hero's entrance sequence, one beat per element.
 const beat = (index: number) => ({ animationDelay: `${index * 90}ms` });
@@ -239,16 +239,17 @@ export default function Home() {
                   <span style={beat(index + 1)} className="inline-block animate-rise">
                     {word}&nbsp;
                   </span>
-                  {word === "activity" && <br className="hidden xl:block" />}
+                  {word === "key," && <br className="hidden xl:block" />}
                 </Fragment>
               ))}
               <span style={beat(headline.length + 1)} className="inline-block animate-rise">
-                <span className="text-shine">purchasing power</span>
+                <span className="text-shine">settled on-chain</span>
               </span>
             </h1>
             <p style={beat(6)} className="mt-6 max-w-[52ch] animate-rise text-lg leading-relaxed text-mist">
-              Kredit turns your on-chain reputation and activity into AI credits
-              you can spend across models, agents and APIs.
+              Kredit is an on-chain OpenRouter. One key reaches OpenAI, Anthropic, Google and the rest
+              through one OpenAI-compatible API, and your wallet&apos;s activity on Robinhood Chain earns
+              the credits that pay for it.
             </p>
             <div style={beat(8)} className="mt-9 flex animate-rise flex-wrap items-center gap-x-6 gap-y-4">
               <WalletButton label="Connect and see your record" />

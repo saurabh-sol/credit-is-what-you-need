@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Kredit — your on-chain activity has purchasing power",
+  title: "Kredit — one key, every model, settled on-chain",
   description:
-    "Kredit turns your on-chain reputation and activity into AI credits you can spend across models, agents and APIs.",
+    "Kredit is an on-chain OpenRouter: one API key for every AI model, paid with credits your wallet earns and buys on Robinhood Chain.",
 };
 
 // Only what every page shares. The marketing pages add their header and footer

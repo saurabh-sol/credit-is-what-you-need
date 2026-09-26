@@ -6,7 +6,7 @@
 
 # Kredit
 
-Kredit turns a wallet's on-chain activity into AI credits.
+Kredit is an on-chain OpenRouter: one API key that works with every major AI model, paid with credits a wallet earns from its on-chain activity or buys on-chain.
 
 A person connects their wallet on [usekredit.space](https://usekredit.space). We scan their history on Robinhood Chain, score it, and hand out credits. They spend those credits on AI models (OpenAI, Anthropic, Google and others) through our API, the web playground, or the command line. When credits run out, they can buy more with USDG, ETH or the KRED token.
 
