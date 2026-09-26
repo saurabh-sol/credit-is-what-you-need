@@ -137,49 +137,6 @@ node --env-file=.env.local scripts/checkout-admin.mjs pause | unpause
 Then run `scripts/checkout-test.mjs` for a real purchase each way (the ETH leg
 pays USDG to the treasury, which can then pay the USDG leg).
 
-## KreditTokenCheckout: buying credits with KRED
-
-`src/KreditTokenCheckout.sol` sells credits for the Kredit token, KRED
-(`0x1b69Ba93b8DA9CF4cbc8f9C40e7ED25347F86Dd1`, 18 decimals). KRED still trades
-on its launch curve (`0x66f0…8e34`, a bonding curve, not a Uniswap pair), so
-there is no pool to swap through or quote from on-chain. Instead the owner sets
-`tokensPerCredit`, the token base units one credit costs, and reprices it by
-hand as the token moves; the server reads the rate from the contract.
-
-- `buyWithToken(credits)` moves `costOf(credits)` KRED from the buyer to the
-  treasury (`transferFrom`, so the buyer approves that amount first) and
-  records the whole credits the tokens that actually arrived are worth, so a
-  fee-on-transfer token buys fewer credits, never more. The token's own revert
-  reason (insufficient allowance, balance) passes through.
-- Emits the same `Purchased(buyer, KRED, 0, amount, credits)` as KreditCheckout,
-  so `src/lib/topup.ts`'s reader serves both. Never holds funds. One purchase
-  is capped at `maxCreditsPerBuy` (100,000 by default).
-- Owner-only: `setPrice`, `setTreasury`, `setMaxCreditsPerBuy`, `setPaused`,
-  `transferOwnership`.
-
-Deploy (paying with KRED is on as soon as the server has `TOPUP_TOKEN_CHECKOUT_ADDRESS`):
-
-```sh
-cd contracts && forge build
-node --env-file=.env.local scripts/deploy-token-checkout.mjs     # DEPLOYER_KEY, TOPUP_TREASURY_ADDRESS; rate from the curve unless TOPUP_TOKENS_PER_CREDIT is set
-# or: TREASURY=$TREASURY TOKENS_PER_CREDIT=125000000000000000000 forge script script/DeployTokenCheckout.s.sol --rpc-url mainnet --private-key $DEPLOYER_KEY --broadcast
-```
-
-Verify: `forge verify-contract <address> src/KreditTokenCheckout.sol:KreditTokenCheckout --chain 4663 --verifier sourcify --constructor-args $(cast abi-encode "constructor(address,address,address,uint256)" $OWNER $TREASURY 0x1b69Ba93b8DA9CF4cbc8f9C40e7ED25347F86Dd1 <tokensPerCredit>)`,
-then Blockscout's "Verify & publish" page as for the others (single file, 0.8.28, paris, optimizer 2000 runs).
-
-Operate it:
-
-```sh
-node --env-file=.env.local scripts/token-checkout-admin.mjs status          # rate, cap, what the curve says the rate should be
-node --env-file=.env.local scripts/token-checkout-admin.mjs set-price 125   # 125 KRED per credit: 1,000 credits = 125,000 KRED
-node --env-file=.env.local scripts/token-checkout-admin.mjs reprice         # set-price to the curve's implied rate for $0.0008 a credit
-node --env-file=.env.local scripts/token-checkout-admin.mjs pause | unpause
-```
-
-`scripts/checkout-test.mjs` runs a KRED purchase as its third leg when the
-wallet holds enough (`ONLY=kred` for just that one).
-
 ## KreditSwapBuy (superseded)
 
 `src/KreditSwapBuy.sol` was the first take: ETH swapped for a project token.

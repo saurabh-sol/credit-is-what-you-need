@@ -8,8 +8,7 @@ import { CheckIcon, CoinsIcon } from "@/components/icons";
 import { CHECKOUT_ABI } from "@/lib/checkout-abi";
 import { formatCredits, shortAddress } from "@/lib/format";
 import { networks } from "@/lib/networks";
-import { TOKEN_CHECKOUT_ABI } from "@/lib/token-checkout-abi";
-import { costInTokens, costOfCredits, formatTokenAmount, formatUsd, parseCredits, type TokenTopUpConfig, type TopUpConfig } from "@/lib/topup";
+import { costOfCredits, formatTokenAmount, formatUsd, parseCredits, type TopUpConfig } from "@/lib/topup";
 import { QUOTER_V2_ABI } from "@/lib/uniswap";
 import { ACCOUNT_KEY, api } from "@/lib/use-kredit-account";
 import { rewardChains } from "@/lib/wagmi";
@@ -18,40 +17,36 @@ type Step = "idle" | "switching" | "approving" | "signing" | "confirming" | "cre
 const stepText: Record<Step, string> = {
   idle: "",
   switching: "Switching network in your wallet",
-  approving: "Approve the tokens in your wallet, then confirm the purchase",
+  approving: "Approve the USDG in your wallet, then confirm the purchase",
   signing: "Confirm the payment in your wallet",
   confirming: "Waiting for the chain to confirm",
   crediting: "Checking the payment and adding credits",
   done: "",
 };
 
-type Mode = "eth" | "usdg" | "token";
+type Mode = "eth" | "usdg";
 const presets = ["1000", "5000", "20000"];
 const SLIPPAGE_BPS = BigInt(100); // ETH sent on top of the quote, so the swap still clears if the price moves 1%
 const SWAP_DEADLINE_SECONDS = 10 * 60;
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 type Config = TopUpConfig & { chainId: number };
-// The KRED checkout's terms come from its contract; `null` when the chain could not be read.
-type TokenConfig = TokenTopUpConfig & { chainId: number; tokensPerCredit: string | null; maxCreditsPerBuy: number | null; paused: boolean | null };
 
-// Pick how many credits, pay the fixed dollar price in USDG or in ETH, or pay
-// in KRED at the rate its checkout sets. Either way a checkout contract pays
-// the treasury and writes a receipt, and the server credits whatever that
-// receipt proves.
+// Pick how many credits, pay the fixed dollar price in USDG or in ETH. Either
+// way the checkout contract pays the treasury and writes a receipt, and the
+// server credits whatever that receipt proves.
 export function TopUp() {
   const { data } = useQuery({
     queryKey: ["topup-config"],
-    queryFn: () => api<{ config: Config | null; token: TokenConfig | null }>("/api/topup"),
+    queryFn: () => api<{ config: Config | null }>("/api/topup"),
     staleTime: 600_000,
   });
   const config = data?.config;
-  const token = data?.token;
-  const [mode, setMode] = useState<Mode | null>(null);
+  const [mode, setMode] = useState<Mode>("eth");
   const [amount, setAmount] = useState(presets[0]);
   const credits = parseCredits(amount);
 
-  if (data && !config && !token) {
+  if (data && !config) {
     return (
       <Shell>
         <p className="mt-2 max-w-md leading-relaxed text-mist">
@@ -64,7 +59,7 @@ export function TopUp() {
       </Shell>
     );
   }
-  if (!data || (!config && !token)) {
+  if (!config) {
     return (
       <Shell>
         <p className="skeleton mt-3 h-24 w-full" aria-hidden />
@@ -72,35 +67,14 @@ export function TopUp() {
     );
   }
 
-  const modes: Mode[] = [...(config ? (["eth", "usdg"] as const) : []), ...(token ? (["token"] as const) : [])];
-  const active: Mode = mode && modes.includes(mode) ? mode : modes[0];
-  const cost = credits && config ? costOfCredits(credits, config) : null;
-  const rate = token?.tokensPerCredit ? BigInt(token.tokensPerCredit) : null;
-  const tokenCost = credits && rate ? costInTokens(credits, rate) : null;
-  const cap = active === "token" ? (token?.maxCreditsPerBuy ?? Infinity) : (config?.maxCreditsPerBuy ?? Infinity);
-  const overCap = credits !== null && credits > cap;
+  const cost = credits ? costOfCredits(credits, config) : null;
+  const overCap = credits !== null && credits > config.maxCreditsPerBuy;
   return (
     <Shell>
       <p className="mt-2 max-w-md leading-relaxed text-mist">
-        {config ? (
-          <>
-            <span className="text-fog">1,000 credits cost {formatUsd(costOfCredits(1_000, config))}</span>, paid in USDG or the
-            same value in ETH{token ? `, or in ${token.symbol}` : ""}.
-          </>
-        ) : (
-          <>
-            {rate ? (
-              <span className="text-fog">
-                1,000 credits cost {formatTokenAmount(costInTokens(1_000, rate), token!.decimals, 2)} {token!.symbol}
-              </span>
-            ) : (
-              <span className="text-fog">Pay in {token!.symbol}</span>
-            )}
-            .
-          </>
-        )}{" "}
-        The payment goes straight to Kredit&apos;s treasury through the checkout contract, which writes the receipt;
-        nothing is held.
+        <span className="text-fog">1,000 credits cost {formatUsd(costOfCredits(1_000, config))}</span>, paid in USDG or the same
+        value in ETH. The payment goes straight to Kredit&apos;s treasury through the checkout contract, which writes the
+        receipt; nothing is held.
       </p>
 
       <label htmlFor="topup-credits" className="mt-6 block text-sm text-mist">
@@ -120,51 +94,41 @@ export function TopUp() {
         ))}
       </div>
       <p className="mt-2 text-xs text-mist">
-        {credits && active !== "token" && cost ? (
+        {credits && cost ? (
           <>
             <span className="font-mono text-accent">{formatCredits(credits)}</span> credits for{" "}
             <span className="font-mono text-fog">{formatUsd(cost)}</span>, about ${(credits / 1000).toFixed(2)} of AI usage
-          </>
-        ) : credits && active === "token" && tokenCost && token ? (
-          <>
-            <span className="font-mono text-accent">{formatCredits(credits)}</span> credits for{" "}
-            <span className="font-mono text-fog">
-              {formatTokenAmount(tokenCost, token.decimals, 2)} {token.symbol}
-            </span>
-            , about ${(credits / 1000).toFixed(2)} of AI usage
           </>
         ) : (
           "Enter a whole number of credits, like 1000"
         )}
       </p>
-      {overCap && Number.isFinite(cap) && (
-        <p className="mt-2 text-xs text-danger">One purchase is capped at {formatCredits(cap)} credits. Buy in smaller amounts.</p>
+      {overCap && (
+        <p className="mt-2 text-xs text-danger">
+          One purchase is capped at {formatCredits(config.maxCreditsPerBuy)} credits. Buy in smaller amounts.
+        </p>
       )}
 
-      {modes.length > 1 && (
-        <div className="mt-6 flex flex-wrap gap-2" role="tablist" aria-label="Pay with">
-          {modes.map((option) => (
-            <button
-              key={option}
-              type="button"
-              role="tab"
-              aria-selected={active === option}
-              onClick={() => setMode(option)}
-              className={`btn-ghost px-4 text-sm ${active === option ? "border-accent/55 text-fog" : ""}`}
-            >
-              {option === "eth" ? "Pay with ETH" : option === "usdg" ? "Pay with USDG" : `Pay with ${token?.symbol ?? "KRED"}`}
-            </button>
-          ))}
-        </div>
-      )}
+      <div className="mt-6 flex gap-2" role="tablist" aria-label="Pay with">
+        {(["eth", "usdg"] as const).map((option) => (
+          <button
+            key={option}
+            type="button"
+            role="tab"
+            aria-selected={mode === option}
+            onClick={() => setMode(option)}
+            className={`btn-ghost px-4 text-sm ${mode === option ? "border-accent/55 text-fog" : ""}`}
+          >
+            {option === "eth" ? "Pay with ETH" : "Pay with USDG"}
+          </button>
+        ))}
+      </div>
 
-      {active === "eth" && config ? (
+      {mode === "eth" ? (
         <PayWithEth key="eth" config={config} credits={overCap ? null : credits} />
-      ) : active === "usdg" && config ? (
+      ) : (
         <PayWithUsdg key="usdg" config={config} credits={overCap ? null : credits} />
-      ) : token ? (
-        <PayWithToken key="token" config={token} credits={overCap ? null : credits} />
-      ) : null}
+      )}
     </Shell>
   );
 }
@@ -394,106 +358,6 @@ function PayWithUsdg({ config, credits }: { config: Config; credits: number | nu
         className="btn-primary mt-5 w-full px-5 py-2.5 text-sm sm:w-auto"
       >
         {!address ? "Reconnect your wallet to pay" : busy ? "Working" : `Pay ${cost ? formatTokenAmount(cost, config.decimals) : ""} USDG`}
-      </button>
-
-      <Status step={step} bought={bought} error={error} />
-    </>
-  );
-}
-
-// Pay in KRED at the rate the token checkout sets: approve exactly the cost,
-// then buy. The contract counts the credits from what reaches the treasury.
-function PayWithToken({ config, credits }: { config: TokenConfig; credits: number | null }) {
-  const { chain, address, writeContract, ensureChain } = useWallet();
-  const rate = config.tokensPerCredit ? BigInt(config.tokensPerCredit) : null;
-  const held = useReadContract({
-    abi: erc20Abi,
-    address: config.token as Address,
-    functionName: "balanceOf",
-    args: address && [address],
-    chainId: chain.id,
-    query: { enabled: Boolean(address) },
-  });
-  const allowance = useReadContract({
-    abi: erc20Abi,
-    address: config.token as Address,
-    functionName: "allowance",
-    args: address && [address, config.checkout as Address],
-    chainId: chain.id,
-    query: { enabled: Boolean(address) },
-  });
-  const cost = credits && rate ? costInTokens(credits, rate) : null;
-  const tooMuch = cost !== null && held.data !== undefined && cost > held.data;
-  const needsApproval = cost !== null && allowance.data !== undefined && allowance.data < cost;
-  const { step, setStep, error, bought, busy, run } = usePurchase();
-  const symbol = config.symbol;
-
-  async function pay() {
-    if (!credits || !cost || !address) return;
-    await run(
-      async () => {
-        await ensureChain(setStep);
-        if (needsApproval) {
-          // Approve exactly this purchase; the contract can never take more.
-          setStep("approving");
-          await writeContract({
-            abi: erc20Abi,
-            address: config.token as Address,
-            functionName: "approve",
-            args: [config.checkout as Address, cost],
-            chainId: chain.id,
-          });
-        }
-        setStep("signing");
-        return writeContract({
-          abi: TOKEN_CHECKOUT_ABI,
-          address: config.checkout as Address,
-          functionName: "buyWithToken",
-          args: [BigInt(credits)],
-          chainId: chain.id,
-        });
-      },
-      () => {
-        held.refetch();
-        allowance.refetch();
-      },
-    );
-  }
-
-  return (
-    <>
-      <p className="mt-4 flex flex-wrap justify-between gap-2 text-xs text-mist">
-        <span>
-          {!rate ? (
-            <span className="text-danger">No {symbol} price right now. Try again in a moment.</span>
-          ) : config.paused ? (
-            <span className="text-danger">Paying with {symbol} is paused for the moment.</span>
-          ) : cost ? (
-            <>
-              Pay{" "}
-              <span className="font-mono text-fog">
-                {formatTokenAmount(cost, config.decimals, 2)} {symbol}
-              </span>{" "}
-              from your wallet{needsApproval ? ", after one approval for exactly that amount" : ""}
-            </>
-          ) : (
-            "Pick how many credits first"
-          )}
-        </span>
-        {held.data !== undefined && (
-          <span className={tooMuch ? "text-danger" : ""}>
-            You hold {formatTokenAmount(held.data, config.decimals, 2)} {symbol}
-          </span>
-        )}
-      </p>
-
-      <button
-        type="button"
-        onClick={pay}
-        disabled={busy || !cost || tooMuch || !address || Boolean(config.paused)}
-        className="btn-primary mt-5 w-full px-5 py-2.5 text-sm sm:w-auto"
-      >
-        {!address ? "Reconnect your wallet to pay" : busy ? "Working" : `Pay ${cost ? formatTokenAmount(cost, config.decimals, 2) : ""} ${symbol}`}
       </button>
 
       <Status step={step} bought={bought} error={error} />

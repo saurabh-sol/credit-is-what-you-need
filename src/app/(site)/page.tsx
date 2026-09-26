@@ -185,7 +185,7 @@ const openRouterComparison = {
   ],
   different: [
     "No card and no account form. You sign in with a wallet signature.",
-    "Credits come from what your wallet has done on Robinhood Chain, or from a top-up in USDG, ETH or KRED.",
+    "Credits come from what your wallet has done on Robinhood Chain, or from a top-up in USDG or ETH.",
     "Every claim is a receipt on-chain that anyone can verify.",
     "The cost of every call comes back in the response headers.",
   ],
@@ -216,11 +216,11 @@ const faqs = [
   },
   {
     question: "Can I buy credits instead of earning them?",
-    answer: "Earning is the main way and costs nothing. Once top-ups are open you can also buy credits at a fixed price, 1,000 credits for $0.80, paid in USDG, ETH or KRED from your own wallet, and they land when the chain confirms the payment.",
+    answer: "Earning is the main way and costs nothing. Once top-ups are open you can also buy credits at a fixed price, 1,000 credits for $0.80, paid in USDG or ETH from your own wallet, and they land when the chain confirms the payment.",
   },
   {
     question: "How is Kredit different from OpenRouter?",
-    answer: `Same idea, different wallet. Like OpenRouter, one Kredit key reaches every major model through an OpenAI-compatible API, and each call is billed at the provider's price plus a ${Math.round(MARGIN * 100)}% fee. The difference is how you pay: there is no card and no account. Credits come from what your wallet has done on Robinhood Chain, or from a top-up in USDG, ETH or KRED, and every claim is a receipt on-chain. If your code already talks to OpenRouter, change the base URL and the key and it works.`,
+    answer: `Same idea, different wallet. Like OpenRouter, one Kredit key reaches every major model through an OpenAI-compatible API, and each call is billed at the provider's price plus a ${Math.round(MARGIN * 100)}% fee. The difference is how you pay: there is no card and no account. Credits come from what your wallet has done on Robinhood Chain, or from a top-up in USDG or ETH, and every claim is a receipt on-chain. If your code already talks to OpenRouter, change the base URL and the key and it works.`,
   },
   {
     question: "What if a key leaks?",

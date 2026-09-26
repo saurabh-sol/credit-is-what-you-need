@@ -8,7 +8,7 @@
 
 Kredit is an on-chain OpenRouter: one API key that works with every major AI model, paid with credits a wallet earns from its on-chain activity or buys on-chain.
 
-A person connects their wallet on [usekredit.space](https://usekredit.space). We scan their history on Robinhood Chain, score it, and hand out credits. They spend those credits on AI models (OpenAI, Anthropic, Google and others) through our API, the web playground, or the command line. When credits run out, they can buy more with USDG, ETH or the KRED token.
+A person connects their wallet on [usekredit.space](https://usekredit.space). We scan their history on Robinhood Chain, score it, and hand out credits. They spend those credits on AI models (OpenAI, Anthropic, Google and others) through our API, the web playground, or the command line. When credits run out, they can buy more with USDG or ETH.
 
 Live site: https://usekredit.space
 Repo: https://github.com/saurabh-sol/credit-is-what-you-need
@@ -63,7 +63,7 @@ Everything a person sees. `src/app/(site)` is the public website. `src/app/(app)
 
 ### Blockchain
 
-Three contracts on Robinhood Chain mainnet, all in `contracts/src`. `KreditReceipts` records claims. `KreditCheckout` sells credits for USDG or ETH. `KreditTokenCheckout` sells credits for KRED. Addresses and deploy history are in `contracts/README.md`.
+Two contracts on Robinhood Chain mainnet, all in `contracts/src`. `KreditReceipts` records claims. `KreditCheckout` sells credits for USDG or ETH. Addresses and deploy history are in `contracts/README.md`.
 
 ### CLI
 
