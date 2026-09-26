@@ -27,10 +27,9 @@
   },
   "dependencies": {
     "@ai-sdk/gateway": "^4.0.88",
-    "@base-org/account": "^2.5.10",
-    "@coinbase/wallet-sdk": "^4.3.7",
     "@neondatabase/serverless": "^1.1.0",
-    "@rainbow-me/rainbowkit": "^2.2.11",
+    "@privy-io/react-auth": "^3.45.0",
+    "@privy-io/wagmi": "^4.0.17",
     "@tanstack/react-query": "^5.103.1",
     "ai": "^7.0.109",
     "jose": "^6.2.12",
@@ -38,7 +37,7 @@
     "pg": "^8.23.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "viem": "^2.56.8",
+    "viem": "^2.56.0",
     "wagmi": "^2.19.5"
   },
   "devDependencies": {

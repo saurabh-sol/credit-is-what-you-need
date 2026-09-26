@@ -1,65 +1,64 @@
+// End-to-end check of sign-in and sessions against a running server.
+//
+// Privy issues the login, so the happy path (a real Privy token) cannot run
+// from a script. What is checked here: the sign-in route refuses everything
+// that is not a valid Privy token, and sessions behave once one exists (made
+// directly in the database, the same way the other e2e scripts do).
+//   SESSION_SECRET=… DATABASE_URL=postgres://… BASE_URL=http://localhost:3458 node scripts/auth-test.mjs
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
-import { createSiweMessage } from "viem/siwe";
+import { sessionCookie } from "./lib/test-session.mjs";
 
 const base = process.env.BASE_URL ?? "http://localhost:3000";
-const cookieOf = (res) => res.headers.getSetCookie().map((c) => c.split(";")[0]).join("; ");
 const results = [];
 const check = (name, pass, detail = "") => { results.push(pass); console.log(`${pass ? "PASS" : "FAIL"}  ${name} ${detail}`); };
-
-async function login(signer, claimedAddress) {
-  const nonceRes = await fetch(`${base}/api/auth/nonce`);
-  const { nonce } = await nonceRes.json();
-  const message = createSiweMessage({ address: claimedAddress, chainId: 4663, nonce, domain: new URL(base).host, uri: base, version: "1", statement: "test" });
-  const signature = await signer.signMessage({ message });
-  const send = () => fetch(`${base}/api/auth/verify`, { method: "POST", headers: { "content-type": "application/json", cookie: cookieOf(nonceRes) }, body: JSON.stringify({ message, signature }) });
-  return { res: await send(), replay: send };
-}
+const json = { "content-type": "application/json" };
 
 const alice = privateKeyToAccount(generatePrivateKey());
-const mallory = privateKeyToAccount(generatePrivateKey());
 
 // 1. no session -> dashboard redirects home
 const anon = await fetch(`${base}/dashboard`, { redirect: "manual" });
 check("dashboard blocked without session", anon.status === 307, `(status ${anon.status} -> ${anon.headers.get("location")})`);
 
-// 2. real login
-const { res, replay } = await login(alice, alice.address);
-const session = cookieOf(res);
-check("valid signature signs in", res.status === 200 && (await res.json()).address === alice.address);
+// 2. the sign-in route only takes a real Privy token
+const empty = await fetch(`${base}/api/auth/privy`, { method: "POST", headers: json, body: "{}" });
+check("sign-in without a token is refused", empty.status === 400 || empty.status === 503, `(status ${empty.status})`);
+const junk = await fetch(`${base}/api/auth/privy`, { method: "POST", headers: json, body: JSON.stringify({ token: "not.a.jwt", address: alice.address }) });
+check("sign-in with a made-up token is refused", junk.status === 401 || junk.status === 503, `(status ${junk.status})`);
+const forged = await fetch(`${base}/api/auth/privy`, {
+  method: "POST",
+  headers: json,
+  // A well-formed JWT signed by nobody Privy knows.
+  body: JSON.stringify({ token: "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6cHJpdnk6eCIsImlzcyI6InByaXZ5LmlvIn0.AAAA", address: alice.address }),
+});
+check("sign-in with a forged token is refused", forged.status === 401 || forged.status === 503, `(status ${forged.status})`);
+const none = await fetch(`${base}/api/auth/me`);
+check("/me is null before signing in", (await none.json()).address === null);
 
-// 3. session works
+// 3. a session works
+const session = await sessionCookie(alice.address);
 const me = await (await fetch(`${base}/api/auth/me`, { headers: { cookie: session } })).json();
-check("/me returns the signed-in wallet", me.address === alice.address);
+check("/me returns the signed-in wallet", me.address?.toLowerCase() === alice.address.toLowerCase());
 const dash = await fetch(`${base}/dashboard`, { headers: { cookie: session }, redirect: "manual" });
-check("dashboard opens with session", dash.status === 200 && (await dash.text()).includes(alice.address));
+check("dashboard opens with session", dash.status === 200 && (await dash.text()).toLowerCase().includes(alice.address.slice(0, 6).toLowerCase()));
 
-// 4. replaying the same signed message fails (nonce is single use, cookie was cleared server-side;
-//    we resend the ORIGINAL nonce cookie to simulate an attacker who captured everything)
-const replayRes = await replay();
-check("replay with captured nonce cookie", replayRes.status === 200 ? false : true, `(status ${replayRes.status})`);
-
-// 5. mallory signs but claims alice's address
-const forged = await login(mallory, alice.address);
-check("forged signature rejected", forged.res.status === 401, `(status ${forged.res.status})`);
-
-// 6. record scanner: needs a session, validates input, and scans the signed-in wallet
+// 4. record scanner: needs a session, validates input, and scans the signed-in wallet
 const anonScan = await fetch(`${base}/api/record`);
 check("scan blocked without session", anonScan.status === 401);
 const badNetwork = await fetch(`${base}/api/record?network=solana`, { headers: { cookie: session } });
 check("scan rejects unknown network", badNetwork.status === 400);
 const scan = await fetch(`${base}/api/record?network=mainnet`, { headers: { cookie: session } });
 const scanBody = await scan.json();
-check("new wallet gets an empty receipt", scan.status === 200 && scanBody.total === 0 && scanBody.address === alice.address, `(total ${scanBody.total})`);
+check("new wallet has nothing to claim", scan.status === 200 && scanBody.claimable === 0 && scanBody.address?.toLowerCase() === alice.address.toLowerCase(), `(status ${scan.status}, claimable ${scanBody.claimable ?? scanBody.error})`);
 
-// 7. logout
+// 5. logout
 const out = await fetch(`${base}/api/auth/logout`, { method: "POST", headers: { cookie: session } });
 check("logout clears cookie", out.headers.getSetCookie().some((c) => c.startsWith("kredit_session=;")));
 const stale = await (await fetch(`${base}/api/auth/me`, { headers: { cookie: session } })).json();
 check("a copy of the old cookie is dead after logout", stale.address === null);
 
-// 8. signing out everywhere ends the wallet's other sessions too
-const laptop = cookieOf((await login(alice, alice.address)).res);
-const phone = cookieOf((await login(alice, alice.address)).res);
+// 6. signing out everywhere ends the wallet's other sessions too
+const laptop = await sessionCookie(alice.address);
+const phone = await sessionCookie(alice.address);
 await fetch(`${base}/api/auth/logout?everywhere=1`, { method: "POST", headers: { cookie: laptop } });
 const other = await (await fetch(`${base}/api/auth/me`, { headers: { cookie: phone } })).json();
 check("logout everywhere ends the other browser's session", other.address === null);

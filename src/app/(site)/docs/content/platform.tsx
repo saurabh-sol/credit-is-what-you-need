@@ -8,40 +8,52 @@ import { Callout, Doc, Endpoint, H2, number, Table } from "../ui";
 
 export function SignIn() {
   return (
-    <Doc slug="platform/sign-in" lede="You prove you own a wallet by signing one message. No transaction, no gas, no approvals, nothing to revoke later.">
-      <H2>What happens when you connect</H2>
+    <Doc slug="platform/sign-in" lede="Sign in with an email code, Google, or a wallet you already have. Either way your account is a wallet address, and the sign-in costs nothing.">
+      <H2>Three ways in, one kind of account</H2>
+      <p>
+        The sign-in dialog is run by <a href="https://privy.io">Privy</a>. Pick an email code, Google, or a wallet
+        such as MetaMask, Rabby, Coinbase Wallet or any phone wallet by QR code. Every Kredit account is an Ethereum
+        address, because credits, keys and claims are all kept against one:
+      </p>
+      <ul>
+        <li>
+          <strong>Email or Google.</strong> Privy makes you an embedded wallet at sign-up, in your browser, with a key
+          only you hold. That address is your account. It starts with no on-chain history, so it earns nothing from
+          the record scan until it is used on Robinhood Chain, but it can buy credits and spend them right away.
+        </li>
+        <li>
+          <strong>Your own wallet.</strong> You sign one free message inside the Privy dialog to prove it is yours.
+          No transaction, no gas, no approvals. Its Robinhood Chain history is what the record scan scores.
+        </li>
+      </ul>
+
+      <H2>What happens after the dialog</H2>
       <ol>
         <li>
-          The browser asks the server for a nonce (<code>GET /api/auth/nonce</code>). It is kept in a signed cookie
-          for five minutes and works exactly once, so a copied sign-in message cannot be replayed.
+          The browser sends Privy&apos;s short-lived access token and the wallet address to{" "}
+          <code>POST /api/auth/privy</code>.
         </li>
         <li>
-          Your wallet signs a Sign-In with Ethereum message: <em>Sign in to Kredit. This proves you own this wallet
-          and costs no gas.</em> The message names this site&apos;s domain, so it is worthless anywhere else.
-        </li>
-        <li>
-          The server verifies the signature (<code>POST /api/auth/verify</code>). Ordinary wallets verify locally.
-          Smart wallets, such as a Coinbase smart wallet, are verified on-chain with ERC-1271 and ERC-6492 on Base
-          and Robinhood Chain, whichever answers.
+          The server checks the token against Privy&apos;s public keys for this app, then asks Privy which wallets
+          belong to that person. The address is accepted only if it is one of them.
         </li>
         <li>
           You get a session: a signed cookie that names a row in the server&apos;s database. It lasts{" "}
-          <strong>seven days</strong>.
+          <strong>seven days</strong>. Privy&apos;s own login lasts longer, so a return visit after that just
+          refreshes the cookie without asking you anything.
         </li>
       </ol>
 
-      <H2>Wallets</H2>
+      <H2>Transactions</H2>
       <p>
-        Browser wallets and Coinbase Wallet always work. When the operator has set a WalletConnect project id, the
-        list also offers Rainbow, MetaMask, WalletConnect, Trust, Rabby, OKX, Zerion, Uniswap, Omni, imToken, Ledger
-        and Safe, including phone wallets by QR code. The app knows Robinhood Chain and Base (the latter only so a
-        Coinbase smart wallet can sign in).
+        Claiming on-chain and buying credits send a transaction from the signed-in address. An embedded wallet signs
+        it in a Privy prompt; an external wallet signs it in its own window. The app knows Robinhood Chain and Base.
       </p>
 
       <H2>Signing out</H2>
       <p>
-        Signing out closes the session row, so the cookie is dead at once even if it was copied. Because the cookie
-        only names a row, a server-side revoke ends a session before the cookie expires.{" "}
+        Signing out closes the session row and the Privy login, so the cookie is dead at once even if it was copied.
+        Because the cookie only names a row, a server-side revoke ends a session before the cookie expires.{" "}
         <code>POST /api/auth/logout?everywhere=1</code> closes every session of the wallet, in every browser.
       </p>
 
@@ -49,8 +61,7 @@ export function SignIn() {
       <Table
         head={["Route", "What it does"]}
         rows={[
-          [<code key="a">GET /api/auth/nonce</code>, "A fresh nonce, in a five-minute cookie."],
-          [<code key="a">POST /api/auth/verify</code>, "{ message, signature } → { address }, and the session cookie."],
+          [<code key="a">POST /api/auth/privy</code>, "{ token, address } → { address }, and the session cookie."],
           [<code key="a">GET /api/auth/me</code>, "{ address } of the signed-in wallet, or null."],
           [<code key="a">POST /api/auth/logout</code>, "Ends this session; ?everywhere=1 ends them all."],
         ]}
@@ -199,8 +210,8 @@ export function Security() {
     <Doc slug="platform/security" lede="Kredit holds no funds, asks for no approvals, and stores as little as it can. Here is exactly what it keeps and how it protects it.">
       <H2>Your wallet</H2>
       <ul>
-        <li>Signing in is a signature over a message, never a transaction. It grants no allowance and can be revoked by signing out.</li>
-        <li>Nonces are single use and expire in five minutes; a captured sign-in message cannot be replayed.</li>
+        <li>Signing in never sends a transaction. A wallet signs one message in Privy&apos;s dialog; an email account gets an embedded wallet. Nothing grants an allowance, and signing out revokes the session.</li>
+        <li>Privy&apos;s access tokens last about an hour and are checked against Privy&apos;s public keys on every sign-in; the address is accepted only if Privy lists it as that person&apos;s.</li>
         <li>Sessions are server-side rows named by a signed, httpOnly, same-site cookie. Signing out kills the row, so a copied cookie is dead too.</li>
         <li>
           Top-ups are plain token transfers from your wallet to the treasury, or one call to the swap contract that
@@ -233,7 +244,7 @@ export function Security() {
           ["Claimed transaction hashes, milestones, streak days", "Postgres (Neon)", "Server only; used to pay once."],
           ["API key hashes, names, last use", "Postgres (Neon)", "You, on the dashboard."],
           ["Usage rows (model, tokens, credits per call)", "Postgres (Neon)", "You, through the key that made them or the dashboard."],
-          ["Sessions and spent nonces", "Postgres (Neon)", "Server only."],
+          ["Sessions", "Postgres (Neon)", "Server only."],
           ["Display name", "Postgres (Neon)", "Public, by your choice."],
           ["Inviter, invited wallets", "Postgres (Neon)", "You and your inviter."],
           ["Prompts and answers", "Not stored", "Passed to the provider, never written down."],

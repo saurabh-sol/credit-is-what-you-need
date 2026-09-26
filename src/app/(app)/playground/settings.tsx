@@ -113,7 +113,7 @@ export function Settings({ mode, model, onModel, compareModel, onCompareModel, s
             </>
           ) : (
             <p className="mt-3 text-[0.8125rem] leading-relaxed text-mist">
-              Connect your wallet to see your credits. Everything made here is paid from them.
+              Sign in to see your credits. Everything made here is paid from them.
             </p>
           )}
           <div className="mt-3.5 flex flex-wrap gap-2">

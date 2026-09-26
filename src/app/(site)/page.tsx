@@ -203,8 +203,8 @@ const faqs = [
     answer: `${formatCredits(CREDITS_PER_USD)} credits pay for $1 of AI usage. Each call is charged exactly what the model's provider charged, with a ${Math.round(MARGIN * 100)}% fee on top and a ${MIN_CREDITS_PER_REQUEST}-credit minimum, and every response tells you what it cost and what is left.`,
   },
   {
-    question: "Does connecting my wallet cost anything?",
-    answer: "No. You sign one free message to prove the wallet is yours. There is no transaction and no gas.",
+    question: "Does signing in cost anything?",
+    answer: "No. With a wallet you sign one free message to prove it is yours; with email or Google you confirm a code and get an embedded wallet. There is no transaction and no gas.",
   },
   {
     question: "How are my credits calculated?",
@@ -272,7 +272,7 @@ export default function Home() {
               the credits that pay for it.
             </p>
             <div style={beat(8)} className="mt-9 flex animate-rise flex-wrap items-center gap-x-6 gap-y-4">
-              <WalletButton label="Connect and see your record" />
+              <WalletButton label="Sign in and see your record" />
               <a href="#how" className={quietLink}>
                 How it works
                 <ArrowRightIcon className={quietArrow} />
@@ -392,7 +392,7 @@ export default function Home() {
         <div className="mx-auto grid max-w-6xl items-center gap-x-16 gap-y-14 px-4 py-24 md:py-32 lg:grid-cols-[0.85fr_1.3fr]">
           <div>
             <SectionHeading eyebrow="The dashboard" title="A dashboard that stays out of your way">
-              Once you connect, four numbers tell you where you stand. Everything else is one step away.
+              Once you sign in, four numbers tell you where you stand. Everything else is one step away.
             </SectionHeading>
             <ul className="mt-10 border-t border-line">
               {dashboardPoints.map((point, index) => (
@@ -591,11 +591,11 @@ export default function Home() {
                 Your record is already worth <span className="text-shine">something.</span>
               </h2>
               <p className="mt-5 max-w-[52ch] text-lg leading-relaxed text-mist">
-                Connect your wallet, sign one free message, and see the receipt.
+                Sign in with your wallet and see the receipt.
               </p>
             </div>
             <div className="shrink-0">
-              <WalletButton label="Connect and see your record" />
+              <WalletButton label="Sign in and see your record" />
             </div>
           </div>
         </Reveal>

@@ -1,11 +1,10 @@
 "use client";
 
-import { useConnectModal } from "@rainbow-me/rainbowkit";
+import { usePrivy } from "@privy-io/react-auth";
 import Link from "next/link";
-import { useEffect } from "react";
-import { useAccount, useDisconnect } from "wagmi";
 import { ArrowRightIcon } from "@/components/icons";
 import { shortAddress } from "@/lib/format";
+import { PRIVY_APP_ID } from "@/lib/privy";
 import { useSession } from "@/lib/use-session";
 
 const primary = "btn-primary px-5 py-2.5 text-sm";
@@ -16,22 +15,13 @@ type WalletButtonProps = {
   signedIn?: "account" | "action";
 };
 
-export function WalletButton({ label = "Connect wallet", signedIn = "action" }: WalletButtonProps) {
-  // RainbowKit's dialog: pick a wallet, then sign one free message. It is offered
-  // while no wallet is connected, and while one is connected but not yet signed in.
-  const { openConnectModal } = useConnectModal();
-  const { address, isConnected } = useAccount();
-  const { disconnect } = useDisconnect();
+export function WalletButton({ label = "Sign in", signedIn = "action" }: WalletButtonProps) {
+  // Privy's dialog: an email code, Google, or a wallet. Once it is done the
+  // session bridge in providers.tsx turns the login into a Kredit session.
+  const privy = usePrivy();
   const session = useSession();
-
-  // If the user switches to another account, the old session no longer applies.
-  const sessionAddress = session.address;
-  const signOutNow = session.signOut.mutate;
-  useEffect(() => {
-    if (sessionAddress && address && sessionAddress.toLowerCase() !== address.toLowerCase()) {
-      signOutNow();
-    }
-  }, [sessionAddress, address, signOutNow]);
+  // Privy is done but the server session is still being made.
+  const finishing = privy.ready && privy.authenticated && !session.address && !session.isLoading;
 
   if (session.address && signedIn === "action") {
     return (
@@ -54,10 +44,7 @@ export function WalletButton({ label = "Connect wallet", signedIn = "action" }: 
         </Link>
         {/* On a phone the dashboard's sidebar has sign-out; the header keeps only what fits. */}
         <button
-          onClick={() => {
-            disconnect();
-            session.signOut.mutate();
-          }}
+          onClick={() => session.signOut.mutate()}
           className="hidden rounded-full px-3 py-2 text-sm whitespace-nowrap text-mist transition hover:text-fog md:inline-flex"
         >
           Sign out
@@ -66,11 +53,19 @@ export function WalletButton({ label = "Connect wallet", signedIn = "action" }: 
     );
   }
 
+  if (!PRIVY_APP_ID) {
+    return (
+      <button className={primary} disabled title="Set NEXT_PUBLIC_PRIVY_APP_ID to turn sign-in on">
+        Sign-in not configured
+      </button>
+    );
+  }
+
   return (
-    // Not disabled while RainbowKit is still working out the connection: the button
-    // would flash dim on every page load for the second that takes.
-    <button className={primary} onClick={() => openConnectModal?.()}>
-      {isConnected ? "Sign in" : label}
+    // Not disabled while Privy is still loading: the button would flash dim on
+    // every page load for the second that takes.
+    <button className={primary} onClick={() => privy.login()} disabled={finishing}>
+      {finishing ? "Signing in…" : label}
     </button>
   );
 }

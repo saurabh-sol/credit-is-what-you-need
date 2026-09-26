@@ -66,7 +66,6 @@ export function Privacy() {
           [`API keys (up to ${MAX_ACTIVE_KEYS}): SHA-256 hash, name, first characters, last use`, "To authenticate calls", "Until revoked; the hash stays so a revoked key can never come back"],
           ["Usage rows: model, token counts, credits, time, which key", "So you can see what a call cost", "Forever, as totals on your dashboard"],
           ["Sessions", "To keep you signed in", "7 days, or until you sign out"],
-          ["Spent sign-in nonces", "So a sign-in message cannot be replayed", "5 minutes"],
           [`Referral cookie`, "Remembers the invite link that brought you here", `${referralDays} days, or until you sign in`],
           ["CLI device codes", "To finish a CLI login", "10 minutes"],
           ["Workspace conversations and messages", "So your chats survive a reload and follow you across devices", "Until you delete them"],
@@ -121,9 +120,9 @@ export function Privacy() {
 
       <H2>Cookies</H2>
       <p>
-        Three, all first-party and all needed to work: the signed session cookie, the five-minute sign-in nonce,
-        and the referral cookie set by an invite link. There is no consent banner because there is nothing to
-        consent to; the cookies do no tracking.
+        Two of our own, both first-party and needed to work: the signed session cookie and the referral cookie set
+        by an invite link. Privy, which runs the sign-in dialog, keeps your login in your browser&apos;s local
+        storage. There is no consent banner because there is nothing to consent to; nothing here does tracking.
       </p>
 
       <H2>Your controls</H2>

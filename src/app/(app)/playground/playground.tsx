@@ -106,7 +106,7 @@ export function Playground({ initialModel, initialMode }: PlaygroundProps = {}) 
     session.isLoading ? (
       "Checking whether you are signed in."
     ) : (
-      "Connect your wallet to send a message. Replies are paid from your own credits."
+      "Sign in to send a message. Replies are paid from your own credits."
     )
   ) : outOfCredits ? (
     <>

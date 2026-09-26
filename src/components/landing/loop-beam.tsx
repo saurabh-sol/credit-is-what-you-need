@@ -86,7 +86,7 @@ const stages = [
   {
     icon: WalletIcon,
     title: "Wallet activity",
-    text: "Connect the wallet you use on Robinhood Chain and sign one free message.",
+    text: "Sign in with the wallet you use on Robinhood Chain, or with your email.",
     proof: <SignedProof />,
   },
   {

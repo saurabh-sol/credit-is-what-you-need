@@ -25,8 +25,10 @@ services:
       - key: SESSION_SECRET
         generateValue: true
       # Set these in the dashboard; they are secrets or deployment choices.
-      # The WalletConnect ID is read at build time: redeploy after setting it.
-      - key: NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID
+      # Privy signs people in. The app id is read at build time: redeploy after setting it.
+      - key: NEXT_PUBLIC_PRIVY_APP_ID
+        sync: false
+      - key: PRIVY_APP_SECRET
         sync: false
       - key: UPSTREAM_BASE_URL
         sync: false

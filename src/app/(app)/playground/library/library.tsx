@@ -39,7 +39,7 @@ export function Library() {
         <h1 className="page-title">Library</h1>
         <p className="page-lede">The pictures and clips you make in the studio are kept here, for your wallet only. Connect it to see them.</p>
         <div className="mt-6">
-          <WalletButton label="Connect wallet" />
+          <WalletButton label="Sign in" />
         </div>
       </div>
     );

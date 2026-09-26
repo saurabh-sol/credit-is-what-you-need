@@ -42,7 +42,7 @@ function advice(code?: string) {
         </>
       );
     case "not_signed_in":
-      return "Your session ended. Connect your wallet again, then resend.";
+      return "Your session ended. Sign in again, then resend.";
     case "rate_limit_exceeded":
       return "Wait a minute, then send it again.";
     case "provider_unreachable":
@@ -184,7 +184,7 @@ function SignedOut() {
         ))}
       </dl>
       <div className="mt-7 flex flex-wrap items-center gap-x-4 gap-y-3">
-        <WalletButton label="Connect wallet" />
+        <WalletButton label="Sign in" />
         <p className="text-xs text-mist">Signing in is a free signature. It costs no gas.</p>
       </div>
     </div>

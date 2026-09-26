@@ -54,7 +54,7 @@ export const docGroups: DocGroup[] = [
   {
     title: "Platform",
     pages: [
-      { slug: "platform/sign-in", title: "Wallets and sign-in", description: "Sign-In with Ethereum, sessions and smart wallets." },
+      { slug: "platform/sign-in", title: "Sign-in and wallets", description: "Email, Google or a wallet through Privy; sessions; embedded wallets." },
       { slug: "platform/dashboard", title: "Dashboard", description: "Every signed-in page and what it does." },
       { slug: "platform/playground", title: "Workspace", description: "Chat with any model, keep the conversation, compare two models, make pictures and clips." },
       { slug: "platform/security", title: "Privacy and security", description: "What is stored, what is public, and how keys and sessions are protected." },

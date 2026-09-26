@@ -36,13 +36,15 @@ wallet activity on chain ──scan──▶ receipt ──claim──▶ credit
 You can read the landing page and the docs. You cannot
 earn, spend, or open the dashboard; `/dashboard` sends you back to the home page.
 
-### 2. Signing in (every wallet user)
+### 2. Signing in (every user)
 
-1. Click **Connect wallet** and pick your wallet: a browser wallet such as MetaMask,
-   Coinbase Wallet, or a Base Account smart wallet.
-2. The site asks you to **sign a message** ("Sign-In with Ethereum"). This is free: no
-   transaction, no gas. It only proves the wallet is yours.
-3. The server checks the signature and gives your browser a session that lasts **7 days**.
+1. Click **Sign in**. The dialog is Privy's: an **email code**, **Google**, or a **wallet**
+   (MetaMask, Rabby, Coinbase Wallet, phone wallets by QR code).
+2. A wallet user signs one free message inside the dialog. An email or Google user gets an
+   **embedded wallet** made by Privy; that address is their account.
+3. The browser sends Privy's token to the server (`POST /api/auth/privy`), the server checks
+   it against Privy's public keys and asks Privy which wallets are that person's, and gives
+   the browser a session that lasts **7 days**.
 4. You land on the dashboard. If you signed in from the playground or the docs, you stay there.
 
 Details: the sign-in code (nonce) is valid for 5 minutes and works only once, so a copied

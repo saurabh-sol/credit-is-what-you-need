@@ -27,18 +27,19 @@ const marginPercent = Math.round(MARGIN * 100);
 
 export function QuickstartPage() {
   return (
-    <Doc slug="quickstart" lede="A wallet, a signature, a key, a request. Five minutes from nothing to a model answering on your credits.">
+    <Doc slug="quickstart" lede="A sign-in, a key, a request. Five minutes from nothing to a model answering on your credits.">
       <Steps>
-        <Step title="Connect your wallet">
+        <Step title="Sign in">
           <p>
-            Open <Link href="/dashboard">the dashboard</Link> and connect the wallet you use on Robinhood Chain.
-            Browser wallets, Coinbase Wallet and, with WalletConnect enabled, phone wallets by QR code all work.
+            Open <Link href="/dashboard">the dashboard</Link> and sign in: an email code, Google, or the wallet you
+            use on Robinhood Chain. A wallet with history there earns from the record scan; an email account gets an
+            embedded wallet that starts empty and can buy credits.
           </p>
         </Step>
-        <Step title="Sign one message">
+        <Step title="Prove it is you">
           <p>
-            You sign a Sign-In with Ethereum message that reads <em>Sign in to Kredit. This proves you own this
-            wallet and costs no gas.</em> No transaction, no gas, no approval. The session lasts seven days.
+            A wallet signs one message inside the dialog; an email account confirms a code. No transaction, no gas,
+            no approval. The session lasts seven days.
           </p>
         </Step>
         <Step title="Scan and claim">
@@ -217,7 +218,6 @@ export function Rules() {
         head={["Rule", "Value"]}
         rows={[
           ["Session length", "7 days"],
-          ["Sign-in nonce", "5 minutes, single use"],
           ["Invite link cookie", "30 days"],
           ["Signed on-chain receipt", "Good for 10 minutes"],
           ["Display name", "2 to 24 letters, digits, spaces, dots, dashes or underscores"],

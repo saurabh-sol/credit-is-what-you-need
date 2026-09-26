@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { useDisconnect } from "wagmi";
 import { Logo } from "@/components/header";
 import {
   ActivityIcon,
@@ -132,7 +131,6 @@ function CommandMenu({ onClose }: { onClose: () => void }) {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const session = useSession();
-  const { disconnect } = useDisconnect();
   const [drawerAt, setDrawerAt] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const drawerOpen = drawerAt === pathname; // navigating closes it
@@ -208,17 +206,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 type="button"
                 aria-label="Sign out"
                 title="Sign out"
-                onClick={() => {
-                  disconnect();
-                  session.signOut.mutate();
-                }}
+                onClick={() => session.signOut.mutate()}
                 className="grid size-8 place-items-center rounded-lg text-mist transition hover:bg-fog/5 hover:text-fog"
               >
                 <LogOutIcon />
               </button>
             </div>
           ) : (
-            !session.isLoading && <WalletButton label="Connect wallet" />
+            !session.isLoading && <WalletButton label="Sign in" />
           )}
         </div>
       </aside>

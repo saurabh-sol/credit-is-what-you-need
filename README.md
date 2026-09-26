@@ -103,7 +103,7 @@ The other `test:*` scripts in `package.json` each hit one feature (auth, referra
 
 ## Deploying
 
-Production is Render. It watches the `main` branch of this repo and rebuilds on every push, using `render.yaml`. Secrets (database URL, provider keys, WalletConnect ID) are set in the Render dashboard, not in the repo.
+Production is Render. It watches the `main` branch of this repo and rebuilds on every push, using `render.yaml`. Secrets (database URL, provider keys, the Privy app id and secret) are set in the Render dashboard, not in the repo.
 
 Anything starting with `NEXT_PUBLIC_` is baked into the browser bundle at build time, so changing one of those needs a redeploy, not just a restart.
 

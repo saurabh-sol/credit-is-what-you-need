@@ -51,9 +51,9 @@ export function Verify({ initialCode }: { initialCode: string }) {
 
       {!signedIn && (
         <div className="card p-5">
-          <p className="text-sm text-fog">Sign in with the wallet the terminal should spend from.</p>
+          <p className="text-sm text-fog">Sign in as the account the terminal should spend from.</p>
           <div className="mt-4">
-            <WalletButton label="Connect wallet" signedIn="account" />
+            <WalletButton label="Sign in" signedIn="account" />
           </div>
         </div>
       )}
