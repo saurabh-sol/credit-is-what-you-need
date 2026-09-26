@@ -2,7 +2,7 @@
 //   node render.mjs                 -> frames/00000.png … + kredit-promo.mp4
 //   PREVIEW=0,1.5,4,9,14,19,24,28 node render.mjs -> preview/<t>.png only
 import { execFileSync } from "node:child_process";
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { launch } from "./cdp.mjs";
 
@@ -35,10 +35,12 @@ if (preview) {
     if (i % 90 === 0) console.log(`frame ${i}/${total} (${((Date.now() - started) / 1000).toFixed(0)}s)`);
   }
   const out = process.env.OUT ?? `${dir}kredit-promo.mp4`;
+  // Soundtrack: score.wav from `node score.mjs`, muxed in when present.
+  const audio = existsSync(`${dir}score.wav`) ? ["-i", `${dir}score.wav`, "-c:a", "aac", "-b:a", "192k", "-shortest"] : [];
   execFileSync(ffmpeg, [
-    "-y", "-framerate", String(FPS), "-i", `${dir}frames/%05d.png`,
+    "-y", "-loglevel", "error", "-framerate", String(FPS), "-i", `${dir}frames/%05d.png`, ...audio,
     "-c:v", "libx264", "-preset", "slow", "-crf", "17", "-pix_fmt", "yuv420p", "-movflags", "+faststart",
-    "-vf", "format=yuv420p", out,
+    out,
   ], { stdio: "inherit" });
   console.log("wrote", out);
 }

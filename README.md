@@ -1,3 +1,9 @@
+<p align="center">
+  <a href="promo/kredit-promo.mp4"><img src="promo/preview.gif" alt="Kredit" width="100%" /></a>
+</p>
+
+<p align="center"><a href="promo/kredit-promo.mp4"><b>▶ Watch the 30-second film with sound</b></a></p>
+
 # Kredit
 
 Kredit turns a wallet's on-chain activity into AI credits.
