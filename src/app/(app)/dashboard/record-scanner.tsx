@@ -153,7 +153,6 @@ function ScanResult({ data, onClaimed }: { data: RecordResponse; onClaimed: () =
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ACCOUNT_KEY });
-      queryClient.invalidateQueries({ queryKey: ["distribution"] });
       onClaimed();
     },
     onSettled: () => setStep("idle"),

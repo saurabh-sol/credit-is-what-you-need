@@ -20,7 +20,6 @@ import {
   SearchIcon,
   SettingsIcon,
   TerminalIcon,
-  UsersIcon,
 } from "@/components/icons";
 import { LibraryIcon } from "@/app/(app)/playground/icons";
 import { Identicon } from "@/components/identicon";
@@ -44,7 +43,6 @@ const product: Destination[] = [
 ];
 const elsewhere: Destination[] = [
   { name: "API docs", href: "/docs", icon: TerminalIcon },
-  { name: "Distribution", href: "/distribution", icon: UsersIcon },
   { name: "Home", href: "/", icon: HomeIcon },
 ];
 const everywhere = [...product, ...elsewhere];
@@ -150,11 +148,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     queryFn: () => api<AccountResponse>("/api/account"),
     enabled: Boolean(session.address),
   });
-  const profile = useQuery({
-    queryKey: ["profile"],
-    queryFn: () => api<{ name: string | null }>("/api/profile"),
-    enabled: Boolean(session.address),
-  });
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -208,7 +201,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <div className="flex items-center gap-2.5">
               <Identicon address={session.address} className="size-8" />
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[0.8125rem] font-medium">{profile.data?.name ?? shortAddress(session.address)}</p>
+                <p className="truncate text-[0.8125rem] font-medium">{shortAddress(session.address)}</p>
                 <p className="truncate font-mono text-[0.6875rem] text-mist">{shortAddress(session.address)}</p>
               </div>
               <button

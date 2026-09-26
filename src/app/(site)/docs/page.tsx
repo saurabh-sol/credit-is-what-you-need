@@ -97,8 +97,8 @@ export default async function Introduction() {
           exactly one time, enforced in a single database transaction.
         </li>
         <li>
-          <strong>Earnings are public, spending is private.</strong> The{" "}
-          <Link href="/distribution">distribution board</Link> shows who earned what; nobody sees what you spent it on.
+          <strong>Claims are public, spending is private.</strong> Every claim is a receipt on Robinhood Chain;
+          nobody sees what you spent the credits on.
         </li>
         <li>
           <strong>No custody.</strong> Signing in costs no gas and grants nothing. Kredit never holds your tokens.

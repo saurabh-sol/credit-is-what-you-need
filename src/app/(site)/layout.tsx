@@ -24,7 +24,6 @@ const footerLinks = [
     title: "Kredit",
     links: [
       ["Dashboard", "/dashboard"],
-      ["Distribution", "/distribution"],
       ["FAQ", "/#faq"],
     ],
   },

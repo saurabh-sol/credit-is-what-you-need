@@ -137,8 +137,8 @@ export function HowItWorks() {
       <H2>4. Credits are a ledger</H2>
       <p>
         Your balance is the sum of your ledger rows: claims, milestones, streak bonuses, referral shares and top-ups
-        are positive, spending is negative. Nothing is ever edited, only added. What you earn is public on the{" "}
-        <Link href="/docs/platform/distribution">distribution board</Link>; what you spend it on is not.
+        are positive, spending is negative. Nothing is ever edited, only added. Claims are public as on-chain
+        receipts; what you spend credits on is not.
       </p>
 
       <H2>5. Credits pay for AI</H2>

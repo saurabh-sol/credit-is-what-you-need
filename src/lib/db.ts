@@ -72,7 +72,7 @@ const SCHEMA = `
   );
   CREATE INDEX IF NOT EXISTS api_keys_address ON api_keys (address);
 
-  -- The name a wallet chose to show on the public distribution page.
+  -- Display names from the retired distribution board. Kept so old rows stay; nothing writes here now.
   CREATE TABLE IF NOT EXISTS profiles (
     address TEXT PRIMARY KEY,
     name TEXT NOT NULL,

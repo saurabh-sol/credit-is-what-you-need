@@ -57,7 +57,6 @@ export const docGroups: DocGroup[] = [
       { slug: "platform/sign-in", title: "Wallets and sign-in", description: "Sign-In with Ethereum, sessions and smart wallets." },
       { slug: "platform/dashboard", title: "Dashboard", description: "Every signed-in page and what it does." },
       { slug: "platform/playground", title: "Workspace", description: "Chat with any model, keep the conversation, compare two models, make pictures and clips." },
-      { slug: "platform/distribution", title: "Distribution board", description: "The public record of who earned what." },
       { slug: "platform/security", title: "Privacy and security", description: "What is stored, what is public, and how keys and sessions are protected." },
     ],
   },

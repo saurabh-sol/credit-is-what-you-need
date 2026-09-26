@@ -29,7 +29,7 @@ This is one Next.js project. The frontend and the backend live in the same repo 
 .
 ├── src/                      The website and the API (frontend + backend)
 │   ├── app/
-│   │   ├── (site)/           FRONTEND, public pages: landing, catalog, docs, distribution board, CLI login
+│   │   ├── (site)/           FRONTEND, public pages: landing, catalog, docs, CLI login
 │   │   ├── (app)/            FRONTEND, signed-in pages: dashboard (credits, keys, earn, activity, settings), playground
 │   │   ├── api/              BACKEND, internal API used by the website (auth, claim, keys, top-up, profile, referrals, workspace)
 │   │   ├── v1/               BACKEND, public AI API for customers (chat, completions, embeddings, images, videos, models, usage)

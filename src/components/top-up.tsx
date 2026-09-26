@@ -205,7 +205,6 @@ function usePurchase() {
       const hash = await send();
       setBought(await confirm(hash, setStep));
       await queryClient.invalidateQueries({ queryKey: ACCOUNT_KEY });
-      queryClient.invalidateQueries({ queryKey: ["distribution"] });
       after?.();
       setStep("done");
     } catch (caught) {

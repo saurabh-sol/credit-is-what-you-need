@@ -4,7 +4,7 @@ import { HISTORY_SENT, MAX_CONVERSATIONS, MAX_CREATIONS, MAX_MESSAGE_CHARS } fro
 import { Callout, Doc, Endpoint, H2, number, Table } from "../ui";
 
 // The signed-in product and the public board, written from src/lib/session.ts,
-// the dashboard pages, src/lib/distribution.ts and the playground routes.
+// the dashboard pages and the playground routes.
 
 export function SignIn() {
   return (
@@ -76,7 +76,7 @@ export function Dashboard() {
           [<Link key="a" href="/dashboard/credits">Credits</Link>, "The three pricing rules, a table of what typical requests cost, and the top-up card when buying is open."],
           [<Link key="a" href="/dashboard/keys">Keys</Link>, `Create and revoke API keys, up to ${MAX_ACTIVE_KEYS}. A new key is shown once with a ready-to-run curl.`],
           [<Link key="a" href="/dashboard/activity">Activity</Link>, "Every credit that came in or went out, newest first. Claims paid on-chain link to their receipt on Blockscout."],
-          [<Link key="a" href="/dashboard/settings">Settings</Link>, "Your display name on the public distribution board."],
+          [<Link key="a" href="/dashboard/settings">Settings</Link>, "Download everything Kredit holds about the wallet, or clear the workspace."],
         ]}
         min="32rem"
       />
@@ -102,8 +102,7 @@ export function Dashboard() {
       <H2>Keyboard</H2>
       <p>
         Press <kbd className="kbd">Cmd</kbd> <kbd className="kbd">K</kbd> or <kbd className="kbd">Ctrl</kbd>{" "}
-        <kbd className="kbd">K</kbd> anywhere in the app to jump to a page by name. On the distribution board,{" "}
-        <kbd className="kbd">/</kbd> focuses the search.
+        <kbd className="kbd">K</kbd> anywhere in the app to jump to a page by name.
       </p>
     </Doc>
   );
@@ -191,54 +190,6 @@ export function Playground() {
           stored is listed in the <Link href="/docs/legal/privacy">privacy policy</Link>.
         </p>
       </Callout>
-    </Doc>
-  );
-}
-
-export function Distribution() {
-  return (
-    <Doc slug="platform/distribution" lede="Credits are handed out by rules, not by us, so the full list is public: every wallet that earned, how much, and from what. Spending never appears.">
-      <H2>What is shown</H2>
-      <Table
-        head={["Column", "Meaning"]}
-        rows={[
-          ["#", "Rank by credits earned."],
-          ["Wallet", "Display name if set, otherwise the short address, with an identicon and a copy button."],
-          ["Credits earned", "Every credit that ever came in: claims, milestones, streaks, referrals and top-ups."],
-          ["Worth", "The same in dollars, at 1,000 credits per $1."],
-          ["Share", "Percent of every credit ever handed out."],
-          ["Sources", "A bar split into Tasks, Milestones, Streaks, Referrals and Bought."],
-          ["Paid in", "Tokens paid for top-ups, per symbol."],
-          ["Last earned", "When the wallet last earned."],
-        ]}
-        min="30rem"
-      />
-      <ul>
-        <li>The board shows the top 100 wallets and refreshes every 20 seconds.</li>
-        <li>Your own row is pinned at the top with a <em>You</em> chip when you are signed in.</li>
-        <li>
-          The ticker under the totals lists at most 12 wallets, one line each, the ones using the most credits
-          first: what they claimed and, as a single number, what they have used.
-        </li>
-        <li>Search matches a display name or any part of an address, up to 64 characters.</li>
-      </ul>
-
-      <H2>What stays private</H2>
-      <p>
-        <strong>What you spent credits on.</strong> Models, prompts, images and individual calls are never shown.
-        Spending appears only as one <em>used</em> total per wallet in the ticker, and never on the board.
-      </p>
-
-      <H2>Display names</H2>
-      <p>
-        Set one under <Link href="/dashboard/settings">Settings</Link>: 2 to 24 characters, starting with a letter or
-        digit, then letters, digits, spaces, dots, dashes or underscores. Leave it empty to show only your address.
-      </p>
-      <Endpoint method="GET" path="/api/distribution?q=" note="public" />
-      <p>
-        The same data the board renders: <code>totals</code>, <code>wallets</code> and <code>active</code>. No sign-in
-        needed.
-      </p>
     </Doc>
   );
 }

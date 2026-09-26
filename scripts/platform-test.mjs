@@ -1,5 +1,4 @@
-// End-to-end check of the public platform pieces: display names, the
-// playground, the distribution board and top-up gating.
+// End-to-end check of the public platform pieces: the playground and top-up gating.
 // Needs a server and this script to share SESSION_SECRET and DATABASE_URL:
 //   SESSION_SECRET=… DATABASE_URL=postgres://… npx next start -p 3458
 //   SESSION_SECRET=… DATABASE_URL=postgres://… BASE_URL=http://localhost:3458 node scripts/platform-test.mjs
@@ -17,7 +16,7 @@ const app = (path, init = {}) => fetch(base + path, { ...init, headers: { cookie
 const json = async (response) => response.json();
 
 // --- pages render
-for (const page of ["/", "/docs", "/playground", "/distribution"]) {
+for (const page of ["/", "/docs", "/playground"]) {
   check(`${page} renders`, (await fetch(base + page)).status === 200);
 }
 
@@ -27,14 +26,6 @@ for (const page of ["/dashboard", "/dashboard/earn", "/dashboard/keys", "/dashbo
 }
 const stranger = await fetch(`${base}/dashboard/keys`, { redirect: "manual" });
 check("dashboard pages send signed-out visitors away", stranger.status >= 300 && stranger.status < 400);
-
-// --- display name
-const badName = await app("/api/profile", { method: "PUT", body: JSON.stringify({ name: "<b>" }) });
-check("a name with markup is refused", badName.status === 400);
-const NAME = `Mira ${Date.now() % 100000}`;
-const named = await json(await app("/api/profile", { method: "PUT", body: JSON.stringify({ name: `  ${NAME}  ` }) }));
-check("a valid name is trimmed and saved", named.name === NAME);
-check("signed-out visitors cannot set a name", (await fetch(`${base}/api/profile`, { method: "PUT", body: "{}" })).status === 401);
 
 // --- playground
 const hello = { model: "kredit/echo", stream: true, messages: [{ role: "user", content: "hi" }] };
@@ -57,15 +48,6 @@ check("a long request costs more than a short one", 499 - afterEssay > 10, `(${4
 const usage = (await query("SELECT key_id FROM usage WHERE address = ?", [WALLET.toLowerCase()])).rows[0];
 check("usage is recorded under the playground, not a key", usage?.key_id === "playground");
 
-// --- distribution
-const board = await json(await fetch(`${base}/api/distribution?q=${encodeURIComponent(NAME)}`));
-const row = board.wallets[0];
-check("the wallet shows on the board under its name", row?.name === NAME && row.address === WALLET.toLowerCase());
-check("the board counts what was earned, not what is left", row?.earned === 500 && row.bySource.claim === 500);
-const page = await fetch(`${base}/distribution`);
-check("the distribution page renders once it has wallets to show", page.status === 200 && (await page.text()).includes(NAME));
-check("searching for nobody finds nobody", (await json(await fetch(`${base}/api/distribution?q=zzzz-nobody`))).wallets.length === 0);
-
 // --- models and top-ups
 const models = await json(await fetch(`${base}/api/models`));
 check("the model catalog always has the test model", models.models.some((model) => model.id === "kredit/echo"));
@@ -79,7 +61,6 @@ if (config) {
   check("top-ups are closed until configured", closed.status === 503);
 }
 
-await app("/api/profile", { method: "PUT", body: JSON.stringify({ name: "" }) });
 const passed = results.filter(Boolean).length;
 console.log(`\n${passed}/${results.length} passed`);
 process.exit(passed === results.length ? 0 : 1);

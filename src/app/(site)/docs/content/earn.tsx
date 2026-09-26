@@ -418,8 +418,7 @@ export function TopUps() {
       <Callout>
         <p>
           Buying stays switched off until the operator sets the checkout contract and the treasury. The price
-          in ETH floats with the market; the price in dollars does not. Every top-up is listed on the public
-          distribution board as <em>Bought</em>, with the USDG paid in. {number(CREDITS_PER_USD)} credits are
+          in ETH floats with the market; the price in dollars does not. {number(CREDITS_PER_USD)} credits are
           worth $1 of AI usage whichever way they arrived.
         </p>
       </Callout>

@@ -51,7 +51,7 @@ export function Privacy() {
         <li>What you send to a model through the API is forwarded and dropped. It is never written to our database.</li>
         <li>Conversations you have in the workspace are stored for you, in your account, until you delete them.</li>
         <li>Nothing you send trains a model, ours or anyone else&apos;s.</li>
-        <li>What you earned is public on the distribution board. What you spent shows as totals, never as prompts.</li>
+        <li>Claims are public as receipts on Robinhood Chain. What you spent is never shown as prompts.</li>
         <li>No analytics scripts, no advertising pixels, no data brokers.</li>
       </ul>
 
@@ -60,7 +60,6 @@ export function Privacy() {
         head={["Data", "Why", "Kept"]}
         rows={[
           ["Wallet address", "It is your account", "As long as the account has any row"],
-          ["Display name (optional)", "Shown on the distribution board instead of the address", "Until you remove it"],
           ["Ledger rows: every credit in and out", "Your balance is the sum of them", "Forever. It is the money."],
           ["Claimed transaction hashes, milestones, streak days", "So each pays once", "Forever"],
           ["Referral: who invited you, invited wallets, shares paid", "To pay the inviter's share", "Forever"],
@@ -96,11 +95,9 @@ export function Privacy() {
 
       <H2>What is public</H2>
       <p>
-        Credits are handed out by rules, so the hand-outs are public. The{" "}
-        <Link href="/distribution">distribution board</Link> shows, for every wallet that earned: its address or
-        display name, credits earned, where they came from (tasks, milestones, streaks, referrals, purchases), one
-        &quot;used&quot; total and the models it went to, and when it last earned. It never shows prompts, individual
-        calls or amounts per call. Claims are also written as receipts on Robinhood Chain, which anyone can read.
+        Credits are handed out by rules, so claims are public: each one is written as a receipt on Robinhood
+        Chain, which anyone can read. Nothing else is published. Prompts, individual calls and amounts per call are
+        never shown to anyone.
       </p>
 
       <H2>Who else sees your data</H2>
@@ -232,7 +229,6 @@ export function Terms() {
         </li>
         <li>Do not use Kredit to break the law, to harm people, or to attack the service, the chain or the providers.</li>
         <li>Do not resell access to your key or share one wallet&apos;s credits as a service to others without telling us.</li>
-        <li>Do not scrape the distribution board to target the wallets on it.</li>
       </ul>
 
       <H2>6. The service</H2>

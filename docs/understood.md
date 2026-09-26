@@ -26,14 +26,13 @@ wallet activity on chain ──scan──▶ receipt ──claim──▶ credit
 | `/dashboard` | Signed-in wallets | Overview and balance, with a page each for earning (`/earn`: scan, claim, referrals), credits (`/credits`: buy more), API keys (`/keys`), activity (`/activity`) and settings (`/settings`: display name). |
 | `/playground` | Signed-in wallets | Chat with any model in the browser, paid from your credits. No key needed. |
 | `/docs` | Developers | How to call the API, with copy-paste code and what typical requests cost. |
-| `/distribution` | Everyone | Public board: every wallet that earned credits, where they came from, and a live ticker. |
 | `/v1/...` | Programs | The API itself (OpenAI-compatible). |
 
 ## How it works for each user
 
 ### 1. A visitor (no wallet connected)
 
-You can read the landing page, the docs, and the public distribution board. You cannot
+You can read the landing page and the docs. You cannot
 earn, spend, or open the dashboard; `/dashboard` sends you back to the home page.
 
 ### 2. Signing in (every wallet user)
@@ -185,20 +184,11 @@ credits = provider's price in USD × 1,000, rounded up, minimum 1 (no fee on top
 
 ### 7. What everyone can see (the public side)
 
-`/distribution` is public on purpose: credits are handed out by rules, so anyone can check
-them. It shows, for every wallet that earned: total credits, their worth in dollars, where
-they came from (tasks, milestones, streaks, referrals, bought), tokens paid in, and when
-it last earned. You can search by name or address. It refreshes every 20 seconds.
-
-The **ticker** under the totals shows one entry per wallet that has claimed: what it
-claimed and how much it has used, with the wallets using the most credits first.
+Claims are written as receipts on Robinhood Chain (`KreditReceipts`), so anyone can check
+that credits were handed out by the rules. There is no public list of wallets on the site.
 
 What stays private: **what** you spent credits on. Models, prompts and single calls are
-never shown; only one "used" total per wallet.
-
-By default you appear as a short address like `0xf7d0…dca2`. On the dashboard you can set
-a **display name** (2–24 letters, digits, spaces, dots, dashes or underscores), or remove
-it again.
+never shown to anyone.
 
 ## For the person running the site
 
