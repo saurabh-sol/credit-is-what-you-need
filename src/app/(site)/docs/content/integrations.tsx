@@ -74,6 +74,15 @@ const { text } = await generateText({ model: kredit("anthropic/claude-sonnet-4.5
         ]}
       />
 
+      <H2>Switching from OpenRouter</H2>
+      <p>
+        Kredit works the way OpenRouter does: one key, every model, the OpenAI request format. Model ids use the
+        same <code>maker/model</code> shape, so code written for OpenRouter usually needs two changes: the base
+        URL, from <code>https://openrouter.ai/api/v1</code> to this host&apos;s <code>/v1</code>, and the key.
+        OpenRouter&apos;s optional <code>HTTP-Referer</code> and <code>X-Title</code> headers are not needed. The
+        cost of each call comes back in <code>x-kredit-credits-charged</code> instead of a usage dashboard.
+      </p>
+
       <H2>Editors and desktop tools</H2>
       <Table
         head={["Tool", "Where to put it"]}
@@ -82,6 +91,7 @@ const { text } = await generateText({ model: kredit("anthropic/claude-sonnet-4.5
           ["Continue", "In config, an openai provider with apiBase set to this host's /v1 and apiKey set to the key."],
           ["Open WebUI", "Connections → OpenAI API: base URL this host's /v1, key the Kredit key."],
           ["Postman", "Import /v1/openapi.json, set the bearer token to the key."],
+          ["Anything set up for OpenRouter", "Replace https://openrouter.ai/api/v1 with this host's /v1 and the OpenRouter key with a Kredit key. Model ids stay as they are."],
         ]}
         min="30rem"
       />

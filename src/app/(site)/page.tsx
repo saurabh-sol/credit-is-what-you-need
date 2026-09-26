@@ -175,6 +175,22 @@ const stats = [
   { value: CREDITS_PER_USD, suffix: "", label: "credits buy $1 of AI usage" },
 ];
 
+// Side by side with OpenRouter, which is the closest thing people already know.
+const openRouterComparison = {
+  same: [
+    "One key reaches every maker: OpenAI, Anthropic, Google, Meta and the rest.",
+    "OpenAI-compatible API. Change the base URL, keep your code.",
+    "Model ids in the same maker/model shape, like openai/gpt-4o-mini.",
+    `Pay per call at the provider's price, plus a ${Math.round(MARGIN * 100)}% fee.`,
+  ],
+  different: [
+    "No card and no account form. You sign in with a wallet signature.",
+    "Credits come from what your wallet has done on Robinhood Chain, or from a top-up in USDG, ETH or KRED.",
+    "Every claim is a receipt on-chain that anyone can verify.",
+    "The cost of every call comes back in the response headers.",
+  ],
+};
+
 const topUpPoints = [
   "You pay from your own wallet, straight to the treasury, and the contract writes the receipt.",
   "The server credits only what the transaction receipt proves.",
@@ -201,6 +217,10 @@ const faqs = [
   {
     question: "Can I buy credits instead of earning them?",
     answer: "Earning is the main way and costs nothing. Once top-ups are open you can also buy credits at a fixed price, 1,000 credits for $0.80, paid in USDG, ETH or KRED from your own wallet, and they land when the chain confirms the payment.",
+  },
+  {
+    question: "How is Kredit different from OpenRouter?",
+    answer: `Same idea, different wallet. Like OpenRouter, one Kredit key reaches every major model through an OpenAI-compatible API, and each call is billed at the provider's price plus a ${Math.round(MARGIN * 100)}% fee. The difference is how you pay: there is no card and no account. Credits come from what your wallet has done on Robinhood Chain, or from a top-up in USDG, ETH or KRED, and every claim is a receipt on-chain. If your code already talks to OpenRouter, change the base URL and the key and it works.`,
   },
   {
     question: "What if a key leaks?",
@@ -445,6 +465,43 @@ export default function Home() {
             <ApiDemo />
           </Reveal>
         </div>
+      </section>
+
+      <section id="openrouter" className="mx-auto max-w-6xl px-4 py-24 md:py-32">
+        <SectionHeading eyebrow="OpenRouter, on-chain" title="What you expect from OpenRouter, paid a different way">
+          If you have used OpenRouter, you already know how Kredit works. One key, every model,
+          one API. The difference is where the credits come from.
+        </SectionHeading>
+        <div className="mt-14 grid gap-6 lg:grid-cols-2">
+          {[
+            { label: "Same as OpenRouter", points: openRouterComparison.same, accent: false },
+            { label: "Only on Kredit", points: openRouterComparison.different, accent: true },
+          ].map((column, index) => (
+            <Reveal key={column.label} delay={index * 120}>
+              <div className={`h-full rounded-2xl border p-6 sm:p-8 ${column.accent ? "border-accent/30 bg-accent/[0.04]" : "border-line bg-surface"}`}>
+                <h3 className={`section-label ${column.accent ? "text-accent" : ""}`}>{column.label}</h3>
+                <ul className="mt-5 space-y-4">
+                  {column.points.map((point) => (
+                    <li key={point} className="flex items-start gap-3 text-sm leading-relaxed text-fog">
+                      <CheckIcon className={`mt-0.5 size-4 shrink-0 ${column.accent ? "text-accent" : "text-mist"}`} />
+                      {point}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+        <Reveal delay={240}>
+          <p className="mt-8 max-w-[60ch] text-sm leading-relaxed text-mist">
+            Already on OpenRouter? Swap the base URL for this host&apos;s /v1 and the key for a Kredit key.
+            Model ids stay the same.{" "}
+            <Link href="/docs/integrations" className="text-fog underline decoration-line underline-offset-4 transition hover:decoration-accent">
+              See the integrations guide
+            </Link>
+            .
+          </p>
+        </Reveal>
       </section>
 
       <section aria-label="Kredit in four numbers" className="mx-auto max-w-6xl px-4 pt-24 md:pt-32">
