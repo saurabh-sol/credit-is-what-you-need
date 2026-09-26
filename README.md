@@ -1,65 +1,125 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Kredit
 
-## Getting Started
+Kredit turns a wallet's on-chain activity into AI credits.
 
-First, run the development server:
+A person connects their wallet on [usekredit.space](https://usekredit.space). We scan their history on Robinhood Chain, score it, and hand out credits. They spend those credits on AI models (OpenAI, Anthropic, Google and others) through our API, the web playground, or the command line. When credits run out, they can buy more with USDG, ETH or the KRED token.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+Live site: https://usekredit.space
+Repo: https://github.com/saurabh-sol/credit-is-what-you-need
+
+## How it works, in one pass
+
+1. Wallet signs in (no password, just a signature).
+2. Server reads the wallet's transactions from the chain, scores them, and signs a receipt.
+3. Wallet submits that receipt to our `KreditReceipts` contract. The claim is recorded on-chain.
+4. Server writes the credits into the ledger (Neon Postgres).
+5. Person creates an API key on the dashboard and calls `https://usekredit.space/v1/...` exactly like they would call OpenAI. Every call deducts credits at the model's price.
+
+## Folder structure
+
+This is one Next.js project. The frontend and the backend live in the same repo and are deployed together as one service. The split below is by what each folder does, not by separate apps.
+
+```
+.
+├── src/                      The website and the API (frontend + backend)
+│   ├── app/
+│   │   ├── (site)/           FRONTEND, public pages: landing, catalog, docs, distribution board, CLI login
+│   │   ├── (app)/            FRONTEND, signed-in pages: dashboard (credits, keys, earn, activity, settings), playground
+│   │   ├── api/              BACKEND, internal API used by the website (auth, claim, keys, top-up, profile, referrals, workspace)
+│   │   ├── v1/               BACKEND, public AI API for customers (chat, completions, embeddings, images, videos, models, usage)
+│   │   ├── typesafe/         BACKEND, TypeSafe AI "systemone" endpoint
+│   │   └── r/                BACKEND, referral links (/r/<wallet>)
+│   ├── components/           FRONTEND, shared UI: header, wallet button, top-up, receipts, landing sections, brand assets
+│   └── lib/                  BACKEND, the business logic: ledger, pricing, scoring, receipts, sessions, DB, proxy to AI providers
+│
+├── contracts/                BLOCKCHAIN, Solidity contracts (Foundry): KreditReceipts, KreditCheckout, KreditTokenCheckout
+├── cli/                      CLI, the `kredit` terminal tool published as @kredit/cli
+├── scripts/                  TOOLING, deploy contracts, run tests against a live server, backups, chain scan
+├── docs/                     Internal notes: CI, plan, plain-language explanation of the product
+├── promo/                    The 30-second promo video and the pipeline that renders it
+├── public/                   Static files served as-is (provider logos)
+├── data/                     Local dev database and backups (git-ignored)
+│
+├── Dockerfile                Container build
+├── docker-compose.yml        Run it locally with Docker
+├── render.yaml               Render deployment blueprint (production runs from this)
+├── .env.example              Every environment variable, with what it does
+└── package.json              Scripts and dependencies
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Frontend
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Everything a person sees. `src/app/(site)` is the public website. `src/app/(app)` is what you get after connecting a wallet: the dashboard and the playground. `src/components` holds the pieces shared between them. Built with Next.js 16, React 19, Tailwind, RainbowKit and wagmi for wallets.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Backend
 
-## Run with Docker
+`src/app/api` is what our own website talks to. `src/app/v1` is what customers talk to: it accepts OpenAI-shaped requests, checks the API key and balance, forwards the call to the upstream provider (Vercel AI Gateway by default, OpenRouter as a second source), and charges the credits. `src/lib` is where the rules live: how credits are earned (`scoring.ts`), what each model costs (`pricing.ts`), the ledger (`ledger.ts`), on-chain receipts (`receipts.ts`), buying credits (`topup.ts`, `token-checkout.ts`). Data is in Neon Postgres; tables are created on first run.
 
-Put `SESSION_SECRET` (32+ random characters, `openssl rand -hex 32`) and any
-optional settings from `.env.example` in `.env.local`, then:
+### Blockchain
 
-```bash
+Three contracts on Robinhood Chain mainnet, all in `contracts/src`. `KreditReceipts` records claims. `KreditCheckout` sells credits for USDG or ETH. `KreditTokenCheckout` sells credits for KRED. Addresses and deploy history are in `contracts/README.md`.
+
+### CLI
+
+`cli/` is a separate small Node package. `kredit login`, `kredit chat`, `kredit models`, `kredit usage` and so on. It only talks to the `/v1` API. See `cli/README.md`.
+
+## Running it locally
+
+Needs Node 22 or newer.
+
+```sh
+npm install
+cp .env.example .env.local        # fill in DATABASE_URL, SESSION_SECRET, UPSTREAM_API_KEY at minimum
+npm run dev
+```
+
+Open http://localhost:3000. Without `UPSTREAM_API_KEY` only the test model `kredit/echo` answers, which is enough to click through the site.
+
+Or with Docker:
+
+```sh
 docker compose --env-file .env.local up -d --build
 ```
 
-Open [http://localhost:4000](http://localhost:4000); set `KREDIT_PORT` to use
-another port. Credits, API keys and display names live in the `kredit-data`
-volume, so they survive rebuilds. `docker compose down -v` deletes them.
+That serves on http://localhost:4000.
 
-`NEXT_PUBLIC_*` values (the RPC URLs and the WalletConnect project ID) are baked
-into the browser bundle, so changing them needs a rebuild (`--build`); every
-other setting only needs a restart.
+## Tests
 
-## Back up the ledger
-
-Everything lives in Neon Postgres (`DATABASE_URL`), which keeps its own
-point-in-time history. For a copy you hold yourself:
-
-```bash
-npm run backup                                          # data/backups/kredit-<time>.json
+```sh
+npm test                 # unit tests in src/lib
+npm run test:contracts   # Foundry tests in contracts/
+npm run test:compat      # checks /v1 against OpenAI, Anthropic and Cursor client shapes (needs a running server)
+npm run test:gateway     # end-to-end AI call through /v1 (needs a running server and an upstream key)
+npm run lint
 ```
 
-It is safe while the site is running, checks the file, and keeps the newest 14
-(`BACKUP_KEEP`). Run it from cron and copy the folder off the server.
+The other `test:*` scripts in `package.json` each hit one feature (auth, referrals, receipts, top-up guard, platform) against a running server.
 
-## Learn More
+## Deploying
 
-To learn more about Next.js, take a look at the following resources:
+Production is Render. It watches the `main` branch of this repo and rebuilds on every push, using `render.yaml`. Secrets (database URL, provider keys, WalletConnect ID) are set in the Render dashboard, not in the repo.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Anything starting with `NEXT_PUBLIC_` is baked into the browser bundle at build time, so changing one of those needs a redeploy, not just a restart.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Backups
 
-## Deploy on Vercel
+The ledger lives in Neon Postgres, which keeps its own point-in-time history. For a copy you hold yourself:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```sh
+npm run backup           # writes data/backups/kredit-<time>.json, keeps the newest 14
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Safe to run while the site is live.
+
+## Where to look for what
+
+| Question | File |
+| --- | --- |
+| How many credits does an action earn? | `src/lib/scoring.ts`, `src/lib/referral-rules.ts` |
+| What does a model cost? | `src/lib/pricing.ts`, `src/lib/catalog.ts` |
+| What can a key spend per minute / per day? | `src/lib/limits.ts`, `src/lib/budget.ts` |
+| Price of buying credits | `.env.example` (`TOPUP_*`), `src/lib/topup.ts` |
+| Which chain and RPC | `src/lib/networks.ts`, `src/lib/chain.ts` |
+| Contract addresses | `contracts/README.md` |
+| Every env var | `.env.example` |
+| Plain-language walkthrough of the whole product | `docs/understood.md` |
